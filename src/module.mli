@@ -99,6 +99,8 @@ val set_pp : t -> (unit, string list) Build.t option -> t
 
 val to_sexp : t Sexp.Encoder.t
 
+val pp : t Fmt.t
+
 val wrapped_compat : t -> t
 
 module Name_map : sig
@@ -108,9 +110,12 @@ module Name_map : sig
   val impl_only : t -> module_ list
 
   val of_list_exn : module_ list -> t
+
+  val add : t -> module_ -> t
 end with type module_ := t
 
 val is_public : t -> bool
+val is_private : t -> bool
 
 val set_private : t -> t
 

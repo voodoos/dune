@@ -1,5 +1,31 @@
-1.4.0 (4/10/2018)
------------------
+next
+----
+
+- Filter out empty paths from `OCAMLPATH` and `PATH` (#1436, @rgrinberg)
+
+- Do not add the `lib.cma.js` target in lib's directory. Put this target in a
+  sub directory instead. (#1435, fix #1302, @rgrinberg)
+
+- Install generated OCaml files with a `.ml` rather than a `.ml-gen` extension
+  (#1425, fix #1414, @rgrinberg)
+
+- Allow to use the `bigarray` library in >= 4.07 without ocamlfind and without
+  installing the corresponding `otherlib`. (#1455, @nojb)
+
+- Add `@all` alias to build all targets defined in a directory (#1409, fix
+  #1220, @rgrinberg)
+
+- Add `@check` alias to build all targets required for type checking and tooling
+  support. (#1447, fix #1220, @rgrinberg)
+
+- Produce the odoc index page with the content wrapper to make it consistent
+  with odoc's theming (#1469, @rizo)
+
+- Unblock signals in processes started by dune (#1461, fixes #1451,
+  @diml)
+
+1.4.0 (10/10/2018)
+------------------
 
 - Do not fail if the output of `ocamlc -config` doesn't include
   `standard_runtime` (#1326, @diml)
@@ -43,6 +69,13 @@
   installed (#1391, @nojb)
 
 - Take argument to self_build_stubs_archive into account. (#1395, @nojb)
+
+- Fix bad interaction between `env` customization and vendored
+  projects: when a vendored project didn't have its own `env` stanza,
+  the `env` stanza from the enclosing project was in effect (#1408,
+  @diml)
+
+- Fix stop early bug when scanning for watermarks (#1423, @struktured)
 
 1.3.0 (23/09/2018)
 ------------------

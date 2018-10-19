@@ -15,6 +15,14 @@
    (progn (run %{exe:cram.exe} -test run.t) (diff? run.t run.t.corrected)))))
 
 (alias
+ (name all-alias)
+ (deps (package dune) (source_tree test-cases/all-alias))
+ (action
+  (chdir
+   test-cases/all-alias
+   (progn (run %{exe:cram.exe} -test run.t) (diff? run.t run.t.corrected)))))
+
+(alias
  (name bad-alias-error)
  (deps (package dune) (source_tree test-cases/bad-alias-error))
  (action
@@ -44,6 +52,14 @@
  (action
   (chdir
    test-cases/c-stubs
+   (progn (run %{exe:cram.exe} -test run.t) (diff? run.t run.t.corrected)))))
+
+(alias
+ (name check-alias)
+ (deps (package dune) (source_tree test-cases/check-alias))
+ (action
+  (chdir
+   test-cases/check-alias
    (progn (run %{exe:cram.exe} -test run.t) (diff? run.t run.t.corrected)))))
 
 (alias
@@ -478,6 +494,14 @@
    (progn (run %{exe:cram.exe} -test run.t) (diff? run.t run.t.corrected)))))
 
 (alias
+ (name glob-deps)
+ (deps (package dune) (source_tree test-cases/glob-deps))
+ (action
+  (chdir
+   test-cases/glob-deps
+   (progn (run %{exe:cram.exe} -test run.t) (diff? run.t run.t.corrected)))))
+
+(alias
  (name ignored_subdirs)
  (deps (package dune) (source_tree test-cases/ignored_subdirs))
  (action
@@ -499,6 +523,14 @@
  (action
   (chdir
    test-cases/inline_tests
+   (progn (run %{exe:cram.exe} -test run.t) (diff? run.t run.t.corrected)))))
+
+(alias
+ (name install-dry-run)
+ (deps (package dune) (source_tree test-cases/install-dry-run))
+ (action
+  (chdir
+   test-cases/install-dry-run
    (progn (run %{exe:cram.exe} -test run.t) (diff? run.t run.t.corrected)))))
 
 (alias
@@ -1017,10 +1049,12 @@
  (deps
   (alias action-modifying-a-dependency)
   (alias aliases)
+  (alias all-alias)
   (alias bad-alias-error)
   (alias block-strings)
   (alias byte-code-only)
   (alias c-stubs)
+  (alias check-alias)
   (alias configurator)
   (alias configurator-gh1166)
   (alias copy_files)
@@ -1073,9 +1107,11 @@
   (alias github764)
   (alias github784)
   (alias github992)
+  (alias glob-deps)
   (alias ignored_subdirs)
   (alias include-loop)
   (alias inline_tests)
+  (alias install-dry-run)
   (alias install-libdir)
   (alias installable-dup-private-libs)
   (alias intf-only)
@@ -1143,10 +1179,12 @@
  (deps
   (alias action-modifying-a-dependency)
   (alias aliases)
+  (alias all-alias)
   (alias bad-alias-error)
   (alias block-strings)
   (alias byte-code-only)
   (alias c-stubs)
+  (alias check-alias)
   (alias configurator)
   (alias configurator-gh1166)
   (alias copy_files)
@@ -1195,9 +1233,11 @@
   (alias github764)
   (alias github784)
   (alias github992)
+  (alias glob-deps)
   (alias ignored_subdirs)
   (alias include-loop)
   (alias inline_tests)
+  (alias install-dry-run)
   (alias install-libdir)
   (alias installable-dup-private-libs)
   (alias intf-only)

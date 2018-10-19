@@ -81,6 +81,8 @@ val basename : t -> string
 val parent : t -> t option
 val parent_exn : t -> t
 
+val is_suffix : t -> suffix:string -> bool
+
 val extend_basename : t -> suffix:string -> t
 
 (** Extract the build context from a path. For instance, representing paths as strings:
@@ -173,3 +175,10 @@ end
 module L : sig
   val relative : t -> string list -> t
 end
+
+(** Return the "local part" of a path.
+    For local paths (in build directory or source tree),
+    this returns the path itself.
+    For external paths, it returns a path that is relative to the current
+    directory. For example, the local part of [/a/b] is [./a/b]. *)
+val local_part : t -> Local.t

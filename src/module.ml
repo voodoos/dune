@@ -36,11 +36,13 @@ end
 module Syntax = struct
   type t = OCaml | Reason
 
-  let to_sexp =
-    let open Sexp.Encoder in
-    function
-    | OCaml -> string "OCaml"
-    | Reason -> string "Reason"
+  let to_string = function
+    | OCaml -> "ocaml"
+    | Reason -> "reason"
+
+  let pp fmt t = Format.pp_print_string fmt (to_string t)
+
+  let to_sexp t = Sexp.Encoder.string (to_string t)
 end
 
 module File = struct
@@ -57,18 +59,30 @@ module File = struct
       [ "path", Path.to_sexp path
       ; "syntax", Syntax.to_sexp syntax
       ]
+
+  let pp fmt { path; syntax } =
+    Fmt.record fmt
+      [ "path", Fmt.const Path.pp path
+      ; "syntax", Fmt.const Syntax.pp syntax
+      ]
 end
 
 module Visibility = struct
   type t = Public | Private
 
-  let to_sexp = function
-    | Public -> Sexp.Encoder.string "public"
-    | Private -> Sexp.Encoder.string "private"
+  let to_string = function
+    | Public -> "public"
+    | Private -> "private"
+
+  let pp fmt t = Format.pp_print_string fmt (to_string t)
+
+  let to_sexp t = Sexp.Encoder.string (to_string t)
 
   let is_public = function
     | Public -> true
     | Private -> false
+
+  let is_private t = not (is_public t)
 end
 
 type t =
@@ -193,6 +207,15 @@ let to_sexp { name; impl; intf; obj_name ; pp ; visibility } =
     ; "visibility", Visibility.to_sexp visibility
     ]
 
+let pp fmt { name; impl; intf; obj_name ; pp = _ ; visibility } =
+  Fmt.record fmt
+    [ "name", Fmt.const Name.pp name
+    ; "impl", Fmt.const (Fmt.optional File.pp) impl
+    ; "intf", Fmt.const (Fmt.optional File.pp) intf
+    ; "obj_name", Fmt.const Format.pp_print_string obj_name
+    ; "visibility", Fmt.const Visibility.pp visibility
+    ]
+
 let wrapped_compat t =
   { t with
     intf = None
@@ -225,9 +248,13 @@ module Name_map = struct
   let of_list_exn modules =
     List.map modules ~f:(fun m -> (name m, m))
     |> Name.Map.of_list_exn
+
+  let add t module_ =
+    Name.Map.add t (name module_) module_
 end
 
 let is_public t = Visibility.is_public t.visibility
+let is_private t = Visibility.is_private t.visibility
 
 let set_private t =
   { t with visibility = Private }

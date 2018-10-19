@@ -1170,6 +1170,7 @@ module Library = struct
     | Some p -> snd p.name
 
   let is_virtual t = Option.is_some t.virtual_modules
+  let is_impl t = Option.is_some t.implements
 
   module Main_module_name = struct
     type t =
@@ -1301,6 +1302,12 @@ module Executables = struct
       | None ->
         let { mode; kind; loc = _ } = link_mode in
         Dune_lang.Encoder.pair Mode_conf.encode Binary_kind.encode (mode, kind)
+
+    let pp fmt { mode ; kind ; loc = _ } =
+      Fmt.record fmt
+        [ "mode", Fmt.const Mode_conf.pp mode
+        ; "kind", Fmt.const Binary_kind.pp kind
+        ]
 
     module Set = struct
       include Set.Make(T)
