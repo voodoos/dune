@@ -85,9 +85,8 @@ let print ppf loc =
             String.length lnum
           in
           let print_ellipsis padding_width =
-            (* We add 2 to the width of max line to account for
-               the extra space and the `|` character at the end
-               of a line number *)
+            (* We add 2 to the width of max line to account for the extra space
+               and the `|` character at the end of a line number *)
             let line = String.make (padding_width + 2) '.' in
             Format.fprintf pp "%s\n" line
           in
@@ -102,9 +101,9 @@ let print ppf loc =
             in
             print_lines lines (get_padding lines)
           else
-            (* We need to send the padding width from the last four lines
-               so the two blocks of lines align if they have different number
-               of digits in their line numbers *)
+            (* We need to send the padding width from the last four lines so
+               the two blocks of lines align if they have different number of
+               digits in their line numbers *)
             let first_shown_lines =
               file_lines path ~start:start.pos_lnum
                 ~stop:(start.pos_lnum + context_lines)

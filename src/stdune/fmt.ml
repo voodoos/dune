@@ -1,15 +1,9 @@
 (* CR-someday diml: we should define a GADT for this:
 
-   {[
-     type 'a t =
-       | Int : int t
-       | Box : ...
-           | Colored : ...
-   ]}
+   {[ type 'a t = | Int : int t | Box : ... | Colored : ... ]}
 
-   This way we could separate the creation of messages from the
-   actual rendering.
-*)
+   This way we could separate the creation of messages from the actual
+   rendering. *)
 type 'a t = Format.formatter -> 'a -> unit
 
 let kstrf f fmt =

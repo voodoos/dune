@@ -2,8 +2,8 @@
 
 open! Stdune
 
-(** Return the absolute path to the shell and the argument to pass it
-    (-c or /c). Raise in case in cannot be found. *)
+(** Return the absolute path to the shell and the argument to pass it (-c or
+    /c). Raise in case in cannot be found. *)
 val system_shell_exn : needed_to:string -> Path.t * string
 
 (** Same as [system_shell_exn] but for bash *)
@@ -15,14 +15,14 @@ val signal_name : int -> string
 (** Nice description of a target *)
 val describe_target : Path.t -> string
 
-(** Return the directory where the object files for the given
-    library should be stored. *)
+(** Return the directory where the object files for the given library should be
+    stored. *)
 val library_object_directory : dir:Path.t -> Lib_name.Local.t -> Path.t
 
 val library_private_obj_dir : obj_dir:Path.t -> Path.t
 
-(** Return the directory where the object files for the given
-    executable should be stored. *)
+(** Return the directory where the object files for the given executable should
+    be stored. *)
 val executable_object_directory : dir:Path.t -> string -> Path.t
 
 type target_kind =

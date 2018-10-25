@@ -29,12 +29,11 @@ end
 
 (* Arguments for the compiler to prevent it from being too clever.
 
-   The compiler creates the cmi when it thinks a .ml file has no
-   corresponding .mli. However this behavior is a bit racy and doesn't
-   work well when the extension is not .ml or when the .ml and .mli
-   are in different directories. This flags makes the compiler think
-   there is a .mli file and will the read the cmi file rather than
-   create it. *)
+   The compiler creates the cmi when it thinks a .ml file has no corresponding
+   .mli. However this behavior is a bit racy and doesn't work well when the
+   extension is not .ml or when the .ml and .mli are in different directories.
+   This flags makes the compiler think there is a .mli file and will the read
+   the cmi file rather than create it. *)
 let force_read_cmi source_file = ["-intf-suffix"; Path.extension source_file]
 
 let build_cm cctx ?sandbox ?(dynlink = true) ~dep_graphs ~cm_kind
@@ -59,9 +58,8 @@ let build_cm cctx ?sandbox ?(dynlink = true) ~dep_graphs ~cm_kind
              let extra_args, extra_deps, other_targets =
                match (cm_kind, Module.intf m, public_vlib_module) with
                (* If there is no mli, [ocamlY -c file.ml] produces both the
-           .cmY and .cmi. We choose to use ocamlc to produce the cmi
-           and to produce the cmx we have to wait to avoid race
-           conditions. *)
+                  .cmY and .cmi. We choose to use ocamlc to produce the cmi and
+                  to produce the cmx we have to wait to avoid race conditions. *)
                | Cmo, None, false -> ([], [], [Target.cm m Cmi])
                | Cmo, None, true | (Cmo | Cmx), _, _ ->
                    ( force_read_cmi src
@@ -98,7 +96,7 @@ let build_cm cctx ?sandbox ?(dynlink = true) ~dep_graphs ~cm_kind
              in
              if CC.dir_kind cctx = Jbuild && obj_dir <> dir then (
                (* Symlink the object files in the original directory for
-           backward compatibility *)
+                  backward compatibility *)
                let old_dst = Module.cm_file_unsafe m ~obj_dir:dir cm_kind in
                SC.add_rule sctx (Build.symlink ~src:dst ~dst:old_dst);
                List.iter2 hidden_targets other_targets

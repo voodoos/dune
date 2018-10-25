@@ -98,8 +98,8 @@ let library_object_directory ~dir name =
 
 let library_private_obj_dir ~obj_dir = Path.relative obj_dir ".private"
 
-(* Use "eobjs" rather than "objs" to avoid a potential conflict with a
-   library of the same name *)
+(* Use "eobjs" rather than "objs" to avoid a potential conflict with a library
+   of the same name *)
 let executable_object_directory ~dir name =
   Path.relative dir ("." ^ name ^ ".eobjs")
 

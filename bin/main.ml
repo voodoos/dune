@@ -5,8 +5,8 @@ module Term = Cmdliner.Term
 module Manpage = Cmdliner.Manpage
 open Fiber.O
 
-(* Things in src/ don't depend on cmdliner to speed up the
-   bootstrap, so we set this reference here *)
+(* Things in src/ don't depend on cmdliner to speed up the bootstrap, so we set
+   this reference here *)
 let () = suggest_function := Cmdliner_suggest.value
 
 module Let_syntax = Cmdliner.Term
@@ -607,7 +607,7 @@ let install_uninstall ~what =
                     files_deleted_in := Path.Set.add !files_deleted_in dir );
                   Path.Set.to_list !files_deleted_in
                   (* This [List.rev] is to ensure we process children
-                  directories before their parents *)
+                     directories before their parents *)
                   |> List.rev
                   |> List.iter ~f:Ops.remove_dir_if_empty ) ) ) )
   in
@@ -866,8 +866,8 @@ let promote =
       Arg.(value & pos_all Cmdliner.Arg.file [] & info [] ~docv:"FILE")
     in
     Common.set_common common ~targets:[];
-    (* We load and restore the digest cache as we need to clear the
-       cache for promoted files, due to issues on OSX. *)
+    (* We load and restore the digest cache as we need to clear the cache for
+       promoted files, due to issues on OSX. *)
     Utils.Cached_digest.load ();
     Promotion.promote_files_registered_in_last_run
       ( match files with

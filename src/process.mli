@@ -11,8 +11,8 @@ type ('a, 'b) failure_mode =
   | Strict : ('a, 'a) failure_mode
       (** Fail if the process exits with anything else than [0] *)
   | Accept : accepted_codes -> ('a, ('a, int) result) failure_mode
-      (** Accept the following non-zero exit codes, and return [Error
-      code] if the process exists with one of these codes. *)
+      (** Accept the following non-zero exit codes, and return [Error code] if
+          the process exists with one of these codes. *)
 
 (** Where to redirect standard output *)
 type std_output_to =
@@ -36,7 +36,8 @@ type purpose =
   | Internal_job
   | Build_job of Path.Set.t
 
-(** [run ?dir ?stdout_to prog args] spawns a sub-process and wait for its termination *)
+(** [run ?dir ?stdout_to prog args] spawns a sub-process and wait for its
+    termination *)
 val run :
      ?dir:Path.t
   -> ?stdout_to:std_output_to

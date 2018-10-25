@@ -31,9 +31,11 @@ val first : ('a, 'b) t -> ('a * 'c, 'b * 'c) t
 
 val second : ('a, 'b) t -> ('c * 'a, 'c * 'b) t
 
-(** Same as [O.(&&&)]. Sends the input to both argument arrows and combine their output.
+(** Same as [O.(&&&)]. Sends the input to both argument arrows and combine
+    their output.
 
-    The default definition may be overridden with a more efficient version if desired. *)
+    The default definition may be overridden with a more efficient version if
+    desired. *)
 val fanout : ('a, 'b) t -> ('a, 'c) t -> ('a, 'b * 'c) t
 
 val fanout3 : ('a, 'b) t -> ('a, 'c) t -> ('a, 'd) t -> ('a, 'b * 'c * 'd) t
@@ -47,25 +49,17 @@ val fanout4 :
 
 val all : ('a, 'b) t list -> ('a, 'b list) t
 
-(** Optimization to avoiding eagerly computing a [Build.t] value,
-    assume it contains no targets. *)
+(** Optimization to avoiding eagerly computing a [Build.t] value, assume it
+    contains no targets. *)
 val lazy_no_targets : ('a, 'b) t Lazy.t -> ('a, 'b) t
 (* CR-someday diml: this API is not great, what about:
 
-   {[
-     module Action_with_deps : sig
-       type t
-       val add_file_dependency : t -> Path.t -> t
-     end
+   {[ module Action_with_deps : sig type t val add_file_dependency : t ->
+   Path.t -> t end
 
-     (** Same as [t >>> arr (fun x -> Action_with_deps.add_file_dependency x p)]
-         but better as [p] is statically known *)
-     val record_dependency
-       :  Path.t
-       -> ('a, Action_with_deps.t) t
-       -> ('a, Action_with_deps.t) t
-   ]}
-*)
+   (** Same as [t >>> arr (fun x -> Action_with_deps.add_file_dependency x p)]
+   but better as [p] is statically known *) val record_dependency : Path.t ->
+   ('a, Action_with_deps.t) t -> ('a, Action_with_deps.t) t ]} *)
 
 (** [path p] records [p] as a file that is read by the action produced by the
     build arrow. *)
@@ -75,12 +69,12 @@ val paths : Path.t list -> ('a, 'a) t
 
 val path_set : Path.Set.t -> ('a, 'a) t
 
-(** Evaluate a glob and record all the matched files as dependencies
-    of the action produced by the build arrow. *)
+(** Evaluate a glob and record all the matched files as dependencies of the
+    action produced by the build arrow. *)
 val paths_glob : loc:Loc.t -> dir:Path.t -> Re.re -> ('a, Path.Set.t) t
 
-(** Evaluate a predicate against all targets and record all the matched files as
-    dependencies of the action produced by the build arrow. *)
+(** Evaluate a predicate against all targets and record all the matched files
+    as dependencies of the action produced by the build arrow. *)
 val paths_matching :
   loc:Loc.t -> dir:Path.t -> (Path.t -> bool) -> ('a, Path.Set.t) t
 
@@ -88,8 +82,8 @@ val paths_matching :
     action produced by the build arrow. *)
 val env_var : string -> ('a, 'a) t
 
-(** Compute the set of source of all files present in the sub-tree
-    starting at [dir] and record them as dependencies. *)
+(** Compute the set of source of all files present in the sub-tree starting at
+    [dir] and record them as dependencies. *)
 val source_tree : dir:Path.t -> file_tree:File_tree.t -> ('a, Path.Set.t) t
 
 (** Record dynamic dependencies *)
@@ -118,25 +112,23 @@ val strings : Path.t -> ('a, string list) t
 (** Load an S-expression from a file *)
 val read_sexp : Path.t -> Dune_lang.syntax -> (unit, Dune_lang.Ast.t) t
 
-(** Evaluates to [true] if the file is present on the file system or is the target of a
-    rule. *)
+(** Evaluates to [true] if the file is present on the file system or is the
+    target of a rule. *)
 val file_exists : Path.t -> ('a, bool) t
 
-(** [if_file_exists p ~then ~else] is an arrow that behaves like [then_] if [file_exists
-    p] evaluates to [true], and [else_] otherwise. *)
+(** [if_file_exists p ~then ~else] is an arrow that behaves like [then_] if
+    [file_exists p] evaluates to [true], and [else_] otherwise. *)
 val if_file_exists :
   Path.t -> then_:('a, 'b) t -> else_:('a, 'b) t -> ('a, 'b) t
 
 (** [file_exists_opt p t] is:
 
-    {[
-      if_file_exists p ~then_:(t >>^ fun x -> Some x) ~else_:(arr (fun _ -> None))
-    ]}
-*)
+    {[ if_file_exists p ~then_:(t >>^ fun x -> Some x) ~else_:(arr (fun _ ->
+    None)) ]} *)
 val file_exists_opt : Path.t -> ('a, 'b) t -> ('a, 'b option) t
 
-(** Always fail when executed. We pass a function rather than an
-    exception to get a proper backtrace *)
+(** Always fail when executed. We pass a function rather than an exception to
+    get a proper backtrace *)
 val fail : ?targets:Path.t list -> fail -> (_, _) t
 
 val of_result : ?targets:Path.t list -> ('a, 'b) t Or_exn.t -> ('a, 'b) t
@@ -144,8 +136,8 @@ val of_result : ?targets:Path.t list -> ('a, 'b) t Or_exn.t -> ('a, 'b) t
 val of_result_map :
   ?targets:Path.t list -> 'a Or_exn.t -> f:('a -> ('b, 'c) t) -> ('b, 'c) t
 
-(** [memoize name t] is an arrow that behaves like [t] except that its
-    result is computed only once. *)
+(** [memoize name t] is an arrow that behaves like [t] except that its result
+    is computed only once. *)
 val memoize : string -> (unit, 'a) t -> (unit, 'a) t
 
 val run :

@@ -20,13 +20,13 @@ val make :
   -> dir_kind:File_tree.Dune_file.Kind.t
   -> t
 
-(** Setup the preprocessing rules for the following modules and
-    returns the translated modules *)
+(** Setup the preprocessing rules for the following modules and returns the
+    translated modules *)
 val pp_modules :
   t -> ?lint:bool -> Module.t Module.Name.Map.t -> Module.t Module.Name.Map.t
 
-(** Preprocess a single module, using the configuration for the given
-    module name. *)
+(** Preprocess a single module, using the configuration for the given module
+    name. *)
 val pp_module_as : t -> ?lint:bool -> Module.Name.t -> Module.t -> Module.t
 
 (** Get a path to a cached ppx driver *)
@@ -38,8 +38,8 @@ val get_ppx_driver :
   -> Path.t Or_exn.t
 
 module Compat_ppx_exe_kind : sig
-  (** [Dune] for directories using a [dune] file, and [Jbuild driver]
-      for directories using a [jbuild] file. *)
+  (** [Dune] for directories using a [dune] file, and [Jbuild driver] for
+      directories using a [jbuild] file. *)
   type t =
     | Dune
     | Jbuild of string option
@@ -49,8 +49,8 @@ end
 val get_compat_ppx_exe :
   Super_context.t -> name:Lib_name.t -> kind:Compat_ppx_exe_kind.t -> Path.t
 
-(** [cookie_library_name lib_name] is ["--cookie"; lib_name] if [lib_name] is not
-    [None] *)
+(** [cookie_library_name lib_name] is ["--cookie"; lib_name] if [lib_name] is
+    not [None] *)
 val cookie_library_name : Lib_name.Local.t option -> string list
 
 val gen_rules : Super_context.t -> string list -> unit

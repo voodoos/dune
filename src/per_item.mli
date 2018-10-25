@@ -1,9 +1,7 @@
 (** Module used to represent the [(per_xxx ...)] forms
 
-    The main different between this module and a plain [Map] is that
-    the [map] operation applies transformations only once per distinct
-    value.
-*)
+    The main different between this module and a plain [Map] is that the [map]
+    operation applies transformations only once per distinct value. *)
 
 open! Stdune
 
@@ -22,9 +20,9 @@ module type S = sig
   (** Get the configuration for the given item *)
   val get : 'a t -> key -> 'a
 
-  (** Returns [true] if the mapping returns the same value for all
-      keys. Note that the mapping might still be constant if
-      [is_constant] returns [false]. *)
+  (** Returns [true] if the mapping returns the same value for all keys. Note
+      that the mapping might still be constant if [is_constant] returns
+      [false]. *)
   val is_constant : _ t -> bool
 
   val map : 'a t -> f:('a -> 'b) -> 'b t

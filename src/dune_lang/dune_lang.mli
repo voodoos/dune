@@ -62,8 +62,8 @@ type t =
   | List of t list
   | Template of Template.t
 
-(** [atom s] convert the string [s] to an Atom.
-    @raise Invalid_argument if [s] does not satisfy [Atom.is_valid s]. *)
+(** [atom s] convert the string [s] to an Atom. @raise Invalid_argument if [s]
+    does not satisfy [Atom.is_valid s]. *)
 val atom : string -> t
 
 val atom_or_quoted_string : string -> t
@@ -76,17 +76,17 @@ val to_string : t -> syntax:syntax -> string
 (** Serialize a S-expression using indentation to improve readability *)
 val pp : syntax -> Format.formatter -> t -> unit
 
-(** Serialization that never fails because it quotes atoms when necessary
-    TODO remove this once we have a proper sexp type *)
+(** Serialization that never fails because it quotes atoms when necessary TODO
+    remove this once we have a proper sexp type *)
 val pp_quoted : Format.formatter -> t -> unit
 
-(** Same as [pp ~syntax:Dune], but split long strings. The formatter
-    must have been prepared with [prepare_formatter]. *)
+(** Same as [pp ~syntax:Dune], but split long strings. The formatter must have
+    been prepared with [prepare_formatter]. *)
 val pp_split_strings : Format.formatter -> t -> unit
 
-(** Prepare a formatter for [pp_split_strings]. Additionaly the
-    formatter escape newlines when the tags "makefile-action" or
-    "makefile-stuff" are active. *)
+(** Prepare a formatter for [pp_split_strings]. Additionaly the formatter
+    escape newlines when the tags "makefile-action" or "makefile-stuff" are
+    active. *)
 val prepare_formatter : Format.formatter -> unit
 
 (** Abstract syntax tree *)
@@ -188,27 +188,25 @@ module Decoder : sig
 
   exception Decoder of Loc.t * string * hint option
 
-  (** Monad producing a value of type ['a] by parsing an input
-      composed of a sequence of S-expressions.
+  (** Monad producing a value of type ['a] by parsing an input composed of a
+      sequence of S-expressions.
 
-      The input can be seen either as a plain sequence of
-      S-expressions or a list of fields. The ['kind] parameter
-      indicates how the input is seen:
+      The input can be seen either as a plain sequence of S-expressions or a
+      list of fields. The ['kind] parameter indicates how the input is seen:
 
-      - with {['kind = [values]]}, the input is seen as an ordered
-      sequence of S-expressions
+      - with {['kind = [values]]}, the input is seen as an ordered sequence of
+      S-expressions
 
-      - with {['kind = [fields]]}, the input is seen as an unordered
-      sequence of fields
+      - with {['kind = [fields]]}, the input is seen as an unordered sequence
+      of fields
 
-      A field is a S-expression of the form: [(<atom> <values>...)]
-      where [atom] is a plain atom, i.e. not a quoted string and not
-      containing variables. [values] is a sequence of zero, one or more
-      S-expressions.
+      A field is a S-expression of the form: [(<atom> <values>...)] where
+      [atom] is a plain atom, i.e. not a quoted string and not containing
+      variables. [values] is a sequence of zero, one or more S-expressions.
 
-      It is possible to switch between the two mode at any time using
-      the appropriate combinator. Some primitives can be used in both
-      mode while some are specific to one mode.  *)
+      It is possible to switch between the two mode at any time using the
+      appropriate combinator. Some primitives can be used in both mode while
+      some are specific to one mode. *)
   type ('a, 'kind) parser
 
   type values
@@ -219,10 +217,9 @@ module Decoder : sig
 
   type 'a fields_parser = ('a, fields) parser
 
-  (** [parse parser context sexp] parse a S-expression using the
-      following parser. The input consist of a single
-      S-expression. [context] allows to pass extra information such as
-      versions to individual parsers. *)
+  (** [parse parser context sexp] parse a S-expression using the following
+      parser. The input consist of a single S-expression. [context] allows to
+      pass extra information such as versions to individual parsers. *)
   val parse : 'a t -> Univ_map.t -> ast -> 'a
 
   val return : 'a -> ('a, _) parser
@@ -254,53 +251,51 @@ module Decoder : sig
   val if_eos :
     then_:('a, 'b) parser -> else_:('a, 'b) parser -> ('a, 'b) parser
 
-  (** If the next element of the sequence is a list, parse it with
-      [then_], otherwise parse it with [else_]. *)
+  (** If the next element of the sequence is a list, parse it with [then_],
+      otherwise parse it with [else_]. *)
   val if_list : then_:'a t -> else_:'a t -> 'a t
 
-  (** If the next element of the sequence is of the form [(:<name>
-      ...)], use [then_] to parse [...]. Otherwise use [else_]. *)
+  (** If the next element of the sequence is of the form [(:<name> ...)], use
+      [then_] to parse [...]. Otherwise use [else_]. *)
   val if_paren_colon_form :
     then_:(Loc.t * string -> 'a) t -> else_:'a t -> 'a t
 
   (** Expect the next element to be the following atom. *)
   val keyword : string -> unit t
 
-  (** {[match_keyword [(k1, t1); (k2, t2); ...] ~fallback]} inspects
-     the next element of the input sequence. If it is an atom equal to
-     one of [k1], [k2], ... then the corresponding parser is used to
-     parse the rest of the sequence. Other [fallback] is used. *)
+  (** {[match_keyword [(k1, t1); (k2, t2); ...] ~fallback]} inspects the next
+      element of the input sequence. If it is an atom equal to one of [k1],
+      [k2], ... then the corresponding parser is used to parse the rest of the
+      sequence. Other [fallback] is used. *)
   val match_keyword : (string * 'a t) list -> fallback:'a t -> 'a t
 
-  (** Use [before] to parse elements until the keyword is
-      reached. Then use [after] to parse the rest. *)
+  (** Use [before] to parse elements until the keyword is reached. Then use
+      [after] to parse the rest. *)
   val until_keyword :
     string -> before:'a t -> after:'b t -> ('a list * 'b option) t
 
-  (** What is currently being parsed. The second argument is the atom
-      at the beginnig of the list when inside a [sum ...] or [field
-      ...]. *)
+  (** What is currently being parsed. The second argument is the atom at the
+      beginnig of the list when inside a [sum ...] or [field ...]. *)
   type kind =
     | Values of Loc.t * string option
     | Fields of Loc.t * string option
 
   val kind : (kind, _) parser
 
-  (** [repeat t] use [t] to consume all remaning elements of the input
-      until the end of sequence is reached. *)
+  (** [repeat t] use [t] to consume all remaning elements of the input until
+      the end of sequence is reached. *)
   val repeat : 'a t -> 'a list t
 
   (** Capture the rest of the input for later parsing *)
   val capture : ('a t -> 'a) t
 
-  (** [enter t] expect the next element of the input to be a list and
-      parse its contents with [t]. *)
+  (** [enter t] expect the next element of the input to be a list and parse its
+      contents with [t]. *)
   val enter : 'a t -> 'a t
 
-  (** [fields fp] converts the rest of the current input to a list of
-      fields and parse them with [fp]. This operation fails if one the
-      S-expression in the input is not of the form [(<atom>
-      <values>...)] *)
+  (** [fields fp] converts the rest of the current input to a list of fields
+      and parse them with [fp]. This operation fails if one the S-expression in
+      the input is not of the form [(<atom> <values>...)] *)
   val fields : 'a fields_parser -> 'a t
 
   (** [record fp = enter (fields fp)] *)
@@ -324,9 +319,9 @@ module Decoder : sig
   (** Ignore all the rest of the input *)
   val junk_everything : (unit, _) parser
 
-  (** [plain_string f] expects the next element of the input to be a
-      plain string, i.e. either an atom or a quoted string, but not a
-      template nor a list. *)
+  (** [plain_string f] expects the next element of the input to be a plain
+      string, i.e. either an atom or a quoted string, but not a template nor a
+      list. *)
   val plain_string : (loc:Loc.t -> string -> 'a) -> 'a t
 
   val fix : ('a t -> 'a t) -> 'a t
@@ -343,14 +338,13 @@ module Decoder : sig
 
   val enum : (string * 'a) list -> 'a t
 
-  (** Parser that parse a S-expression of the form [(<atom> <s-exp1>
-      <s-exp2> ...)] or [<atom>]. [<atom>] is looked up in the list and
-      the remaining s-expressions are parsed using the corresponding
-      list parser. *)
+  (** Parser that parse a S-expression of the form [(<atom> <s-exp1> <s-exp2>
+      ...)] or [<atom>]. [<atom>] is looked up in the list and the remaining
+      s-expressions are parsed using the corresponding list parser. *)
   val sum : (string * 'a t) list -> 'a t
 
-  (** Check the result of a list parser, and raise a properly located
-      error in case of failure. *)
+  (** Check the result of a list parser, and raise a properly located error in
+      case of failure. *)
   val map_validate :
     'a fields_parser -> f:('a -> ('b, string) Result.t) -> 'b fields_parser
 
@@ -384,8 +378,7 @@ module Decoder : sig
   (** A field that can appear multiple times *)
   val multi_field : string -> 'a t -> 'a list fields_parser
 
-  (** Default value for [on_dup]. It fails with an appropriate error
-      message. *)
+  (** Default value for [on_dup]. It fails with an appropriate error message. *)
   val field_present_too_many_times : Univ_map.t -> string -> Ast.t list -> _
 
   module Let_syntax : sig

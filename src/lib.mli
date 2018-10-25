@@ -9,8 +9,8 @@ type t
 (** For libraries defined in the workspace, this is the [public_name] if
     present or the [name] if not. *)
 val name : t -> Lib_name.t
-(* CR-someday diml: this should be [Path.t list], since some libraries
-   have multiple source directories because of [copy_files]. *)
+(* CR-someday diml: this should be [Path.t list], since some libraries have
+   multiple source directories because of [copy_files]. *)
 
 (** Directory where the source files for the library are located. *)
 val src_dir : t -> Path.t
@@ -43,8 +43,8 @@ val virtual_ : t -> Lib_info.Virtual.t option
 
 val dune_version : t -> Syntax.Version.t option
 
-(** A unique integer identifier. It is only unique for the duration of
-    the process *)
+(** A unique integer identifier. It is only unique for the duration of the
+    process *)
 val unique_id : t -> int
 
 module Set : Set.S with type elt = t
@@ -70,8 +70,8 @@ module L : sig
   val compile_and_link_flags :
     compile:t -> link:t -> mode:Mode.t -> stdlib_dir:Path.t -> _ Arg_spec.t
 
-  (** All the library archive files (.a, .cmxa, _stubs.a, ...)  that
-      should be linked in when linking an executable. *)
+  (** All the library archive files (.a, .cmxa, _stubs.a, ...) that should be
+      linked in when linking an executable. *)
   val archive_files : t -> mode:Mode.t -> Path.t list
 
   val jsoo_runtime_files : t -> Path.t list
@@ -127,8 +127,8 @@ module Error : sig
   end
 
   module Overlap : sig
-    (** A conflict that doesn't prevent compilation, but that we still
-        consider as an error to avoid surprises. *)
+    (** A conflict that doesn't prevent compilation, but that we still consider
+        as an error to avoid surprises. *)
     type t =
       { in_workspace : Lib_info.t
       ; installed : Lib_info.t * Dep_path.Entry.t list }
@@ -221,14 +221,14 @@ module DB :
         | Redirect of t option * Lib_name.t
     end
 
-    (** Create a new library database. [resolve] is used to resolve
-      library names in this database.
+    (** Create a new library database. [resolve] is used to resolve library
+        names in this database.
 
-      When a library is not found, it is looked up in the parent
-      database if any.
+        When a library is not found, it is looked up in the parent database if
+        any.
 
-      [all] returns the list of names of libraries available in this database.
-  *)
+        [all] returns the list of names of libraries available in this
+        database. *)
     val create :
          ?parent:t
       -> resolve:(Lib_name.t -> Resolve_result.t)
@@ -255,17 +255,17 @@ module DB :
 
     val available : t -> Lib_name.t -> bool
 
-    (** Retrieve the compile information for the given library. Works
-      for libraries that are optional and not available as well. *)
+    (** Retrieve the compile information for the given library. Works for
+        libraries that are optional and not available as well. *)
     val get_compile_info : t -> ?allow_overlaps:bool -> Lib_name.t -> Compile.t
 
     val resolve : t -> Loc.t * Lib_name.t -> lib Or_exn.t
 
-    (** Resolve libraries written by the user in a jbuild file. The
-      resulting list of libraries is transitively closed and sorted by
-      order of dependencies.
+    (** Resolve libraries written by the user in a jbuild file. The resulting
+        list of libraries is transitively closed and sorted by order of
+        dependencies.
 
-      This function is for executables stanzas.  *)
+        This function is for executables stanzas. *)
     val resolve_user_written_deps_for_exes :
          t
       -> ?allow_overlaps:bool
@@ -275,9 +275,8 @@ module DB :
 
     val resolve_pps : t -> (Loc.t * Lib_name.t) list -> L.t Or_exn.t
 
-    (** Return the list of all libraries in this database. If
-      [recursive] is true, also include libraries in parent databases
-      recursively. *)
+    (** Return the list of all libraries in this database. If [recursive] is
+        true, also include libraries in parent databases recursively. *)
     val all : ?recursive:bool -> t -> Set.t
   end
   with type lib := t

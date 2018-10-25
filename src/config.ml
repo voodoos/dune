@@ -31,8 +31,8 @@ let default_build_profile =
 
 open Stanza.Decoder
 
-(* the configuration file use the same version numbers as dune-project
-   files for simplicity *)
+(* the configuration file use the same version numbers as dune-project files
+   for simplicity *)
 let syntax = Stanza.syntax
 
 module Display = struct

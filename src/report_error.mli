@@ -3,12 +3,12 @@ open! Stdune
 
 (** Captures the backtrace and report an error.
 
-    Because dune doesn't stop at the first error, it might end up
-    reporting the same error twice about missing libraries for
-    instance. To avoid this, we keep a cache of reported errors and
-    ignore errors that have already been reported.
+    Because dune doesn't stop at the first error, it might end up reporting the
+    same error twice about missing libraries for instance. To avoid this, we
+    keep a cache of reported errors and ignore errors that have already been
+    reported.
 
-    We cache what is actually printed to the screen.  *)
+    We cache what is actually printed to the screen. *)
 val report : exn -> unit
 
 type printer
@@ -32,6 +32,5 @@ val find_printer : exn -> printer option
 
 (**/**)
 
-(** Used internally at Jane Street.
-  See https://github.com/ocaml/dune/pull/1368 *)
+(** Used internally at Jane Street. See https://github.com/ocaml/dune/pull/1368 *)
 val map_fname : (string -> string) ref

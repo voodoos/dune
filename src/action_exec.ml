@@ -91,7 +91,8 @@ let rec exec t ~ectx ~dir ~env ~stdout_to ~stderr_to =
         match Unix.readlink dst with
         | target ->
             if target <> src then (
-              (* @@DRA Win32 remove read-only attribute needed when symlinking enabled *)
+              (* @@DRA Win32 remove read-only attribute needed when symlinking
+                 enabled *)
               Unix.unlink dst;
               Unix.symlink src dst )
         | exception _ -> Unix.symlink src dst );

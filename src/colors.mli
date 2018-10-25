@@ -4,8 +4,7 @@ val colorize : key:string -> string -> string
 
 val stderr_supports_colors : bool Lazy.t
 
-(** [Env.initial] extended with variables to force a few tools to
-    print colors *)
+(** [Env.initial] extended with variables to force a few tools to print colors *)
 val setup_env_for_colors : Env.t -> Env.t
 
 (** Strip colors in [not (Lazy.force stderr_supports_colors)] *)

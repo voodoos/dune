@@ -135,8 +135,8 @@ let setup_separate_compilation_rules sctx components =
         | Ok pkg ->
             let archives = (Lib.archives pkg).byte in
             let archives =
-              (* Special case for the stdlib because it is not referenced
-             in the META *)
+              (* Special case for the stdlib because it is not referenced in
+                 the META *)
               match Lib_name.to_string (Lib.name pkg) with
               | "stdlib" ->
                   Path.relative ctx.stdlib_dir "stdlib.cma" :: archives

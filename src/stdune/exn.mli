@@ -4,12 +4,9 @@
     shouldn't try to be developer friendly rather than user friendly. *)
 exception
   Code_error of Sexp.t
-  (* CR-soon diml:
-   - Rename to [User_error]
-   - change the [string] argument to [Loc.t option * string] and get rid of
-   [Loc.Error]. The two are a bit confusing
-   - change [string] to [Colors.Style.t Lib_name.t]
-*)
+  (* CR-soon diml: - Rename to [User_error] - change the [string] argument to
+     [Loc.t option * string] and get rid of [Loc.Error]. The two are a bit
+     confusing - change [string] to [Colors.Style.t Lib_name.t] *)
 
 (** A fatal error, that should be reported to the user in a nice way *)
 exception Fatal_error of string

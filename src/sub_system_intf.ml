@@ -6,8 +6,8 @@ module type Info = Dune_file.Sub_system_info.S
 module type S = sig
   module Info : Info
 
-  (** Instantiated representation of the sub-system. I.e. with names
-      resolved using a library database. *)
+  (** Instantiated representation of the sub-system. I.e. with names resolved
+      using a library database. *)
   type t
 
   (** Create an instance of the sub-system *)
@@ -23,8 +23,8 @@ end
 module type Backend = sig
   include S
 
-  (** Description of a backend, such as "inline tests framework" or
-      "ppx driver". *)
+  (** Description of a backend, such as "inline tests framework" or "ppx
+      driver". *)
   val desc : plural:bool -> string
 
   (** "a" or "an" *)
@@ -33,8 +33,7 @@ module type Backend = sig
   (** Library the backend is attached to *)
   val lib : t -> Lib.t
 
-  (** Dump the sub-system configuration. This is used to generate META
-      files. *)
+  (** Dump the sub-system configuration. This is used to generate META files. *)
   val encode : t -> Syntax.Version.t * Dune_lang.t
 end
 
@@ -57,21 +56,20 @@ module type Registered_backend = sig
     val or_exn : ('a, t) result -> loc:Loc.t -> 'a Or_exn.t
   end
 
-  (** Choose a backend by either using the ones written by the user or
-      by scanning the dependencies.
+  (** Choose a backend by either using the ones written by the user or by
+      scanning the dependencies.
 
-      The returned list is sorted by order of dependencies. It is not
-      allowed to have two different backend that are completely
-      independent, i.e. none of them is in the transitive closure of
-      the other one. *)
+      The returned list is sorted by order of dependencies. It is not allowed
+      to have two different backend that are completely independent, i.e. none
+      of them is in the transitive closure of the other one. *)
   val select_extensible_backends :
        ?written_by_user:t list
     -> extends:(t -> t list Or_exn.t)
     -> Lib.t list
     -> (t list, Selection_error.t) result
 
-  (** Choose a backend by either using the ones written by the user or
-      by scanning the dependencies.
+  (** Choose a backend by either using the ones written by the user or by
+      scanning the dependencies.
 
       A backend can replace other backends *)
   val select_replaceable_backend :

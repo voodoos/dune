@@ -2,9 +2,8 @@ open Import
 open! Stdune
 open Result.O
 
-(* +-----------------------------------------------------------------+
-   | Types                                                           |
-   +-----------------------------------------------------------------+ *)
+(* +-----------------------------------------------------------------+ | Types
+   | +-----------------------------------------------------------------+ *)
 
 module Error = struct
   module Library_not_available = struct
@@ -125,10 +124,8 @@ type t =
   ; implements : t Or_exn.t option
   ; (* This is mutable to avoid this error:
 
-       {[
-         This kind of expression is not allowed as right-hand side of `let rec'
-       }]
-       *)
+       {[ This kind of expression is not allowed as right-hand side of `let
+       rec' }] *)
     mutable sub_systems : Sub_system0.Instance.t Lazy.t Sub_system_name.Map.t
   }
 
@@ -157,8 +154,8 @@ let not_available ~loc reason fmt =
   Errors.kerrf fmt ~f:(fun s ->
       Errors.fail loc "%s %a" s Error.Library_not_available.Reason.pp reason )
 
-(* +-----------------------------------------------------------------+
-   | Generals                                                        |
+(* +-----------------------------------------------------------------+ |
+   Generals |
    +-----------------------------------------------------------------+ *)
 
 let name t = t.name
@@ -305,8 +302,8 @@ module Lib_and_module = struct
                Dep (Module.cm_file_unsafe m ~obj_dir (Mode.cm_kind mode)) ) )
 end
 
-(* +-----------------------------------------------------------------+
-   | Sub-systems                                                     |
+(* +-----------------------------------------------------------------+ |
+   Sub-systems |
    +-----------------------------------------------------------------+ *)
 
 module Sub_system = struct
@@ -378,8 +375,8 @@ module Sub_system = struct
         Option.map ~f:(fun f -> f t) M.encode )
 end
 
-(* +-----------------------------------------------------------------+
-   | Library name resolution and transitive closure                  |
+(* +-----------------------------------------------------------------+ |
+   Library name resolution and transitive closure |
    +-----------------------------------------------------------------+ *)
 
 let gen_unique_id =
@@ -389,8 +386,8 @@ let gen_unique_id =
     next := n + 1;
     n
 
-(* Dependency stack used while resolving the dependencies of a library
-   that was just returned by the [resolve] callback *)
+(* Dependency stack used while resolving the dependencies of a library that was
+   just returned by the [resolve] callback *)
 module Dep_stack = struct
   type t =
     { stack : Id.t list
@@ -463,12 +460,12 @@ let result_of_resolve_status = function
   | St_hidden (_, hidden) -> Error (Hidden hidden)
 
 module Virtual_libs : sig
-  (** Make sure that for every virtual library in the list there is at
-      most one corresponding implementation.
+  (** Make sure that for every virtual library in the list there is at most one
+      corresponding implementation.
 
-      Additionally, if linking is [true], ensures that every virtual
-      library as an implementation and re-arrange the list so that
-      implementations replaces virtual libraries. *)
+      Additionally, if linking is [true], ensures that every virtual library as
+      an implementation and re-arrange the list so that implementations
+      replaces virtual libraries. *)
   val associate :
        (t * Dep_stack.t) list
     -> orig_stack:Dep_stack.t
@@ -499,8 +496,8 @@ end = struct
                 >>= fun vlib ->
                 match Map.find acc vlib with
                 | None ->
-                    (* we've already traversed the virtual library because
-                   it must have occured earlier in the closure *)
+                    (* we've already traversed the virtual library because it
+                       must have occured earlier in the closure *)
                     assert false
                 | Some (No_impl _) ->
                     loop (Map.add acc vlib (Impl (lib, stack))) libs
@@ -865,8 +862,8 @@ module Compile = struct
            M.T t )
 end
 
-(* +-----------------------------------------------------------------+
-   | Databases                                                       |
+(* +-----------------------------------------------------------------+ |
+   Databases |
    +-----------------------------------------------------------------+ *)
 
 module DB = struct
@@ -1001,22 +998,21 @@ module DB = struct
     | _ -> l
 end
 
-(* +-----------------------------------------------------------------+
-   | META files                                                      |
-   +-----------------------------------------------------------------+ *)
+(* +-----------------------------------------------------------------+ | META
+   files | +-----------------------------------------------------------------+ *)
 
 module Meta = struct
   let to_names ts =
     List.fold_left ts ~init:Lib_name.Set.empty ~f:(fun acc t ->
         Lib_name.Set.add acc t.name )
 
-  (* For the deprecated method, we need to put all the runtime
-     dependencies of the transitive closure.
+  (* For the deprecated method, we need to put all the runtime dependencies of
+     the transitive closure.
 
-     We need to do this because [ocamlfind ocamlc -package ppx_foo]
-     will not look for the transitive dependencies of [foo], and the
-     runtime dependencies might be attached to a dependency of [foo]
-     rather than [foo] itself.
+     We need to do this because [ocamlfind ocamlc -package ppx_foo] will not
+     look for the transitive dependencies of [foo], and the runtime
+     dependencies might be attached to a dependency of [foo] rather than [foo]
+     itself.
 
      Sigh... *)
   let ppx_runtime_deps_for_deprecated_method t =
@@ -1029,8 +1025,8 @@ module Meta = struct
   let ppx_runtime_deps t = to_names (ppx_runtime_deps_exn t)
 end
 
-(* +-----------------------------------------------------------------+
-   | Error reporting                                                 |
+(* +-----------------------------------------------------------------+ | Error
+   reporting |
    +-----------------------------------------------------------------+ *)
 
 let report_lib_error ppf (e : Error.t) =

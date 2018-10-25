@@ -1,10 +1,9 @@
 (** Library variants *)
 
-(** Library variants allow to select the implementation of a library
-    at link time.
+(** Library variants allow to select the implementation of a library at link
+    time.
 
-    They are directly mapped to findlib predicates.
-*)
+    They are directly mapped to findlib predicates. *)
 
 include Stdune.Interned.S
 

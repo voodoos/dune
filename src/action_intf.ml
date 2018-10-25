@@ -9,8 +9,8 @@ end
 
 module Diff_mode = struct
   type t =
-    | Binary  (** no diffing, just raw comparison      *)
-    | Text  (** diffing after newline normalization  *)
+    | Binary  (** no diffing, just raw comparison *)
+    | Text  (** diffing after newline normalization *)
     | Text_jbuild  (** diffing but no newline normalization *)
 end
 

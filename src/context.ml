@@ -204,10 +204,10 @@ let create ~(kind : Kind.t) ~path ~env ~env_nodes ~name ~merlin ~targets
   let findlib_config_path =
     lazy
       (let fn = which_exn "ocamlfind" in
-       (* When OCAMLFIND_CONF is set, "ocamlfind printconf" does print
-       the contents of the variable, but "ocamlfind printconf conf"
-       still prints the configuration file set at the configuration
-       time of ocamlfind, sigh... *)
+       (* When OCAMLFIND_CONF is set, "ocamlfind printconf" does print the
+          contents of the variable, but "ocamlfind printconf conf" still prints
+          the configuration file set at the configuration time of ocamlfind,
+          sigh... *)
        ( match Env.get env "OCAMLFIND_CONF" with
        | Some s -> Fiber.return s
        | None -> Process.run_capture_line ~env Strict fn ["printconf"; "conf"]
@@ -263,10 +263,9 @@ let create ~(kind : Kind.t) ~path ~env ~env_nodes ~name ~merlin ~targets
         | Default, None -> Env.get env var
         | _ -> (
           (* If we are not in the default context, we can only use the
-             OCAMLPATH variable if it is specific to this build
-             context *)
-          (* CR-someday diml: maybe we should actually clear OCAMLPATH
-             in other build contexts *)
+             OCAMLPATH variable if it is specific to this build context *)
+          (* CR-someday diml: maybe we should actually clear OCAMLPATH in other
+             build contexts *)
           match (Env.get env var, Env.get Env.initial var) with
           | None, None -> None
           | Some s, None -> Some s
@@ -319,10 +318,10 @@ let create ~(kind : Kind.t) ~path ~env ~env_nodes ~name ~merlin ~targets
     >>= fun (findlib_paths, ocfg) ->
     let version = Ocaml_version.of_ocaml_config ocfg in
     let env =
-      (* See comment in ansi_color.ml for setup_env_for_colors.
-         For versions where OCAML_COLOR is not supported, but 'color' is in
-         OCAMLPARAM, use the latter.
-         If 'color' is not supported, we just don't force colors with 4.02. *)
+      (* See comment in ansi_color.ml for setup_env_for_colors. For versions
+         where OCAML_COLOR is not supported, but 'color' is in OCAMLPARAM, use
+         the latter. If 'color' is not supported, we just don't force colors
+         with 4.02. *)
       if
         !Clflags.capture_outputs
         && Lazy.force Colors.stderr_supports_colors

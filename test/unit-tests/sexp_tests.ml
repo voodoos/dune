@@ -2,8 +2,8 @@ open! Stdune
 
 let () = Printexc.record_backtrace true
 
-(* Test that all strings of length <= 3 such that [Dune_lang.Atom.is_valid
-   s] are recignized as atoms by the parser *)
+(* Test that all strings of length <= 3 such that [Dune_lang.Atom.is_valid s]
+   are recignized as atoms by the parser *)
 
 let string_of_syntax (x : Dune_lang.syntax) =
   match x with Dune -> "dune" | Jbuild -> "jbuild"

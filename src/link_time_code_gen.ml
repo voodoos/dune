@@ -19,8 +19,9 @@ let libraries_link ~name ~loc ~mode cctx libs =
   let stdlib_dir = ctx.stdlib_dir in
   match cut_after_libs [] ~pkg_name:findlib_dynload libs with
   | Some (before, after) ->
-      (* If findlib.dynload is linked, we stores in the binary the packages linked by linking just
-       after findlib.dynload a module containing the info *)
+      (* If findlib.dynload is linked, we stores in the binary the packages
+         linked by linking just after findlib.dynload a module containing the
+         info *)
       let libs =
         List.filter
           ~f:(fun lib -> not (Lib_info.Status.is_private (Lib.status lib)))

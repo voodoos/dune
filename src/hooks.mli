@@ -1,5 +1,5 @@
-(** This module deals with management of hooks that run
-    after specific events (e.g. end of build). *)
+(** This module deals with management of hooks that run after specific events
+    (e.g. end of build). *)
 
 module type S = sig
   (** Register a hook called every time the event occurs. *)
@@ -16,12 +16,12 @@ end
     including cancellation of build because of file changes. *)
 module End_of_build : S
 
-(** Same as End_of_build, but not signalized if build was canceled in
-    watch mode. *)
+(** Same as End_of_build, but not signalized if build was canceled in watch
+    mode. *)
 module End_of_build_not_canceled : sig
   include S
 
-  (** Signalize that current build was canceled and hooks registered with [once]
-      should be removed. *)
+  (** Signalize that current build was canceled and hooks registered with
+      [once] should be removed. *)
   val clear : unit -> unit
 end

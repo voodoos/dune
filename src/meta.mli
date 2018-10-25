@@ -43,8 +43,8 @@ end
 
 val load : Path.t -> name:Lib_name.t option -> Simplified.t
 
-(** Builtin META files for libraries distributed with the compiler. For when ocamlfind is
-    not installed. *)
+(** Builtin META files for libraries distributed with the compiler. For when
+    ocamlfind is not installed. *)
 val builtins :
   stdlib_dir:Path.t -> version:Ocaml_version.t -> Simplified.t Lib_name.Map.t
 

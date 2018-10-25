@@ -52,13 +52,10 @@ module Renderer = struct
     open Format
     module Tag = Tag
 
-    (* The format interface only support string for tags, so we embed
-       then as follow:
+    (* The format interface only support string for tags, so we embed then as
+       follow:
 
-       - length of opening string on 16 bits
-       - opening string
-       - closing string
-    *)
+       - length of opening string on 16 bits - opening string - closing string *)
     external get16 : string -> int -> int = "%caml_string_get16"
 
     external set16 : bytes -> int -> int -> unit = "%caml_string_set16"

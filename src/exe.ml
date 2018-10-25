@@ -75,7 +75,7 @@ module Linkage = struct
           match real_mode with
           | Native ->
               (* The compiler doesn't pass these flags in native mode. This
-             looks like a bug in the compiler. *)
+                 looks like a bug in the compiler. *)
               List.concat_map ctx.native_c_libraries ~f:(fun flag ->
                   ["-cclib"; flag] )
               @ so_flags

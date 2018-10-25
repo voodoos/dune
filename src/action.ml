@@ -692,13 +692,10 @@ module Infer = struct
       let {deps; targets} =
         infer {deps = Pset.empty; targets = Pset.empty} t
       in
-      (* A file can be inferred as both a dependency and a target,
-         for instance:
+      (* A file can be inferred as both a dependency and a target, for
+         instance:
 
-         {[
-           (progn (copy a b) (copy b c))
-         ]}
-      *)
+         {[ (progn (copy a b) (copy b c)) ]} *)
       {deps = Pset.diff deps targets; targets}
   end
   [@@inline always]

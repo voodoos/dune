@@ -99,20 +99,17 @@ val is_suffix : t -> suffix:string -> bool
 
 val extend_basename : t -> suffix:string -> t
 
-(** Extract the build context from a path. For instance, representing paths as strings:
+(** Extract the build context from a path. For instance, representing paths as
+    strings:
 
-    {[
-      extract_build_context "_build/blah/foo/bar" = Some ("blah", "foo/bar")
-    ]}
-*)
+    {[ extract_build_context "_build/blah/foo/bar" = Some ("blah", "foo/bar")
+    ]} *)
 val extract_build_context : t -> (string * t) option
 
 (** Same as [extract_build_context] but return the build context as a path:
 
-    {[
-      extract_build_context "_build/blah/foo/bar" = Some ("_build/blah", "foo/bar")
-    ]}
-*)
+    {[ extract_build_context "_build/blah/foo/bar" = Some ("_build/blah",
+    "foo/bar") ]} *)
 val extract_build_context_dir : t -> (t * t) option
 
 (** Drop the "_build/blah" prefix *)
@@ -123,8 +120,7 @@ val drop_build_context_exn : t -> t
 (** Drop the "_build/blah" prefix if present, return [t] otherwise *)
 val drop_optional_build_context : t -> t
 
-(** Transform managed paths so that they are descedant of
-    [sandbox_dir]. *)
+(** Transform managed paths so that they are descedant of [sandbox_dir]. *)
 val sandbox_managed_paths : sandbox_dir:t -> t -> t
 
 val explode : t -> string list option
@@ -142,11 +138,10 @@ val is_in_source_tree : t -> bool
 
 val is_alias_stamp_file : t -> bool
 
-(** [is_strict_descendant_of_build_dir t = is_in_build_dir t && t <>
-    build_dir] *)
+(** [is_strict_descendant_of_build_dir t = is_in_build_dir t && t <> build_dir] *)
 val is_strict_descendant_of_build_dir : t -> bool
 
-(**  Split after the first component if [t] is local *)
+(** Split after the first component if [t] is local *)
 val split_first_component : t -> (string * t) option
 
 val insert_after_build_dir_exn : t -> string -> t
@@ -201,9 +196,8 @@ module L : sig
   val relative : t -> string list -> t
 end
 
-(** Return the "local part" of a path.
-    For local paths (in build directory or source tree),
-    this returns the path itself.
-    For external paths, it returns a path that is relative to the current
-    directory. For example, the local part of [/a/b] is [./a/b]. *)
+(** Return the "local part" of a path. For local paths (in build directory or
+    source tree), this returns the path itself. For external paths, it returns
+    a path that is relative to the current directory. For example, the local
+    part of [/a/b] is [./a/b]. *)
 val local_part : t -> Local.t

@@ -70,11 +70,10 @@ let do_promote db files_to_promote =
     match srcs with
     | [] -> assert false
     | src :: others ->
-        (* We remove the files from the digest cache to force a rehash
-         on the next run. We do this because on OSX [mtime] is not
-         precise enough and if a file is modified and promoted
-         quickly, it will look like it hasn't changed even though it
-         might have. *)
+        (* We remove the files from the digest cache to force a rehash on the
+           next run. We do this because on OSX [mtime] is not precise enough
+           and if a file is modified and promoted quickly, it will look like it
+           hasn't changed even though it might have. *)
         List.iter dirs_to_clear_from_cache ~f:(fun dir ->
             Utils.Cached_digest.remove (Path.append dir dst) );
         File.promote {src; dst};

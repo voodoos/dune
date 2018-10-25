@@ -5,8 +5,8 @@ module SC = Super_context
 
 let executables_rules ~sctx ~dir ~dir_kind ~dir_contents ~scope ~compile_info
     (exes : Dune_file.Executables.t) =
-  (* Use "eobjs" rather than "objs" to avoid a potential conflict
-     with a library of the same name *)
+  (* Use "eobjs" rather than "objs" to avoid a potential conflict with a
+     library of the same name *)
   let obj_dir =
     Utils.executable_object_directory ~dir (List.hd exes.names |> snd)
   in
@@ -51,8 +51,8 @@ let executables_rules ~sctx ~dir ~dir_kind ~dir_contents ~scope ~compile_info
           | false, Native -> None
           | _ -> Some (Exe.Linkage.of_user_config ctx mode) )
     in
-    (* If bytecode was requested but not native or best version,
-       add custom linking *)
+    (* If bytecode was requested but not native or best version, add custom
+       linking *)
     if
       L.Set.mem exes.modes L.byte
       && (not (L.Set.mem exes.modes L.native))

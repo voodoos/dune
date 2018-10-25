@@ -181,15 +181,9 @@ end
             ; cmas
             ; [Path.to_absolute_filename wrapper] ]
         in
-        (* CR-someday jdimino: if we want to allow plugins to use findlib:
-         {[
-           let args =
-             match context.toplevel_path with
-             | None -> args
-             | Some path -> "-I" :: Path.reach ~from:dir path :: args
-           in
-         ]}
-      *)
+        (* CR-someday jdimino: if we want to allow plugins to use findlib: {[
+           let args = match context.toplevel_path with | None -> args | Some
+           path -> "-I" :: Path.reach ~from:dir path :: args in ]} *)
         Process.run Strict ~dir ~env:context.env context.ocaml args
         >>= fun () ->
         if not (Path.exists generated_dune_file) then

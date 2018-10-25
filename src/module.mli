@@ -89,8 +89,8 @@ val obj_name : t -> string
 
 val src_dir : t -> Path.t option
 
-(** Same as [cm_file] but doesn't raise if [cm_kind] is [Cmo] or [Cmx]
-    and the module has no implementation. *)
+(** Same as [cm_file] but doesn't raise if [cm_kind] is [Cmo] or [Cmx] and the
+    module has no implementation. *)
 val cm_file_unsafe : t -> obj_dir:Path.t -> Cm_kind.t -> Path.t
 
 val odoc_file : t -> doc_dir:Path.t -> Path.t

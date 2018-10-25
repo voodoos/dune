@@ -46,10 +46,10 @@ let utop_exe_dir ~dir = Path.relative dir utop_dir_basename
 
 let utop_exe dir =
   Path.relative (utop_exe_dir ~dir) exe_name
-  (* Use the [.exe] version. As the utop executable is declared with
-     [(modes (byte))], the [.exe] correspond the bytecode linked in
-     custom mode. We do that so that it works without hassle when
-     generating a utop for a library with C stubs. *)
+  (* Use the [.exe] version. As the utop executable is declared with [(modes
+     (byte))], the [.exe] correspond the bytecode linked in custom mode. We do
+     that so that it works without hassle when generating a utop for a library
+     with C stubs. *)
   |> Path.extend_basename ~suffix:(Mode.exe_ext Mode.Native)
 
 let is_utop_dir dir = Path.basename dir = utop_dir_basename
@@ -77,13 +77,13 @@ let libs_under_dir sctx ~db ~dir =
                         | None ->
                             acc (* library is defined but outside our scope *)
                         | Some lib ->
-                            (* still need to make sure that it's not coming from an external
-                   source *)
+                            (* still need to make sure that it's not coming
+                               from an external source *)
                             if Path.is_descendant ~of_:dir (Lib.src_dir lib)
                             then lib :: acc
                             else acc
-                              (* external lib with a name matching our private name *)
-                        )
+                              (* external lib with a name matching our private
+                                 name *) )
                       | _ -> acc ) ) )
   |> Option.value ~default:[]
 

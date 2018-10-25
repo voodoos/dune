@@ -4,9 +4,8 @@ module Menhir_rules = Menhir
 open Dune_file
 open! No_io
 
-(* +-----------------------------------------------------------------+
-   | Utils                                                           |
-   +-----------------------------------------------------------------+ *)
+(* +-----------------------------------------------------------------+ | Utils
+   | +-----------------------------------------------------------------+ *)
 
 let stanza_package = function
   | Library {public = Some {package; _}; _}
@@ -55,8 +54,8 @@ module Gen (P : Install_rules.Params) = struct
     | None -> ()
     | Some config -> Format_rules.gen_rules sctx config ~dir
 
-  (* +-----------------------------------------------------------------+
-     | Stanza                                                          |
+  (* +-----------------------------------------------------------------+ |
+     Stanza |
      +-----------------------------------------------------------------+ *)
 
   let gen_rules dir_contents cctxs
@@ -135,8 +134,8 @@ module Gen (P : Install_rules.Params) = struct
             )
           with
           | None ->
-              (* This happens often when passing a [-p ...] option that
-             hides a library *)
+              (* This happens often when passing a [-p ...] option that hides a
+                 library *)
               let targets =
                 List.map (Menhir_rules.targets m) ~f:(Path.relative ctx_dir)
               in
@@ -176,8 +175,8 @@ module Gen (P : Install_rules.Params) = struct
           (Path.drop_build_context_exn dir)
       with
       | None ->
-          (* We get here when [dir] is a generated directory, such as
-            [.utop] or [.foo.objs]. *)
+          (* We get here when [dir] is a generated directory, such as [.utop]
+             or [.foo.objs]. *)
           if Utop.is_utop_dir dir then
             Utop.setup sctx ~dir:(Path.parent_exn dir)
           else if components <> [] then

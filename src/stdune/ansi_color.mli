@@ -27,8 +27,7 @@ module Style : sig
     | Dim
     | Underlined
 
-  (** Ansi escape sequence that set the terminal style to exactly
-      these styles *)
+  (** Ansi escape sequence that set the terminal style to exactly these styles *)
   val escape_sequence : t list -> string
 end
 

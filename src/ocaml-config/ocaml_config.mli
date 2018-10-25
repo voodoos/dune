@@ -4,8 +4,8 @@
 
 open! Stdune
 
-(** Represent a parsed and interpreted output of [ocamlc -config] and
-    contents of [Makefile.config]. *)
+(** Represent a parsed and interpreted output of [ocamlc -config] and contents
+    of [Makefile.config]. *)
 type t
 
 val to_sexp : t Sexp.Encoder.t
@@ -18,8 +18,8 @@ end
 
 (** {1 Raw bindings} *)
 
-(** Represent the parsed but uninterpreted output of [ocamlc -config]
-    or contents of [Makefile.config]. *)
+(** Represent the parsed but uninterpreted output of [ocamlc -config] or
+    contents of [Makefile.config]. *)
 module Vars : sig
   type t = string String.Map.t
 
@@ -35,14 +35,14 @@ module Origin : sig
     | Makefile_config of Path.t
 end
 
-(** Interpret raw bindings (this function also loads the
-    [Makefile.config] file in the stdlib directory). *)
+(** Interpret raw bindings (this function also loads the [Makefile.config] file
+    in the stdlib directory). *)
 val make : Vars.t -> (t, Origin.t * string) Result.t
 
 (** {1 Query} *)
 
-(** The following parameters match the variables in the output of
-    [ocamlc -config] but are stable across versions of OCaml. *)
+(** The following parameters match the variables in the output of [ocamlc
+    -config] but are stable across versions of OCaml. *)
 
 val version : t -> int * int * int
 

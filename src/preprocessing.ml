@@ -5,8 +5,8 @@ open Dune_file
 module SC = Super_context
 
 let pped_path path ~suffix =
-  (* We need to insert the suffix before the extension as some tools
-     inspect the extension *)
+  (* We need to insert the suffix before the extension as some tools inspect
+     the extension *)
   let base, ext = Path.split_extension path in
   Path.extend_basename base ~suffix:(suffix ^ ext)
 
@@ -33,12 +33,11 @@ module Driver = struct
 
       let loc t = t.loc
 
-      (* The syntax of the driver sub-system is part of the main dune
-         syntax, so we simply don't create a new one.
+      (* The syntax of the driver sub-system is part of the main dune syntax,
+         so we simply don't create a new one.
 
-         If we wanted to make the ppx system an extension, then we
-         would create a new one.
-      *)
+         If we wanted to make the ppx system an extension, then we would create
+         a new one. *)
       let syntax = Stanza.syntax
 
       open Stanza.Decoder
@@ -61,9 +60,8 @@ module Driver = struct
            {loc; flags; as_ppx_flags; lint_flags; main; replaces})
     end
 
-    (* The [lib] field is lazy so that we don't need to fill it for
-       hardcoded [t] values used to implement the jbuild style
-       handling of drivers.
+    (* The [lib] field is lazy so that we don't need to fill it for hardcoded
+       [t] values used to implement the jbuild style handling of drivers.
 
        See [Jbuild_driver] below for details. *)
     type t =
@@ -170,16 +168,15 @@ module Driver = struct
 end
 
 module Jbuild_driver = struct
-  (* This module is used to implement the jbuild handling of ppx
-     drivers.  It doesn't implement exactly the same algorithm, but it
-     should be enough for all jbuilder packages out there.
+  (* This module is used to implement the jbuild handling of ppx drivers. It
+     doesn't implement exactly the same algorithm, but it should be enough for
+     all jbuilder packages out there.
 
-     It works as follow: given the list of ppx rewriters specified by
-     the user, check whether the last one is named [ppxlib.runner] or
+     It works as follow: given the list of ppx rewriters specified by the user,
+     check whether the last one is named [ppxlib.runner] or
      [ppx_driver.runner]. If it isn't, assume the driver is
-     ocaml-migrate-parsetree and use some hard-coded driver
-     information. If it is, use the corresponding hardcoded driver
-     information. *)
+     ocaml-migrate-parsetree and use some hard-coded driver information. If it
+     is, use the corresponding hardcoded driver information. *)
 
   let make name info : (Lib_name.t * Driver.t) Lazy.t =
     lazy
@@ -268,8 +265,7 @@ let build_ppx_driver sctx ~lib_db ~dep_kind ~target ~dir_kind pps =
     let open Result.O in
     Result.map_error
       ~f:(fun e ->
-        (* Extend the dependency stack as we don't have locations at
-         this point *)
+        (* Extend the dependency stack as we don't have locations at this point *)
         Dep_path.prepend_exn e (Preprocess pps) )
       ( Lib.DB.resolve_pps lib_db (List.map pps ~f:(fun x -> (Loc.none, x)))
       >>= Lib.closure ~linking:true
@@ -280,8 +276,8 @@ let build_ppx_driver sctx ~lib_db ~dep_kind ~target ~dir_kind pps =
           >>| fun driver -> (driver, resolved_pps)
       | Some driver -> Ok (driver, resolved_pps) )
   in
-  (* CR-someday diml: what we should do is build the .cmx/.cmo once
-     and for all at the point where the driver is defined. *)
+  (* CR-someday diml: what we should do is build the .cmx/.cmo once and for all
+     at the point where the driver is defined. *)
   let ml = Path.relative (Option.value_exn (Path.parent target)) "ppx.ml" in
   SC.add_rule sctx
     ( Build.of_result_map driver_and_libs ~f:(fun (driver, _) ->
@@ -365,8 +361,8 @@ let get_compat_ppx_exe sctx ~name ~kind =
   match (kind : Compat_ppx_exe_kind.t) with
   | Dune -> ppx_exe sctx ~key:name ~dir_kind:Dune
   | Jbuild driver ->
-      (* We know both [name] and [driver] are public libraries, so we
-       don't add the scope key. *)
+      (* We know both [name] and [driver] are public libraries, so we don't add
+         the scope key. *)
       let key =
         match driver with None -> name | Some d -> sprintf "%s+%s" name d
       in
@@ -393,8 +389,8 @@ let cookie_library_name lib_name =
   | Some name ->
       ["--cookie"; sprintf "library-name=%S" (Lib_name.Local.to_string name)]
 
-(* Generate rules for the reason modules in [modules] and return a
-   a new module with only OCaml sources *)
+(* Generate rules for the reason modules in [modules] and return a a new module
+   with only OCaml sources *)
 let setup_reason_rules sctx (m : Module.t) =
   let ctx = SC.context sctx in
   let refmt =

@@ -1,8 +1,8 @@
 (** Element ordering *)
 
 type t =
-  | Lt  (** Lesser than  *)
-  | Eq  (** Equal        *)
+  | Lt  (** Lesser than *)
+  | Eq  (** Equal *)
   | Gt  (** Greater than *)
 
 val of_int : int -> t

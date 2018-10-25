@@ -1,8 +1,8 @@
 open! Stdune
 open Stanza.Decoder
 
-(* workspace files use the same version numbers as dune-project files
-   for simplicity *)
+(* workspace files use the same version numbers as dune-project files for
+   simplicity *)
 let syntax = Stanza.syntax
 
 let env_field =

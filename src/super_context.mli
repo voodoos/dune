@@ -2,8 +2,7 @@
 
 (** A context augmented with: a lib-db, ...
 
-    Super context are used for generating rules.
-*)
+    Super context are used for generating rules. *)
 
 open! Stdune
 open Import
@@ -75,8 +74,8 @@ val installed_libs : t -> Lib.DB.t
 (** All non-public library names *)
 val internal_lib_names : t -> Lib_name.Set.t
 
-(** Compute the ocaml flags based on the directory environment and a
-    buildable stanza *)
+(** Compute the ocaml flags based on the directory environment and a buildable
+    stanza *)
 val ocaml_flags :
   t -> dir:Path.t -> scope:Scope.t -> Buildable.t -> Ocaml_flags.t
 
@@ -171,24 +170,23 @@ val on_load_dir : t -> dir:Path.t -> f:(unit -> unit) -> unit
 val source_files : t -> src_path:Path.t -> String.Set.t
 
 (** [prog_spec t ?hint name] resolve a program. [name] is looked up in the
-    workspace, if it is not found in the tree is is looked up in the PATH. If it
-    is not found at all, the resulting [Prog_spec.t] will either return the
+    workspace, if it is not found in the tree is is looked up in the PATH. If
+    it is not found at all, the resulting [Prog_spec.t] will either return the
     resolved path or a record with details about the error and possibly a hint.
 
-    [hint] should tell the user what to install when the program is not found.
-*)
+    [hint] should tell the user what to install when the program is not found. *)
 val resolve_program :
   t -> ?hint:string -> loc:Loc.t option -> string -> Action.Prog.t
 
 module Libs : sig
   (** Make sure all rules produces by [f] record the library dependencies for
-      [dune external-lib-deps] and depend on the generation of the .merlin file.
+      [dune external-lib-deps] and depend on the generation of the .merlin
+      file.
 
-      /!\ WARNING /!\: make sure the last function call inside [f] is
-      fully applied, otherwise the function might end up being executed
-      after this function has returned. Consider addin a type
-      annotation to make sure this doesn't happen by mistake.
-  *)
+      /!\ WARNING /!\: make sure the last function call inside [f] is fully
+      applied, otherwise the function might end up being executed after this
+      function has returned. Consider addin a type annotation to make sure this
+      doesn't happen by mistake. *)
   val with_lib_deps : t -> Lib.Compile.t -> dir:Path.t -> f:(unit -> 'a) -> 'a
 
   (** Generate the rules for the [(select ...)] forms in library dependencies *)

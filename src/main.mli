@@ -12,8 +12,8 @@ type setup =
 (* Returns [Error ()] if [pkg] is unknown *)
 val package_install_file : setup -> Package.Name.t -> (Path.t, unit) result
 
-(** Scan the source tree and discover everything that's needed in order to build
-    it. *)
+(** Scan the source tree and discover everything that's needed in order to
+    build it. *)
 val setup :
      ?log:Log.t
   -> ?external_lib_deps_mode:bool

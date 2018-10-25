@@ -9,13 +9,12 @@ module File : sig
   val register : t -> unit
 end
 
-(** Promote all registered files if [!Clflags.auto_promote]. Otherwise
-    dump the list of registered files to [_build/.to-promote]. *)
+(** Promote all registered files if [!Clflags.auto_promote]. Otherwise dump the
+    list of registered files to [_build/.to-promote]. *)
 val finalize : unit -> unit
 
-(** Describe what files should be promoted. The second argument of
-    [These] is a function that is called on files that cannot be
-    promoted. *)
+(** Describe what files should be promoted. The second argument of [These] is a
+    function that is called on files that cannot be promoted. *)
 type files_to_promote =
   | All
   | These of Path.t list * (Path.t -> unit)

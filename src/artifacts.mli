@@ -8,8 +8,7 @@ val create :
 
 (** A named artifact that is looked up in the PATH if not found in the tree
 
-    If the name is an absolute path, it is used as it.
-*)
+    If the name is an absolute path, it is used as it. *)
 val binary : t -> ?hint:string -> loc:Loc.t option -> string -> Action.Prog.t
 
 (** [file_of_lib t ~from ~lib ~file] returns the path to a file in the

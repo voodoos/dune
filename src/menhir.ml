@@ -59,8 +59,8 @@ module Run (P : PARAMS) : sig end = struct
   (* Naming conventions. *)
   
   (* If [m] is a (short) module name, such as "myparser", then [source m] is
-     the corresponding source file, and [targets m] is the list of targets
-     that Menhir must build. *)
+     the corresponding source file, and [targets m] is the list of targets that
+     Menhir must build. *)
 
   let source m = Path.relative dir (m ^ ".mly")
 
@@ -92,10 +92,9 @@ module Run (P : PARAMS) : sig end = struct
 
   (* Reminder (from arg_spec.mli):
 
-     [Deps]           is for command line arguments that are dependencies.
-     [As]             is for command line arguments
-     that are neither dependencies nor targets.
-     [Hidden_targets] is for targets that are *not* command line arguments.  *)
+     [Deps] is for command line arguments that are dependencies. [As] is for
+     command line arguments that are neither dependencies nor targets.
+     [Hidden_targets] is for targets that are *not* command line arguments. *)
 
   type args = string list Arg_spec.t list
 
@@ -117,9 +116,9 @@ module Run (P : PARAMS) : sig end = struct
   (* If there is no [base] clause, then a stanza that mentions several modules
      is equivalent to a list of stanzas, each of which mentions one module, so
      Menhir must be invoked once per module, separately. If there is a [base]
-     clause, then the stanza describes a multi-module parser, so Menhir must
-     be invoked once. In either case, we are able to reformulate the input in
-     the form of a list of stanzas, each of which has a [base] clause. *)
+     clause, then the stanza describes a multi-module parser, so Menhir must be
+     invoked once. In either case, we are able to reformulate the input in the
+     form of a list of stanzas, each of which has a [base] clause. *)
   
   (* The current concrete name for [base] clauses is [merge_into], but I would
      like to change it in the future. *)
@@ -134,8 +133,8 @@ module Run (P : PARAMS) : sig end = struct
 
   (* ------------------------------------------------------------------------ *)
   
-  (* The [--infer-*] commands should not be passed by the user; we take care
-     of using these commands appropriately. Fail if they are present. *)
+  (* The [--infer-*] commands should not be passed by the user; we take care of
+     using these commands appropriately. Fail if they are present. *)
 
   let () =
     List.iter stanzas ~f:(fun (stanza : stanza) ->
@@ -159,9 +158,9 @@ module Run (P : PARAMS) : sig end = struct
 
   (* ------------------------------------------------------------------------ *)
   
-  (* [process3 stanza] converts a Menhir stanza into a set of build rules.
-     This is the three-step process where Menhir is invoked twice and OCaml
-     type inference is performed in between. *)
+  (* [process3 stanza] converts a Menhir stanza into a set of build rules. This
+     is the three-step process where Menhir is invoked twice and OCaml type
+     inference is performed in between. *)
 
   let process3 base ~cmly (stanza : stanza) : unit =
     let expanded_flags = expand_flags stanza.flags in
@@ -203,8 +202,8 @@ module Run (P : PARAMS) : sig end = struct
 
   (* ------------------------------------------------------------------------ *)
   
-  (* [process3 stanza] converts a Menhir stanza into a set of build rules.
-     This is a simpler one-step process where Menhir is invoked directly. *)
+  (* [process3 stanza] converts a Menhir stanza into a set of build rules. This
+     is a simpler one-step process where Menhir is invoked directly. *)
 
   let process1 base ~cmly (stanza : stanza) : unit =
     let expanded_flags = expand_flags stanza.flags in

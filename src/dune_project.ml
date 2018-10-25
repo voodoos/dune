@@ -235,8 +235,8 @@ module Extension = struct
         {extension = t; version = ver; loc; parse_args}
 
   (* Extensions that are not selected in the dune-project file are
-     automatically available at their latest version.  When used, dune
-     will automatically edit the dune-project file. *)
+     automatically available at their latest version. When used, dune will
+     automatically edit the dune-project file. *)
   let automatic ~project_file ~f =
     Hashtbl.foldi extensions ~init:[] ~f:(fun name extension acc ->
         if f name then
@@ -356,8 +356,8 @@ let parse ~dir ~lang ~packages ~file =
           and name = located string
           and ver = located Syntax.Version.decode
           and parse_args = capture in
-          (* We don't parse the arguments quite yet as we want to set
-             the version of extensions before parsing them. *)
+          (* We don't parse the arguments quite yet as we want to set the
+             version of extensions before parsing them. *)
           Extension.instantiate ~loc ~parse_args name ver)
      and () = Versioned_file.no_more_lang in
      match

@@ -25,8 +25,8 @@ module Preprocess_map : sig
 
   val default : t
 
-  (** [find module_name] find the preprocessing specification for a
-      given module *)
+  (** [find module_name] find the preprocessing specification for a given
+      module *)
   val find : Module.Name.t -> t -> Preprocess.t
 
   val pps : t -> (Loc.t * Lib_name.t) list
@@ -160,22 +160,20 @@ module Public_lib : sig
     { name : Loc.t * Lib_name.t  (** Full public name *)
     ; package : Package.t  (** Package it is part of *)
     ; sub_dir : string option
-          (** Subdirectory inside the installation
-                                   directory *)
-    }
+          (** Subdirectory inside the installation directory *) }
 
   val name : t -> Lib_name.t
 end
 
 module Sub_system_info : sig
-  (** The type of all kind of sub-system information.
-      This type is what we get just after parsing a [jbuild] file. *)
+  (** The type of all kind of sub-system information. This type is what we get
+      just after parsing a [jbuild] file. *)
   type t = ..
 
   type sub_system = t = ..
 
-  (** What the user must provide in order to define the parsing part
-      of a sub-system. *)
+  (** What the user must provide in order to define the parsing part of a
+      sub-system. *)
   module type S = sig
     type t
 
@@ -240,21 +238,20 @@ module Library : sig
   end
 
   module Stdlib : sig
-    (** Extra information for the OCaml stdlib. Note: contrary to
-        normal libraries, the library interface of the stdlib (the
-        Stdlib module) is used as the alias module when compiling all
-        the other modules. We cannot generate an implicit one as that
-        would break hard-coded names inside the compiler. *)
+    (** Extra information for the OCaml stdlib. Note: contrary to normal
+        libraries, the library interface of the stdlib (the Stdlib module) is
+        used as the alias module when compiling all the other modules. We
+        cannot generate an implicit one as that would break hard-coded names
+        inside the compiler. *)
     type t =
       { modules_before_stdlib : Module.Name.Set.t
             (** Modules that the Stdlib module depend on. *)
       ; exit_module : Module.Name.t option
-            (** Modules that's implicitely added by the compiler at the
-          end when linking an executable *)
+            (** Modules that's implicitely added by the compiler at the end
+                when linking an executable *)
       ; internal_modules : Re.re
-            (** Module names that are hardcoded in the compiler and so
-          cannot be wrapped *)
-      }
+            (** Module names that are hardcoded in the compiler and so cannot
+                be wrapped *) }
   end
 
   type t =
@@ -312,10 +309,9 @@ module Library : sig
 
   val main_module_name : t -> Main_module_name.t
 
-  (** Returns [true] is a special module, i.e. one whose compilation
-      unit name is hard-coded inside the compiler. It is not possible
-      to change the compilation unit name of such modules, so they
-      cannot be wrapped. *)
+  (** Returns [true] is a special module, i.e. one whose compilation unit name
+      is hard-coded inside the compiler. It is not possible to change the
+      compilation unit name of such modules, so they cannot be wrapped. *)
   val special_compiler_module : t -> Module.t -> bool
 end
 
@@ -373,17 +369,17 @@ module Rule : sig
 
   module Mode : sig
     type t =
-      | Standard  (** Only use this rule if  the source files don't exist. *)
+      | Standard  (** Only use this rule if the source files don't exist. *)
       | Fallback  (** Silently promote the targets to the source tree. *)
       | Promote
           (** Same as [Promote] but [jbuilder clean] must delete the file *)
       | Promote_but_delete_on_clean
-          (** Same as [Standard] however this is not a rule stanza, so it
-          is not possible to add a [(fallback)] field to the rule. *)
+          (** Same as [Standard] however this is not a rule stanza, so it is
+              not possible to add a [(fallback)] field to the rule. *)
       | Not_a_rule_stanza
-          (** Just ignore the source files entirely. This is for cases
-          where the targets are promoted only in a specific context,
-          such as for .install files. *)
+          (** Just ignore the source files entirely. This is for cases where
+              the targets are promoted only in a specific context, such as for
+              .install files. *)
       | Ignore_source_files
   end
 

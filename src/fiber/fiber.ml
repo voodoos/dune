@@ -11,8 +11,8 @@ module Execution_context : sig
 
   val deref : t -> unit
 
-  (* Create a new context with a new referebce count. [on_release] is called when the
-     context is no longer used. *)
+  (* Create a new context with a new referebce count. [on_release] is called
+     when the context is no longer used. *)
   val create_sub : t -> on_release:(unit -> unit) -> t
 
   val set_error_handler : t -> on_error:(exn -> unit) -> t
@@ -23,10 +23,7 @@ module Execution_context : sig
 end = struct
   type t =
     { on_error : exn -> unit (* This callback must never raise *)
-    ; fibers :
-        int ref
-        (* Number of fibers running in this execution
-                            context *)
+    ; fibers : int ref (* Number of fibers running in this execution context *)
     ; vars : Univ_map.t
     ; on_release : unit -> unit }
 
@@ -51,8 +48,8 @@ end = struct
   let forward_error t exn =
     let bt = Printexc.get_raw_backtrace () in
     try t.on_error exn with exn2 ->
-      (* We can't abort the execution at this point, so we just dump
-         the error on stderr *)
+      (* We can't abort the execution at this point, so we just dump the error
+         on stderr *)
       let bt2 = Printexc.get_backtrace () in
       let s =
         Printf.sprintf "%s\n%s\nOriginal exception was: %s\n%s"
@@ -218,8 +215,9 @@ end
 let with_error_handler f ~on_error ctx k =
   let on_error exn =
     try on_error exn with exn ->
-      (* Increase the ref-counter of the parent context since this error doesn't originate
-         from a fiber and so doesn't change the number of running fibers. *)
+      (* Increase the ref-counter of the parent context since this error
+         doesn't originate from a fiber and so doesn't change the number of
+         running fibers. *)
       EC.add_refs ctx 1;
       EC.forward_error ctx exn
   in

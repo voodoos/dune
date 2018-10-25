@@ -141,7 +141,7 @@ let report exn =
             | Some loc ->
                 if Filename.is_relative loc.start.pos_fname then
                   (* If the error points to a local file, no need to print the
-                 dependency stack *)
+                     dependency stack *)
                   []
                 else drop dependency_path
         in

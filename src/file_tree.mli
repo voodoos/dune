@@ -13,9 +13,9 @@ module Dune_file : sig
   end
 
   module Plain : sig
-    (** [sexps] is mutable as we get rid of the S-expressions once
-        they have been parsed, in order to release the memory as soon
-        as we don't need them. *)
+    (** [sexps] is mutable as we get rid of the S-expressions once they have
+        been parsed, in order to release the memory as soon as we don't need
+        them. *)
     type t =
       { path : Path.t
       ; mutable sexps : Dune_lang.Ast.t list }
@@ -49,8 +49,8 @@ module Dir : sig
 
   val sub_dir_names : t -> String.Set.t
 
-  (** Whether this directory is ignored by an [ignored_subdirs] stanza
-     or [jbuild-ignore] file in one of its ancestor directories. *)
+  (** Whether this directory is ignored by an [ignored_subdirs] stanza or
+      [jbuild-ignore] file in one of its ancestor directories. *)
   val ignored : t -> bool
 
   val fold :
@@ -63,17 +63,15 @@ module Dir : sig
   val project : t -> Dune_project.t
 end
 
-(** A [t] value represent a view of the source tree. It is lazily
-    constructed by scanning the file system and interpreting [.dune-fs]
-    files, as well as [jbuild-ignore] files for backward
-    compatibility. *)
+(** A [t] value represent a view of the source tree. It is lazily constructed
+    by scanning the file system and interpreting [.dune-fs] files, as well as
+    [jbuild-ignore] files for backward compatibility. *)
 type t
 
 val load : ?extra_ignored_subtrees:Path.Set.t -> Path.t -> t
 
-(** Passing [~traverse_ignored_dirs:true] to this functions causes the
-    whole source tree to be deeply scanned, including ignored
-    sub-trees. *)
+(** Passing [~traverse_ignored_dirs:true] to this functions causes the whole
+    source tree to be deeply scanned, including ignored sub-trees. *)
 val fold :
   t -> traverse_ignored_dirs:bool -> init:'a -> f:(Dir.t -> 'a -> 'a) -> 'a
 

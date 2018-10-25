@@ -36,8 +36,8 @@ external reraise : exn -> _ = "%reraise"
 
 let compare a b = Ordering.of_int (compare a b)
 
-(* The following types are re-exported here so that they are always
-   available in scope *)
+(* The following types are re-exported here so that they are always available
+   in scope *)
 
 type ('a, 'error) result = ('a, 'error) Result.t =
   | Ok of 'a

@@ -1,8 +1,7 @@
 (** Pretty printers *)
 
-(** A document that is not yet rendered. The argument is the type of
-    tags in the document. For instance tags might be used for
-    styles. *)
+(** A document that is not yet rendered. The argument is the type of tags in
+    the document. For instance tags might be used for styles. *)
 type +'tag t
 
 module type Tag = sig
@@ -17,9 +16,8 @@ module type Tag = sig
       (** Initial tag handler *)
       val init : t
 
-      (** Handle a tag: return the string that enables the tag, the
-        handler while the tag is active and the string to disable the
-        tag. *)
+      (** Handle a tag: return the string that enables the tag, the handler
+          while the tag is active and the string to disable the tag. *)
       val handle : t -> tag -> string * t * string
     end
     with type tag := t

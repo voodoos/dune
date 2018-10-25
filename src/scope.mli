@@ -1,6 +1,6 @@
 (** Scopes *)
 
-(** A scope is a project + a library database  *)
+(** A scope is a project + a library database *)
 
 open! Stdune
 
@@ -22,8 +22,7 @@ module DB :
 
     type t
 
-    (** Return the new scope database as well as the public libraries
-      database *)
+    (** Return the new scope database as well as the public libraries database *)
     val create :
          projects:Dune_project.t list
       -> context:string

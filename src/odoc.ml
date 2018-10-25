@@ -355,7 +355,7 @@ struct
         | Ok lib -> SC.load_dir sctx ~dir:(Lib.src_dir lib) )
     | "_html" :: lib_unique_name_or_pkg :: _ ->
         (* TODO we can be a better with the error handling in the case where
-         lib_unique_name_or_pkg is neither a valid pkg or lnu *)
+           lib_unique_name_or_pkg is neither a valid pkg or lnu *)
         let lib, lib_db = SC.Scope_key.of_string sctx lib_unique_name_or_pkg in
         let lib = Lib_name.of_string_exn ~loc:None lib in
         let setup_pkg_html_rules pkg =

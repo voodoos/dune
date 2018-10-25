@@ -343,10 +343,8 @@ module Decoder = struct
 
   (* Arguments are:
 
-     - the location of the whole list
-     - the first atom when parsing a constructor or a field
-     - the universal map holding the user context
-  *)
+     - the location of the whole list - the first atom when parsing a
+     constructor or a field - the universal map holding the user context *)
   type 'kind context =
     | Values : Loc.t * string option * Univ_map.t -> values context
     | Fields : Loc.t * string option * Univ_map.t -> fields context

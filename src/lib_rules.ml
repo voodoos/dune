@@ -18,8 +18,8 @@ module Gen (P : Install_rules.Params) = struct
 
   module Virtual = Virtual_rules.Gen (P)
 
-  (* +-----------------------------------------------------------------+
-     | Library stuff                                                   |
+  (* +-----------------------------------------------------------------+ |
+     Library stuff |
      +-----------------------------------------------------------------+ *)
 
   let msvc_hack_cclibs =
@@ -93,9 +93,9 @@ module Gen (P : Install_rules.Params) = struct
                     | Native -> [Library.archive lib ~dir ~ext:ctx.ext_lib] )
                 ] ) )
 
-  (* If the compiler reads the cmi for module alias even with
-     [-w -49 -no-alias-deps], we must sandbox the build of the
-     alias module since the modules it references are built after. *)
+  (* If the compiler reads the cmi for module alias even with [-w -49
+     -no-alias-deps], we must sandbox the build of the alias module since the
+     modules it references are built after. *)
   let alias_module_build_sandbox =
     Ocaml_version.always_reads_alias_cmi ctx.version
 
@@ -169,9 +169,9 @@ module Gen (P : Install_rules.Params) = struct
       ( SC.expand_and_eval_set sctx ~scope ~dir lib.c_flags
           ~standard:(Build.return (Context.cc_g ctx))
       >>> Build.run
-          (* We have to execute the rule in the library directory as
-            the .o is produced in the current directory *)
-            ~dir:(Path.parent_exn src) (Ok ctx.ocamlc)
+          (* We have to execute the rule in the library directory as the .o is
+             produced in the current directory *) ~dir:(Path.parent_exn src)
+            (Ok ctx.ocamlc)
             [ A "-g"
             ; includes
             ; Dyn (fun c_flags -> Arg_spec.quote_args "-ccopt" c_flags)
@@ -190,9 +190,8 @@ module Gen (P : Install_rules.Params) = struct
       ( SC.expand_and_eval_set sctx ~scope ~dir lib.cxx_flags
           ~standard:(Build.return (Context.cc_g ctx))
       >>> Build.run
-          (* We have to execute the rule in the library directory as
-            the .o is produced in the current directory *)
-            ~dir:(Path.parent_exn src)
+          (* We have to execute the rule in the library directory as the .o is
+             produced in the current directory *) ~dir:(Path.parent_exn src)
             (SC.resolve_program ~loc:None sctx ctx.c_compiler)
             ( [ S [A "-I"; Path ctx.stdlib_dir]
               ; As (SC.cxx_flags sctx)
@@ -232,14 +231,13 @@ module Gen (P : Install_rules.Params) = struct
       modes.native && modes.byte
       && Dynlink_supported.get lib.dynlink ctx.supports_shared_libraries
     then
-      (* If we build for both modes and support dynlink, use a
-         single invocation to build both the static and dynamic
-         libraries *)
+      (* If we build for both modes and support dynlink, use a single
+         invocation to build both the static and dynamic libraries *)
       ocamlmklib ~sandbox:false ~custom:false ~targets:[static; dynamic]
     else (
       ocamlmklib ~sandbox:false ~custom:true ~targets:[static];
-      (* We can't tell ocamlmklib to build only the dll, so we
-         sandbox the action to avoid overriding the static archive *)
+      (* We can't tell ocamlmklib to build only the dll, so we sandbox the
+         action to avoid overriding the static archive *)
       ocamlmklib ~sandbox:true ~custom:false ~targets:[dynamic] )
 
   let build_o_files lib ~dir ~scope ~requires ~dir_contents =
@@ -355,8 +353,8 @@ module Gen (P : Install_rules.Params) = struct
         match Module.Name.Map.find modules name with
         | None -> modules
         | Some m ->
-            (* These files needs to be alongside stdlib.cma as the
-               compiler implicitly adds this module. *)
+            (* These files needs to be alongside stdlib.cma as the compiler
+               implicitly adds this module. *)
             List.iter [".cmx"; ".cmo"; ctx.ext_obj] ~f:(fun ext ->
                 let src = Module.obj_file m ~obj_dir ~ext in
                 let dst = Module.obj_file m ~obj_dir:dir ~ext in
@@ -371,8 +369,7 @@ module Gen (P : Install_rules.Params) = struct
     in
     let wrapped_compat = Module.Name.Map.values wrapped_compat in
     (* Compatibility modules have implementations so we can just append them.
-       We append the modules at the end as no library modules depend on
-       them. *)
+       We append the modules at the end as no library modules depend on them. *)
     let top_sorted_modules =
       match vlib_dep_graphs with
       | None ->

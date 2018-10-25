@@ -30,9 +30,9 @@ val default_build_profile : string
 module Display : sig
   type t =
     | Progress  (** Single interactive status line *)
-    | Short  (** One line per command           *)
-    | Verbose  (** Display all commands fully     *)
-    | Quiet  (** Only display errors            *)
+    | Short  (** One line per command *)
+    | Verbose  (** Display all commands fully *)
+    | Quiet  (** Only display errors *)
 
   val decode : t Dune_lang.Decoder.t
 
@@ -73,6 +73,6 @@ val load_user_config_file : unit -> t
 
 val load_config_file : Path.t -> t
 
-(** Set display mode to [Quiet] if it is [Progress], the output is not
-    a tty and we are not running inside emacs. *)
+(** Set display mode to [Quiet] if it is [Progress], the output is not a tty
+    and we are not running inside emacs. *)
 val adapt_display : t -> output_is_a_tty:bool -> t

@@ -55,9 +55,8 @@ val split : t -> on:char -> t list
 
 val split_lines : t -> t list
 
-(** Escace ONLY double quotes. {!escape} also escapes '\n',... and
-    transforms all chars above '~' into '\xxx' which is not suitable
-    for UTF-8 strings. *)
+(** Escace ONLY double quotes. {!escape} also escapes '\n',... and transforms
+    all chars above '~' into '\xxx' which is not suitable for UTF-8 strings. *)
 val escape_double_quote : t -> t
 
 (** Return the length of the longest string in the list *)

@@ -17,8 +17,8 @@ let make_var ?quoted loc name =
 
 let literal ~quoted ~loc s = {parts = [Text s]; quoted; loc}
 
-(* This module implements the "old" template parsing that is only used in jbuild
-   files *)
+(* This module implements the "old" template parsing that is only used in
+   jbuild files *)
 module Jbuild : sig
   val parse : string -> loc:Loc.t -> quoted:bool -> Dune_lang.Template.t
 end = struct

@@ -80,24 +80,14 @@ end = struct
 
   let to_sexp t = Sexp.Encoder.string (to_string t)
 
-  (*
-  let rec cd_dot_dot t =
-    match Unix.readlink t with
-    | exception _ -> Filename.dirname t
-    | t -> cd_dot_dot t
+  (* let rec cd_dot_dot t = match Unix.readlink t with | exception _ ->
+     Filename.dirname t | t -> cd_dot_dot t
 
-  let relative initial_t path =
-    let rec loop t components =
-      match components with
-      | [] | ["." | ".."] ->
-        die "invalid filename concatenation: %s / %s" initial_t path
-      | [fn] -> Filename.concat t fn
-      | "."  :: rest -> loop t rest
-      | ".." :: rest -> loop (cd_dot_dot t) rest
-      | comp :: rest -> loop (Filename.concat t comp) rest
-    in
-    loop initial_t (explode_path path)
-*)
+     let relative initial_t path = let rec loop t components = match components
+     with | [] | ["." | ".."] -> die "invalid filename concatenation: %s / %s"
+     initial_t path | [fn] -> Filename.concat t fn | "." :: rest -> loop t rest
+     | ".." :: rest -> loop (cd_dot_dot t) rest | comp :: rest -> loop
+     (Filename.concat t comp) rest in loop initial_t (explode_path path) *)
 
   let relative x y =
     match y with "." -> x | _ -> make (Filename.concat (to_string x) y)
@@ -192,8 +182,8 @@ module Local : sig
     end
     with type local := t
 end = struct
-  (* either "." for root, either a '/' separated list of components
-     other that ".", ".."  and not containing '/'. *)
+  (* either "." for root, either a '/' separated list of components other that
+     ".", ".." and not containing '/'. *)
   include Interned.No_interning (struct
               let initial_size = 512
 

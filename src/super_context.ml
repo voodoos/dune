@@ -49,9 +49,8 @@ type t =
   ; host : t option
   ; libs_by_package : (Package.t * Lib.Set.t) Package.Name.Map.t
   ; env : (Path.t, Env_node.t) Hashtbl.t
-  ; (* Env node that represent the environment configured for the
-       workspace. It is used as default at the root of every project
-       in the workspace. *)
+  ; (* Env node that represent the environment configured for the workspace. It
+       is used as default at the root of every project in the workspace. *)
     default_env : Env_node.t Lazy.t }
 
 let context t = t.context
@@ -805,8 +804,8 @@ module Action = struct
                 match deps_written_by_user with
                 | Named _ :: _ ->
                     (* This case is not possible: ${<} only exist in jbuild
-                 files and named dependencies are not available in
-                 jbuild files *)
+                       files and named dependencies are not available in jbuild
+                       files *)
                     assert false
                 | Unnamed v :: _ -> [Path v]
                 | [] ->

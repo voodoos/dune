@@ -125,8 +125,8 @@ module Internal_rule = struct
     ; loc : Loc.t option
     ; dir : Path.t
     ; mutable exec : Exec_status.t
-    ; (* Reverse dependencies discovered so far, labelled by the
-         requested target *)
+    ; (* Reverse dependencies discovered so far, labelled by the requested
+         target *)
       mutable rev_deps : (Path.t * t) list
     ; (* Transitive reverse dependencies discovered so far. *)
       mutable transitive_rev_deps : Id.Set.t }
@@ -136,14 +136,13 @@ module Internal_rule = struct
   let loc ~file_tree ~dir t = rule_loc ~file_tree ~dir ~loc:t.loc
 
   let lib_deps t =
-    (* Forcing this lazy ensures that the various globs and
-       [if_file_exists] are resolved inside the [Build.t] value. *)
+    (* Forcing this lazy ensures that the various globs and [if_file_exists]
+       are resolved inside the [Build.t] value. *)
     ignore (Lazy.force t.static_deps : Static_deps.t);
     Build_interpret.lib_deps t.build
 
-  (* Represent the build goal given by the user. This rule is never
-     actually executed and is only used starting point of all
-     dependency paths. *)
+  (* Represent the build goal given by the user. This rule is never actually
+     executed and is only used starting point of all dependency paths. *)
   let root =
     { id = Id.gen ()
     ; static_deps = lazy Static_deps.empty
@@ -391,7 +390,7 @@ module Dir_status = struct
     | Loaded of Path.Set.t
     (* set of targets in the directory *)
     | Forward of Path.t
-    (* Load this directory first       *)
+    (* Load this directory first *)
     | Failed_to_load
 end
 
@@ -440,8 +439,8 @@ type t =
   { (* File specification by targets *)
     files : File_spec.packed Path.Table.t
   ; contexts : Context.t String.Map.t
-  ; (* Table from target to digest of
-       [(deps (filename + contents), targets (filename only), action)] *)
+  ; (* Table from target to digest of [(deps (filename + contents), targets
+       (filename only), action)] *)
     trace : Trace.t
   ; file_tree : File_tree.t
   ; mutable local_mkdirs : Path.Set.t
@@ -449,8 +448,8 @@ type t =
   ; mutable gen_rules :
       (dir:Path.t -> string list -> extra_sub_directories_to_keep) String.Map.t
   ; mutable load_dir_stack : Path.t list
-  ; (* Set of directories under _build that have at least one rule and
-       all their ancestors. *)
+  ; (* Set of directories under _build that have at least one rule and all
+       their ancestors. *)
     mutable build_dirs_to_keep : Path.Set.t
   ; files_of : Files_of.t Path.Table.t
   ; mutable prefix : (unit, unit) Build.t option
@@ -637,8 +636,8 @@ let create_file_specs t targets rule ~copy_source =
     | Target.Vfile (Vspec.T (fn, kind)) ->
         add_spec t fn (File_spec.create rule (Sexp_file kind)) ~copy_source )
 
-(* This contains the targets of the actions that are being executed. On exit, we need to
-   delete them as they might contain garbage *)
+(* This contains the targets of the actions that are being executed. On exit,
+   we need to delete them as they might contain garbage *)
 let pending_targets = ref Path.Set.empty
 
 let () =
@@ -878,12 +877,12 @@ and setup_copy_rules t ~ctx_dir ~non_target_source_files =
   Path.Set.iter non_target_source_files ~f:(fun path ->
       let ctx_path = Path.append ctx_dir path in
       let build = Build.copy ~src:path ~dst:ctx_path in
-      (* We temporarily allow overrides while setting up copy rules from
-       the source directory so that artifact that are already present
-       in the source directory are not re-computed.
+      (* We temporarily allow overrides while setting up copy rules from the
+         source directory so that artifact that are already present in the
+         source directory are not re-computed.
 
-       This allows to keep generated files in tarballs. Maybe we
-       should allow it on a case-by-case basis though. *)
+         This allows to keep generated files in tarballs. Maybe we should allow
+         it on a case-by-case basis though. *)
       compile_rule t (Pre_rule.make build ~context:None) ~copy_source:true )
 
 and load_dir t ~dir = ignore (load_dir_and_get_targets t ~dir : Path.Set.t)
@@ -994,7 +993,8 @@ and load_dir_step2_exn t ~dir ~collector ~lazy_generators =
         , Path.Set.add alias_stamp_files path ) )
   in
   Path.Table.replace t.dirs ~key:alias_dir ~data:(Loaded alias_stamp_files);
-  (* Compute the set of targets and the set of source files that must not be copied *)
+  (* Compute the set of targets and the set of source files that must not be
+     copied *)
   let user_rule_targets, source_files_to_ignore =
     List.fold_left rules ~init:(Path.Set.empty, Path.Set.empty)
       ~f:(fun (acc_targets, acc_ignored) {Pre_rule.targets; mode; _} ->
@@ -1041,7 +1041,7 @@ and load_dir_step2_exn t ~dir ~collector ~lazy_generators =
     match to_copy with
     | None ->
         (* If there are no source files to copy, fallback rules are
-         automatically kept *)
+           automatically kept *)
         rules
     | Some (_, to_copy) ->
         List.filter rules ~f:(fun (rule : Build_interpret.Rule.t) ->
@@ -1056,10 +1056,9 @@ and load_dir_step2_exn t ~dir ~collector ~lazy_generators =
                       Path.Set.add acc
                         ( Build_interpret.Target.path target
                         |> Path.drop_build_context
-                        (* All targets are in [dir] and we know it
-                      correspond to a directory of a build context
-                      since there are source files to copy, so this
-                      call can't fail. *)
+                        (* All targets are in [dir] and we know it correspond
+                           to a directory of a build context since there are
+                           source files to copy, so this call can't fail. *)
                         |> Option.value_exn ) )
                 in
                 if Path.Set.is_subset source_files_for_targtes ~of_:to_copy
@@ -1185,8 +1184,8 @@ let all_targets t =
   Path.Table.foldi t.files ~init:[] ~f:(fun key _ acc -> key :: acc)
 
 let finalize t =
-  (* Promotion must be handled before dumping the digest cache, as it
-     might delete some entries. *)
+  (* Promotion must be handled before dumping the digest cache, as it might
+     delete some entries. *)
   Promotion.finalize ();
   Promoted_to_delete.dump ();
   Utils.Cached_digest.dump ();
@@ -1452,12 +1451,12 @@ let package_deps t pkg files =
   let open Build.O in
   Build.paths_for_rule files
   >>^ fun () ->
-  (* We know that at this point of execution, all the relevant ivars
-     have been filled *)
+  (* We know that at this point of execution, all the relevant ivars have been
+     filled *)
   Path.Set.fold files ~init:Package.Name.Set.empty ~f:loop_deps
 
-(* +-----------------------------------------------------------------+
-   | Adding rules to the system                                      |
+(* +-----------------------------------------------------------------+ | Adding
+   rules to the system |
    +-----------------------------------------------------------------+ *)
 
 let rec add_build_dir_to_keep t ~dir =

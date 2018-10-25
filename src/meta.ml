@@ -256,9 +256,9 @@ let builtins ~stdlib_dir ~version:ocaml_version =
       if Ocaml_version.stdlib_includes_uchar ocaml_version then uchar :: base
       else base
     in
-    (* We do not rely on an "exists_if" ocamlfind variable,
-       because it would produce an error message mentioning
-       a "hidden" package (which could be confusing). *)
+    (* We do not rely on an "exists_if" ocamlfind variable, because it would
+       produce an error message mentioning a "hidden" package (which could be
+       confusing). *)
     if Path.exists (Path.relative stdlib_dir "nums.cma") then num :: base
     else base
   in

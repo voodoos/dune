@@ -35,16 +35,14 @@ module Rule = struct
     ; value = rule.value }
 end
 
-(* Set of rules for a given variable of a package. Implements the
-   algorithm described here:
+(* Set of rules for a given variable of a package. Implements the algorithm
+   described here:
 
-   http://projects.camlcity.org/projects/dl/findlib-1.6.3/doc/ref-html/r729.html
-*)
+   http://projects.camlcity.org/projects/dl/findlib-1.6.3/doc/ref-html/r729.html *)
 module Rules = struct
-  (* To implement the algorithm, [set_rules] is sorted by decreasing
-     number of formal predicates, then according to the order of the
-     META file. [add_rules] are in the same order as in the META
-     file. *)
+  (* To implement the algorithm, [set_rules] is sorted by decreasing number of
+     formal predicates, then according to the order of the META file.
+     [add_rules] are in the same order as in the META file. *)
   type t =
     { set_rules : Rule.t list
     ; add_rules : Rule.t list }
@@ -233,14 +231,14 @@ let parse_package t ~meta_file ~name ~parent_dir ~vars =
     | [] -> (
         if not (Lib_name.Map.mem t.builtins (Lib_name.root_lib name)) then true
         else
-          (* The META files for installed packages are sometimes broken,
-           i.e. META files for libraries that were not installed by
-           the compiler are still present:
+          (* The META files for installed packages are sometimes broken, i.e.
+             META files for libraries that were not installed by the compiler
+             are still present:
 
-           https://github.com/ocaml/dune/issues/563
+             https://github.com/ocaml/dune/issues/563
 
-           To workaround this problem, for builtin packages we check
-           that at least one of the archive is present. *)
+             To workaround this problem, for builtin packages we check that at
+             least one of the archive is present. *)
           match Package.archives pkg with
           | {byte = []; native = []} -> true
           | {byte; native} -> List.exists (byte @ native) ~f:Path.exists )
@@ -248,8 +246,7 @@ let parse_package t ~meta_file ~name ~parent_dir ~vars =
   let res = if exists then Ok pkg else Error (Unavailable_reason.Hidden pkg) in
   (dir, res)
 
-(* Parse all the packages defined in a META file and add them to
-   [t.packages] *)
+(* Parse all the packages defined in a META file and add them to [t.packages] *)
 let parse_and_acknowledge_meta t ~dir ~meta_file (meta : Meta.Simplified.t) =
   let rec loop ~dir ~full_name (meta : Meta.Simplified.t) =
     let vars = String.Map.map meta.vars ~f:Rules.of_meta_rules in
@@ -267,8 +264,8 @@ let parse_and_acknowledge_meta t ~dir ~meta_file (meta : Meta.Simplified.t) =
   in
   loop ~dir ~full_name:(Option.value_exn meta.name) meta
 
-(* Search for a <package>/META file in the findlib search path, parse
-   it and add its contents to [t.packages] *)
+(* Search for a <package>/META file in the findlib search path, parse it and
+   add its contents to [t.packages] *)
 let find_and_acknowledge_meta t ~fq_name =
   let root_name = Lib_name.root_lib fq_name in
   let rec loop dirs : (Path.t * Path.t * Meta.Simplified.t) option =

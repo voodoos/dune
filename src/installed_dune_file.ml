@@ -9,9 +9,8 @@ let parse_sub_systems ~parsing_context sexps =
             parsing_context)
           sexp
       in
-      (* We ignore sub-systems that are not internally known. These
-       correspond to plugins that are not in use in the current
-       workspace. *)
+      (* We ignore sub-systems that are not internally known. These correspond
+         to plugins that are not in use in the current workspace. *)
       Option.map (Sub_system_name.get name) ~f:(fun name ->
           (name, (Dune_lang.Ast.loc sexp, ver, data)) ) )
   |> Sub_system_name.Map.of_list
@@ -23,10 +22,11 @@ let parse_sub_systems ~parsing_context sexps =
          let (module M) = Dune_file.Sub_system_info.get name in
          Syntax.check_supported M.syntax version;
          let parsing_context =
-           (* We set the syntax to the version used when generating this subsystem.
-         We cannot do this for jbuild defined subsystems however since those use
-         1.0 as the version. Which would correspond to the dune syntax (because
-         subsystems share the syntax of the dune lang) *)
+           (* We set the syntax to the version used when generating this
+              subsystem. We cannot do this for jbuild defined subsystems
+              however since those use 1.0 as the version. Which would
+              correspond to the dune syntax (because subsystems share the
+              syntax of the dune lang) *)
            match
              Univ_map.find_exn parsing_context (Syntax.key Stanza.syntax)
            with
@@ -57,13 +57,12 @@ let of_sexp =
 
 let load fname =
   Io.with_lexbuf_from_file fname ~f:(fun lexbuf ->
-      (* Installed dune files are versioned but they don't use the
-       [(lang ...)] line which was introduced after. Installed dune
-       files in version 1 are using the jbuild syntax and version 2
-       are using the dune syntax, so we start by lexing the first
-       tokens with the dune lexer until we reach the file version, at
-       which point we can decide what lexer to use for the reset of
-       the file. *)
+      (* Installed dune files are versioned but they don't use the [(lang ...)]
+         line which was introduced after. Installed dune files in version 1 are
+         using the jbuild syntax and version 2 are using the dune syntax, so we
+         start by lexing the first tokens with the dune lexer until we reach
+         the file version, at which point we can decide what lexer to use for
+         the reset of the file. *)
       let state = ref 0 in
       let lexer = ref Dune_lang.Lexer.token in
       let lexer lb =

@@ -38,10 +38,9 @@ let stderr_supports_colors =
 let strip_colors_for_stderr s =
   if Lazy.force stderr_supports_colors then s else Ansi_color.strip s
 
-(* We redirect the output of all commands, so by default the various
-   tools will disable colors. Since we support colors in the output of
-   commands, we force it via specific environment variables if stderr
-   supports colors. *)
+(* We redirect the output of all commands, so by default the various tools will
+   disable colors. Since we support colors in the output of commands, we force
+   it via specific environment variables if stderr supports colors. *)
 let setup_env_for_colors env =
   let set env var value =
     Env.update env ~var ~f:(function None -> Some value | Some s -> Some s)

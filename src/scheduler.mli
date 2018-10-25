@@ -7,8 +7,8 @@ type status_line_config =
   ; show_jobs : bool }
 
 (** [go ?log ?config ?gen_status_line fiber] runs the following fiber until it
-    terminates. [gen_status_line] is used to print a status line when [config.display =
-    Progress]. *)
+    terminates. [gen_status_line] is used to print a status line when
+    [config.display = Progress]. *)
 val go :
      ?log:Log.t
   -> ?config:Config.t
@@ -16,12 +16,11 @@ val go :
   -> 'a Fiber.t
   -> 'a
 
-(** Runs [once] in a loop, executing [finally] after every iteration,
-    even if Fiber.Never was encountered.
+(** Runs [once] in a loop, executing [finally] after every iteration, even if
+    Fiber.Never was encountered.
 
-    If any source files change in the middle of iteration, it gets
-    canceled, and [canceled] is called instead of [finally].
-*)
+    If any source files change in the middle of iteration, it gets canceled,
+    and [canceled] is called instead of [finally]. *)
 val poll :
      ?log:Log.t
   -> ?config:Config.t
@@ -48,8 +47,8 @@ val ignore_for_watch : Path.t -> unit
 (** Scheduler information *)
 type t
 
-(** Wait until less tham [!Clflags.concurrency] external processes are running and return
-    the scheduler information. *)
+(** Wait until less tham [!Clflags.concurrency] external processes are running
+    and return the scheduler information. *)
 val wait_for_available_job : unit -> t Fiber.t
 
 (** Logger *)

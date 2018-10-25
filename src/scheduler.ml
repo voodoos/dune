@@ -46,9 +46,8 @@ module Thread = struct
   let create =
     if Sys.win32 then Thread.create
     else
-      (* On unix, we make sure to block signals globally before
-         starting a thread so that only the signal watcher thread can
-         receive signals. *)
+      (* On unix, we make sure to block signals globally before starting a
+         thread so that only the signal watcher thread can receive signals. *)
       fun f x ->
       Lazy.force block_signals;
       Thread.create f x
@@ -61,8 +60,8 @@ module Event : sig
     | Job_completed of job * Unix.process_status
     | Signal of Signal.t
 
-  (** Return the next event. File changes event are always flattened
-      and returned first. *)
+  (** Return the next event. File changes event are always flattened and
+      returned first. *)
   val next : unit -> t
 
   (** Ignore the ne next file change event about this file. *)
@@ -222,8 +221,8 @@ end = struct
              ; "-q" ] )
        | None -> (
          (* On all other platforms, try to use fswatch. fswatch's event
-           filtering is not reliable (at least on Linux), so don't try to
-           use it, instead act on all events. *)
+            filtering is not reliable (at least on Linux), so don't try to use
+            it, instead act on all events. *)
          match Bin.which "fswatch" with
          | Some fswatch ->
              let excludes =
@@ -298,20 +297,18 @@ end = struct
         Mutex.unlock event_mtx
       done
     in
-    (* The buffer thread is used to avoid flooding the main thread
-       with file changes events when a lot of file changes are reported
-       at once. In particular, this avoids restarting the build over
-       and over in a short period of time when many events are
-       reported at once.
+    (* The buffer thread is used to avoid flooding the main thread with file
+       changes events when a lot of file changes are reported at once. In
+       particular, this avoids restarting the build over and over in a short
+       period of time when many events are reported at once.
 
        It works as follow:
 
        - when the first event is received, send it to the main thread
        immediately so that we get a fast response time
 
-       - after the first event is received, buffer subsequent events
-       for [buffering_time]
-    *)
+       - after the first event is received, buffer subsequent events for
+       [buffering_time] *)
     let rec buffer_thread () =
       Mutex.lock event_mtx;
       while List.is_empty !files_changed do
@@ -357,8 +354,8 @@ end = struct
       | Running of job
       | Zombie of Unix.process_status
 
-    (* Invariant: [!running_count] is equal to the number of
-       [Running _] values in [table]. *)
+    (* Invariant: [!running_count] is equal to the number of [Running _] values
+       in [table]. *)
     let table = Hashtbl.create 128
 
     let running_count = ref 0
@@ -411,9 +408,8 @@ end = struct
           if pid <> 0 then raise_notrace (Finished (job, status)) );
       false
     with Finished (job, status) ->
-      (* We need to do the [Unix.waitpid] and remove the process while
-         holding the lock, otherwise the pid might be reused in
-         between. *)
+      (* We need to do the [Unix.waitpid] and remove the process while holding
+         the lock, otherwise the pid might be reused in between. *)
       Process_table.remove ~pid:job.pid status;
       true
 
@@ -617,8 +613,8 @@ let prepare ?(log = Log.no_log) ?(config = Config.default)
     ?(gen_status_line = fun () -> {message = None; show_jobs = false}) () =
   Log.infof log "Workspace root: %s"
     (Path.to_absolute_filename Path.root |> String.maybe_quoted);
-  (* The signal watcher must be initialized first so that signals are
-     blocked in all threads. *)
+  (* The signal watcher must be initialized first so that signals are blocked
+     in all threads. *)
   Signal_watcher.init ();
   Process_watcher.init ();
   let cwd = Sys.getcwd () in

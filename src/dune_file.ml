@@ -2,9 +2,8 @@ open! Stdune
 open Import
 open Stanza.Decoder
 
-(* This file defines the jbuild types as well as the S-expression
-   syntax for the various supported version of the specification.
-*)
+(* This file defines the jbuild types as well as the S-expression syntax for
+   the various supported version of the specification. *)
 
 (* Deprecated *)
 module Jbuild_version = struct
@@ -1855,9 +1854,8 @@ module Stanzas = struct
         [Include_subdirs (loc, t)] ) ]
 
   let jbuild_parser =
-    (* The menhir stanza was part of the vanilla jbuild
-       syntax. Starting from Dune 1.0, it is presented as an
-       extension with its own version. *)
+    (* The menhir stanza was part of the vanilla jbuild syntax. Starting from
+       Dune 1.0, it is presented as an extension with its own version. *)
     let stanzas =
       stanzas
       @ [ ( "menhir"

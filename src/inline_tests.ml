@@ -21,12 +21,11 @@ module Backend = struct
 
       let loc t = t.loc
 
-      (* The syntax of the driver sub-system is part of the main dune
-         syntax, so we simply don't create a new one.
+      (* The syntax of the driver sub-system is part of the main dune syntax,
+         so we simply don't create a new one.
 
-         If we wanted to make the ppx system an extension, then we
-         would create a new one.
-      *)
+         If we wanted to make the ppx system an extension, then we would create
+         a new one. *)
       let syntax = Stanza.syntax
 
       open Stanza.Decoder
