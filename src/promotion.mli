@@ -3,8 +3,7 @@ open! Stdune
 module File : sig
   type t =
     { src : Path.t
-    ; dst : Path.t
-    }
+    ; dst : Path.t }
 
   (** Register a file to promote *)
   val register : t -> unit

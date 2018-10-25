@@ -11,6 +11,7 @@ module Entry : sig
     | Loc of Loc.t
 
   val to_string : t -> string
+
   val pp : Format.formatter -> t -> unit
 end
 

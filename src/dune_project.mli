@@ -1,5 +1,5 @@
-open! Stdune
 (** dune-project files *)
+open! Stdune
 
 open Import
 
@@ -15,7 +15,7 @@ module Name : sig
       - Anonymous p -> p is a local path in the source tree
   *)
   type t = private
-    | Named     of string
+    | Named of string
     | Anonymous of Path.t
 
   val compare : t -> t -> Ordering.t
@@ -27,6 +27,7 @@ module Name : sig
 
   (** Convert to/from an encoded string that is suitable to use in filenames *)
   val to_encoded_string : t -> string
+
   val of_encoded_string : string -> t
 
   module Infix : Comparable.OPS with type t = t
@@ -39,9 +40,13 @@ end
 type t
 
 val packages : t -> Package.t Package.Name.Map.t
+
 val version : t -> string option
+
 val name : t -> Name.t
+
 val root : t -> Path.Local.t
+
 val stanza_parser : t -> Stanza.t list Dune_lang.Decoder.t
 
 module Lang : sig
@@ -65,8 +70,8 @@ module Extension : sig
 
       in their [dune-project] file. [parser] is used to describe
       what [<args>] might be. *)
-  val register
-    :  ?experimental:bool
+  val register :
+       ?experimental:bool
     -> Syntax.t
     -> ('a * Stanza.Parser.t list) Dune_lang.Decoder.t
     -> ('a -> Sexp.t)
@@ -74,8 +79,8 @@ module Extension : sig
 
   (** A simple version where the arguments are not used through
       [find_extension_args]. *)
-  val register_simple
-    :  ?experimental:bool
+  val register_simple :
+       ?experimental:bool
     -> Syntax.t
     -> Stanza.Parser.t list Dune_lang.Decoder.t
     -> unit
@@ -102,7 +107,9 @@ val ensure_project_file_exists : t -> unit
 val append_to_project_file : t -> string -> unit
 
 (** Set the project we are currently parsing dune files for *)
-val set : t -> ('a, 'k) Dune_lang.Decoder.parser -> ('a, 'k) Dune_lang.Decoder.parser
+val set :
+  t -> ('a, 'k) Dune_lang.Decoder.parser -> ('a, 'k) Dune_lang.Decoder.parser
+
 val get_exn : unit -> (t, 'k) Dune_lang.Decoder.parser
 
 (** Find arguments passed to (using). [None] means that the extension was not

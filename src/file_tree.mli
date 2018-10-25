@@ -1,11 +1,13 @@
-open! Stdune
 (** Dune representation of the source tree *)
+open! Stdune
 
 open! Import
 
 module Dune_file : sig
   module Kind : sig
-    type t = Dune_lang.syntax = Jbuild | Dune
+    type t = Dune_lang.syntax =
+      | Jbuild
+      | Dune
 
     val lexer : t -> Dune_lang.Lexer.t
   end
@@ -15,9 +17,8 @@ module Dune_file : sig
         they have been parsed, in order to release the memory as soon
         as we don't need them. *)
     type t =
-      { path          : Path.t
-      ; mutable sexps : Dune_lang.Ast.t list
-      }
+      { path : Path.t
+      ; mutable sexps : Dune_lang.Ast.t list }
   end
 
   module Contents : sig
@@ -28,8 +29,7 @@ module Dune_file : sig
 
   type t =
     { contents : Contents.t
-    ; kind     : Kind.t
-    }
+    ; kind : Kind.t }
 
   val path : t -> Path.t
 end
@@ -37,23 +37,24 @@ end
 module Dir : sig
   type t
 
-  val path     : t -> Path.t
-  val files    : t -> String.Set.t
-  val file_paths    : t -> Path.Set.t
+  val path : t -> Path.t
+
+  val files : t -> String.Set.t
+
+  val file_paths : t -> Path.Set.t
+
   val sub_dirs : t -> t String.Map.t
+
   val sub_dir_paths : t -> Path.Set.t
+
   val sub_dir_names : t -> String.Set.t
 
   (** Whether this directory is ignored by an [ignored_subdirs] stanza
      or [jbuild-ignore] file in one of its ancestor directories. *)
   val ignored : t -> bool
 
-  val fold
-    :  t
-    -> traverse_ignored_dirs:bool
-    -> init:'a
-    -> f:(t -> 'a -> 'a)
-    -> 'a
+  val fold :
+    t -> traverse_ignored_dirs:bool -> init:'a -> f:(t -> 'a -> 'a) -> 'a
 
   (** Return the contents of the dune (or jbuild) file in this directory *)
   val dune_file : t -> Dune_file.t option
@@ -73,12 +74,8 @@ val load : ?extra_ignored_subtrees:Path.Set.t -> Path.t -> t
 (** Passing [~traverse_ignored_dirs:true] to this functions causes the
     whole source tree to be deeply scanned, including ignored
     sub-trees. *)
-val fold
-  :  t
-  -> traverse_ignored_dirs:bool
-  -> init:'a
-  -> f:(Dir.t -> 'a -> 'a)
-  -> 'a
+val fold :
+  t -> traverse_ignored_dirs:bool -> init:'a -> f:(Dir.t -> 'a -> 'a) -> 'a
 
 val root : t -> Dir.t
 

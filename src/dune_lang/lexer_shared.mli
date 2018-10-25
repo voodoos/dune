@@ -1,6 +1,6 @@
 module Token : sig
   type t =
-    | Atom          of Atom.t
+    | Atom of Atom.t
     | Quoted_string of string
     | Lparen
     | Rparen
@@ -13,10 +13,9 @@ type t = Lexing.lexbuf -> Token.t
 
 module Error : sig
   type t =
-    { start   : Lexing.position
-    ; stop    : Lexing.position
-    ; message : string
-    }
+    { start : Lexing.position
+    ; stop : Lexing.position
+    ; message : string }
 end
 
 val error : ?delta:int -> Lexing.lexbuf -> string -> 'a

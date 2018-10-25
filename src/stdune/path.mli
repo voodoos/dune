@@ -1,8 +1,11 @@
 (** In the current workspace (anything under the current project root) *)
 module Local : sig
   type t
+
   val to_sexp : t -> Sexp.t
+
   val equal : t -> t -> bool
+
   val to_string : t -> string
 end
 
@@ -11,7 +14,9 @@ module External : sig
   type t
 
   val to_string : t -> string
+
   val of_string : string -> t
+
   val initial_cwd : t
 
   val cwd : unit -> t
@@ -20,7 +25,7 @@ end
 module Kind : sig
   type t = private
     | External of External.t
-    | Local    of Local.t
+    | Local of Local.t
 
   val of_string : string -> t
 end
@@ -29,21 +34,25 @@ type t
 
 val to_sexp : t Sexp.Encoder.t
 
-val compare : t -> t -> Ordering.t
 (** a directory is smaller than its descendants *)
+val compare : t -> t -> Ordering.t
 
 val equal : t -> t -> bool
 
 module Set : sig
   include Set.S with type elt = t
+
   val to_sexp : t Sexp.Encoder.t
+
   val of_string_set : String.Set.t -> f:(string -> elt) -> t
 end
 
 module Map : Map.S with type key = t
+
 module Table : Hashtbl.S with type key = t
 
 val of_string : ?error_loc:Loc.t -> string -> t
+
 val to_string : t -> string
 
 (** [to_string_maybe_quoted t] is [maybe_quoted (to_string t)] *)
@@ -52,6 +61,7 @@ val to_string_maybe_quoted : t -> string
 val kind : t -> Kind.t
 
 val root : t
+
 val is_root : t -> bool
 
 val is_managed : t -> bool
@@ -72,13 +82,17 @@ val reach : t -> from:t -> string
 val reach_for_running : ?from:t -> t -> string
 
 val descendant : t -> of_:t -> t option
+
 val is_descendant : t -> of_:t -> bool
 
 val append : t -> t -> t
+
 val append_local : t -> Local.t -> t
 
 val basename : t -> string
+
 val parent : t -> t option
+
 val parent_exn : t -> t
 
 val is_suffix : t -> suffix:string -> bool
@@ -103,6 +117,7 @@ val extract_build_context_dir : t -> (t * t) option
 
 (** Drop the "_build/blah" prefix *)
 val drop_build_context : t -> t option
+
 val drop_build_context_exn : t -> t
 
 (** Drop the "_build/blah" prefix if present, return [t] otherwise *)
@@ -113,6 +128,7 @@ val drop_optional_build_context : t -> t
 val sandbox_managed_paths : sandbox_dir:t -> t -> t
 
 val explode : t -> string list option
+
 val explode_exn : t -> string list
 
 (** The build directory *)
@@ -136,18 +152,27 @@ val split_first_component : t -> (string * t) option
 val insert_after_build_dir_exn : t -> string -> t
 
 val exists : t -> bool
+
 val readdir_unsorted : t -> string list
+
 val is_directory : t -> bool
+
 val rmdir : t -> unit
+
 val unlink : t -> unit
+
 val unlink_no_err : t -> unit
+
 val rm_rf : t -> unit
+
 val mkdir_p : t -> unit
 
 val extension : t -> string
+
 val split_extension : t -> t * string
 
 val pp : Format.formatter -> t -> unit
+
 val pp_debug : Format.formatter -> t -> unit
 
 val build_dir_exists : unit -> bool

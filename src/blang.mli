@@ -19,8 +19,5 @@ type t =
 
 val true_ : t
 
-val eval
-  :  t
-  -> dir:Path.t
-  -> f:Value.t list option  String_with_vars.expander
-  -> bool
+val eval :
+  t -> dir:Path.t -> f:Value.t list option String_with_vars.expander -> bool

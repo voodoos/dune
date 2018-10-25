@@ -8,14 +8,15 @@ let () =
   Path.set_build_dir (Path.Kind.of_string "_build")
 
 let prog = Option.value_exn (Bin.which "true")
+
 let run () = Process.run ~env:Env.initial Strict prog []
 
 let go ~jobs fiber =
-  Scheduler.go fiber ~config:{ Config.default with concurrency = Fixed jobs }
+  Scheduler.go fiber ~config:{Config.default with concurrency = Fixed jobs}
 
 let%bench "single" = go (run ()) ~jobs:1
 
 let l = List.init ~len:100 ~f:ignore
 
-let%bench "many" [@indexed jobs = [1; 2; 4; 8]] =
+let%bench ("many"[@indexed jobs = [1; 2; 4; 8]]) =
   go ~jobs (Fiber.parallel_iter l ~f:run)

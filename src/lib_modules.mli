@@ -5,8 +5,7 @@ type t
 module Alias_module : sig
   type t = private
     { main_module_name : Module.Name.t
-    ; alias_module : Module.t
-    }
+    ; alias_module : Module.t }
 end
 
 val alias : t -> Alias_module.t option
@@ -31,8 +30,8 @@ val has_private_modules : t -> bool
 
 val public_modules : t -> Module.Name_map.t
 
-val make
-  :  Dune_file.Library.t
+val make :
+     Dune_file.Library.t
   -> dir:Path.t
   -> Module.Name_map.t
   -> virtual_modules:Module.Name_map.t

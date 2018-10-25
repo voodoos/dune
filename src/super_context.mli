@@ -13,26 +13,24 @@ open Dune_file
 module Dir_with_dune : sig
   type t =
     { src_dir : Path.t
-    ; ctx_dir : Path.t (** [_build/context-name/src_dir] *)
+    ; ctx_dir : Path.t  (** [_build/context-name/src_dir] *)
     ; stanzas : Stanzas.t
-    ; scope   : Scope.t
-    ; kind    : File_tree.Dune_file.Kind.t
-    }
+    ; scope : Scope.t
+    ; kind : File_tree.Dune_file.Kind.t }
 end
 
 module Installable : sig
   type t =
-    { dir    : Path.t
-    ; scope  : Scope.t
+    { dir : Path.t
+    ; scope : Scope.t
     ; stanza : Stanza.t
-    ; kind   : File_tree.Dune_file.Kind.t
-    }
+    ; kind : File_tree.Dune_file.Kind.t }
 end
 
 type t
 
-val create
-  :  context:Context.t
+val create :
+     context:Context.t
   -> ?host:t
   -> projects:Dune_project.t list
   -> file_tree:File_tree.t
@@ -42,18 +40,30 @@ val create
   -> build_system:Build_system.t
   -> t
 
-val context   : t -> Context.t
-val stanzas   : t -> Dir_with_dune.t list
+val context : t -> Context.t
+
+val stanzas : t -> Dir_with_dune.t list
+
 val stanzas_in : t -> dir:Path.t -> Dir_with_dune.t option
-val packages  : t -> Package.t Package.Name.Map.t
+
+val packages : t -> Package.t Package.Name.Map.t
+
 val libs_by_package : t -> (Package.t * Lib.Set.t) Package.Name.Map.t
+
 val file_tree : t -> File_tree.t
+
 val artifacts : t -> Artifacts.t
+
 val stanzas_to_consider_for_install : t -> Installable.t list
+
 val cxx_flags : t -> string list
+
 val build_dir : t -> Path.t
-val profile   : t -> string
+
+val profile : t -> string
+
 val host : t -> t
+
 val build_system : t -> Build_system.t
 
 (** All public libraries of the workspace *)
@@ -67,21 +77,18 @@ val internal_lib_names : t -> Lib_name.Set.t
 
 (** Compute the ocaml flags based on the directory environment and a
     buildable stanza *)
-val ocaml_flags
-  :  t
-  -> dir:Path.t
-  -> scope:Scope.t
-  -> Buildable.t
-  -> Ocaml_flags.t
+val ocaml_flags :
+  t -> dir:Path.t -> scope:Scope.t -> Buildable.t -> Ocaml_flags.t
 
 (** Dump a directory environment in a readable form *)
 val dump_env : t -> dir:Path.t -> (unit, Dune_lang.t list) Build.t
 
-val find_scope_by_dir  : t -> Path.t              -> Scope.t
+val find_scope_by_dir : t -> Path.t -> Scope.t
+
 val find_scope_by_name : t -> Dune_project.Name.t -> Scope.t
 
-val expand_vars
-  :  t
+val expand_vars :
+     t
   -> mode:'a String_with_vars.Mode.t
   -> scope:Scope.t
   -> dir:Path.t
@@ -89,24 +96,24 @@ val expand_vars
   -> String_with_vars.t
   -> 'a
 
-val expand_vars_string
-  :  t
+val expand_vars_string :
+     t
   -> scope:Scope.t
   -> dir:Path.t
   -> ?bindings:Pform.Map.t
   -> String_with_vars.t
   -> string
 
-val expand_vars_path
-  :  t
+val expand_vars_path :
+     t
   -> scope:Scope.t
   -> dir:Path.t
   -> ?bindings:Pform.Map.t
   -> String_with_vars.t
   -> Path.t
 
-val expand_and_eval_set
-  :  t
+val expand_and_eval_set :
+     t
   -> scope:Scope.t
   -> dir:Path.t
   -> ?bindings:Pform.Map.t
@@ -114,48 +121,39 @@ val expand_and_eval_set
   -> standard:(unit, string list) Build.t
   -> (unit, string list) Build.t
 
-val eval_blang
-  :  t
-  -> Blang.t
-  -> scope:Scope.t
-  -> dir:Path.t
-  -> bool
+val eval_blang : t -> Blang.t -> scope:Scope.t -> dir:Path.t -> bool
 
-val prefix_rules
-  :  t
-  -> (unit, unit) Build.t
-  -> f:(unit -> 'a)
-  -> 'a
+val prefix_rules : t -> (unit, unit) Build.t -> f:(unit -> 'a) -> 'a
 
-val add_rule
-  :  t
+val add_rule :
+     t
   -> ?sandbox:bool
   -> ?mode:Dune_file.Rule.Mode.t
   -> ?locks:Path.t list
   -> ?loc:Loc.t
   -> (unit, Action.t) Build.t
   -> unit
-val add_rule_get_targets
-  :  t
+
+val add_rule_get_targets :
+     t
   -> ?sandbox:bool
   -> ?mode:Dune_file.Rule.Mode.t
   -> ?locks:Path.t list
   -> ?loc:Loc.t
   -> (unit, Action.t) Build.t
   -> Path.t list
-val add_rules
-  :  t
-  -> ?sandbox:bool
-  -> (unit, Action.t) Build.t list
-  -> unit
-val add_alias_deps
-  :  t
+
+val add_rules : t -> ?sandbox:bool -> (unit, Action.t) Build.t list -> unit
+
+val add_alias_deps :
+     t
   -> Build_system.Alias.t
   -> ?dyn_deps:(unit, Path.Set.t) Build.t
   -> Path.Set.t
   -> unit
-val add_alias_action
-  :  t
+
+val add_alias_action :
+     t
   -> Build_system.Alias.t
   -> loc:Loc.t option
   -> ?locks:Path.t list
@@ -165,7 +163,9 @@ val add_alias_action
 
 (** See [Build_system for details] *)
 val eval_glob : t -> dir:Path.t -> Re.re -> string list
+
 val load_dir : t -> dir:Path.t -> unit
+
 val on_load_dir : t -> dir:Path.t -> f:(unit -> unit) -> unit
 
 val source_files : t -> src_path:Path.t -> String.Set.t
@@ -177,12 +177,8 @@ val source_files : t -> src_path:Path.t -> String.Set.t
 
     [hint] should tell the user what to install when the program is not found.
 *)
-val resolve_program
-  :  t
-  -> ?hint:string
-  -> loc:Loc.t option
-  -> string
-  -> Action.Prog.t
+val resolve_program :
+  t -> ?hint:string -> loc:Loc.t option -> string -> Action.Prog.t
 
 module Libs : sig
   (** Make sure all rules produces by [f] record the library dependencies for
@@ -193,12 +189,7 @@ module Libs : sig
       after this function has returned. Consider addin a type
       annotation to make sure this doesn't happen by mistake.
   *)
-  val with_lib_deps
-    :  t
-    -> Lib.Compile.t
-    -> dir:Path.t
-    -> f:(unit -> 'a)
-    -> 'a
+  val with_lib_deps : t -> Lib.Compile.t -> dir:Path.t -> f:(unit -> 'a) -> 'a
 
   (** Generate the rules for the [(select ...)] forms in library dependencies *)
   val gen_select_rules : t -> dir:Path.t -> Lib.Compile.t -> unit
@@ -207,15 +198,15 @@ end
 (** Interpret dependencies written in jbuild files *)
 module Deps : sig
   (** Evaluates to the actual list of dependencies, ignoring aliases *)
-  val interpret
-    :  t
+  val interpret :
+       t
     -> scope:Scope.t
     -> dir:Path.t
     -> Dep_conf.t list
     -> (unit, Path.t list) Build.t
 
-  val interpret_named
-    :  t
+  val interpret_named :
+       t
     -> scope:Scope.t
     -> dir:Path.t
     -> Dep_conf.t Bindings.t
@@ -227,11 +218,11 @@ module Action : sig
   type targets =
     | Static of Path.t list
     | Infer
-    | Alias (** This action is for an alias *)
+    | Alias  (** This action is for an alias *)
 
   (** The arrow takes as input the list of actual dependencies *)
-  val run
-    :  t
+  val run :
+       t
     -> loc:Loc.t
     -> bindings:Pform.Map.t
     -> dir:Path.t
@@ -246,7 +237,11 @@ module Action : sig
 end
 
 module Pkg_version : sig
-  val set : t -> Package.t -> (unit, string option) Build.t -> (unit, string option) Build.t
+  val set :
+       t
+    -> Package.t
+    -> (unit, string option) Build.t
+    -> (unit, string option) Build.t
 end
 
 module Scope_key : sig

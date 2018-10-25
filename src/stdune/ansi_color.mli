@@ -32,8 +32,7 @@ module Style : sig
   val escape_sequence : t list -> string
 end
 
-module Render : Pp.Renderer.S
-  with type Tag.t = Style.t list
+module Render : Pp.Renderer.S with type Tag.t = Style.t list
 
 (** Filter out escape sequences in a string *)
 val strip : string -> string

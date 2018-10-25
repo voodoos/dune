@@ -36,7 +36,7 @@ val get : Super_context.t -> dir:Path.t -> t
 
 type kind = private
   | Standalone
-  | Group_root of t list Lazy.t (** Sub-directories part of the group *)
+  | Group_root of t list Lazy.t  (** Sub-directories part of the group *)
   | Group_part of t
 
 val kind : t -> kind

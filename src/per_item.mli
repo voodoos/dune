@@ -16,10 +16,8 @@ module type S = sig
   val for_all : 'a -> 'a t
 
   (** Create a mapping from a list of bindings *)
-  val of_mapping
-    :  (key list * 'a) list
-    -> default:'a
-    -> ('a t, key * 'a * 'a) result
+  val of_mapping :
+    (key list * 'a) list -> default:'a -> ('a t, key * 'a * 'a) result
 
   (** Get the configuration for the given item *)
   val get : 'a t -> key -> 'a
@@ -30,7 +28,8 @@ module type S = sig
   val is_constant : _ t -> bool
 
   val map : 'a t -> f:('a -> 'b) -> 'b t
+
   val fold : 'a t -> init:'acc -> f:('a -> 'acc -> 'acc) -> 'acc
 end
 
-module Make(Key : Comparable.S) : S with type key = Key.t
+module Make (Key : Comparable.S) : S with type key = Key.t

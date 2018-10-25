@@ -1,6 +1,6 @@
 module Token : sig
   type t =
-    | Atom          of Atom.t
+    | Atom of Atom.t
     | Quoted_string of string
     | Lparen
     | Rparen
@@ -12,14 +12,14 @@ end
 type t = Lexing.lexbuf -> Token.t
 
 val token : t
+
 val jbuild_token : t
 
 module Error : sig
   type t =
-    { start   : Lexing.position
-    ; stop    : Lexing.position
-    ; message : string
-    }
+    { start : Lexing.position
+    ; stop : Lexing.position
+    ; message : string }
 end
 
 exception Error of Error.t

@@ -1,9 +1,11 @@
-open! Stdune
 (** Parsing of s-expressions.
 
     This library is internal to dune and guarantees no API stability.*)
+open! Stdune
 
-type syntax = Jbuild | Dune
+type syntax =
+  | Jbuild
+  | Dune
 
 module Atom : sig
   type t = private A of string [@@unboxed]
@@ -11,34 +13,40 @@ module Atom : sig
   val is_valid : t -> syntax -> bool
 
   val of_string : string -> t
+
   val to_string : t -> string
 
   val of_int : int -> t
+
   val of_float : float -> t
+
   val of_bool : bool -> t
+
   val of_int64 : Int64.t -> t
+
   val of_digest : Digest.t -> t
 end
 
 module Template : sig
-  type var_syntax = Dollar_brace | Dollar_paren | Percent
+  type var_syntax =
+    | Dollar_brace
+    | Dollar_paren
+    | Percent
 
   type var =
-    { loc: Loc.t
-    ; name: string
-    ; payload: string option
-    ; syntax: var_syntax
-    }
+    { loc : Loc.t
+    ; name : string
+    ; payload : string option
+    ; syntax : var_syntax }
 
   type part =
     | Text of string
     | Var of var
 
   type t =
-    { quoted: bool
-    ; parts: part list
-    ; loc: Loc.t
-    }
+    { quoted : bool
+    ; parts : part list
+    ; loc : Loc.t }
 
   val string_of_var : var -> string
 
@@ -54,9 +62,9 @@ type t =
   | List of t list
   | Template of Template.t
 
-val atom : string -> t
 (** [atom s] convert the string [s] to an Atom.
     @raise Invalid_argument if [s] does not satisfy [Atom.is_valid s]. *)
+val atom : string -> t
 
 val atom_or_quoted_string : string -> t
 
@@ -82,27 +90,31 @@ val pp_split_strings : Format.formatter -> t -> unit
 val prepare_formatter : Format.formatter -> unit
 
 (** Abstract syntax tree *)
-module Ast : sig
-  type sexp = t
-  type t =
-    | Atom of Loc.t * Atom.t
-    | Quoted_string of Loc.t * string
-    | Template of Template.t
-    | List of Loc.t * t list
+module Ast :
+  sig
+    type sexp = t
 
-  val atom_or_quoted_string : Loc.t -> string -> t
+    type t =
+      | Atom of Loc.t * Atom.t
+      | Quoted_string of Loc.t * string
+      | Template of Template.t
+      | List of Loc.t * t list
 
-  val loc : t -> Loc.t
+    val atom_or_quoted_string : Loc.t -> string -> t
 
-  val remove_locs : t -> sexp
-end with type sexp := t
+    val loc : t -> Loc.t
+
+    val remove_locs : t -> sexp
+  end
+  with type sexp := t
 
 val add_loc : t -> loc:Loc.t -> Ast.t
 
 module Parse_error : sig
   type t
 
-  val loc     : t -> Loc.t
+  val loc : t -> Loc.t
+
   val message : t -> string
 end
 
@@ -112,7 +124,7 @@ exception Parse_error of Parse_error.t
 module Lexer : sig
   module Token : sig
     type t =
-      | Atom          of Atom.t
+      | Atom of Atom.t
       | Quoted_string of string
       | Lparen
       | Rparen
@@ -124,52 +136,44 @@ module Lexer : sig
   type t = Lexing.lexbuf -> Token.t
 
   val token : t
+
   val jbuild_token : t
 end
 
 module Parser : sig
   module Mode : sig
     type 'a t =
-      | Single      : Ast.t t
-      | Many        : Ast.t list t
+      | Single : Ast.t t
+      | Many : Ast.t list t
       | Many_as_one : Ast.t t
   end
 
-  val parse
-    :  mode:'a Mode.t
-    -> ?lexer:Lexer.t
-    -> Lexing.lexbuf
-    -> 'a
+  val parse : mode:'a Mode.t -> ?lexer:Lexer.t -> Lexing.lexbuf -> 'a
 end
 
-val parse_string
-  :  fname:string
-  -> mode:'a Parser.Mode.t
-  -> ?lexer:Lexer.t
-  -> string
-  -> 'a
+val parse_string :
+  fname:string -> mode:'a Parser.Mode.t -> ?lexer:Lexer.t -> string -> 'a
 
-module Encoder : sig
-  type sexp = t
-  include Sexp_intf.Combinators with type 'a t = 'a -> t
+module Encoder :
+  sig
+    type sexp = t
 
-  val record : (string * sexp) list -> sexp
+    include Sexp_intf.Combinators with type 'a t = 'a -> t
 
-  type field
+    val record : (string * sexp) list -> sexp
 
-  val field
-    :  string
-    -> 'a t
-    -> ?equal:('a -> 'a -> bool)
-    -> ?default:'a
-    -> 'a
-    -> field
-  val field_o : string -> 'a t-> 'a option -> field
+    type field
 
-  val record_fields : field list t
+    val field :
+      string -> 'a t -> ?equal:('a -> 'a -> bool) -> ?default:'a -> 'a -> field
 
-  val unknown : _ t
-end with type sexp := t
+    val field_o : string -> 'a t -> 'a option -> field
+
+    val record_fields : field list t
+
+    val unknown : _ t
+  end
+  with type sexp := t
 
 module Decoder : sig
   type ast = Ast.t =
@@ -179,9 +183,8 @@ module Decoder : sig
     | List of Loc.t * ast list
 
   type hint =
-    { on: string
-    ; candidates: string list
-    }
+    { on : string
+    ; candidates : string list }
 
   exception Decoder of Loc.t * string * hint option
 
@@ -209,9 +212,11 @@ module Decoder : sig
   type ('a, 'kind) parser
 
   type values
+
   type fields
 
-  type 'a t             = ('a, values) parser
+  type 'a t = ('a, values) parser
+
   type 'a fields_parser = ('a, fields) parser
 
   (** [parse parser context sexp] parse a S-expression using the
@@ -221,16 +226,24 @@ module Decoder : sig
   val parse : 'a t -> Univ_map.t -> ast -> 'a
 
   val return : 'a -> ('a, _) parser
-  val (>>=) : ('a, 'k) parser -> ('a -> ('b, 'k) parser) -> ('b, 'k) parser
-  val (>>|) : ('a, 'k) parser -> ('a -> 'b) -> ('b, 'k) parser
-  val (>>>) : (unit, 'k) parser -> ('a, 'k) parser -> ('a, 'k) parser
+
+  val ( >>= ) : ('a, 'k) parser -> ('a -> ('b, 'k) parser) -> ('b, 'k) parser
+
+  val ( >>| ) : ('a, 'k) parser -> ('a -> 'b) -> ('b, 'k) parser
+
+  val ( >>> ) : (unit, 'k) parser -> ('a, 'k) parser -> ('a, 'k) parser
+
   val map : ('a, 'k) parser -> f:('a -> 'b) -> ('b, 'k) parser
+
   val try_ : ('a, 'k) parser -> (exn -> ('a, 'k) parser) -> ('a, 'k) parser
 
   (** Access to the context *)
   val get : 'a Univ_map.Key.t -> ('a option, _) parser
+
   val set : 'a Univ_map.Key.t -> 'a -> ('b, 'k) parser -> ('b, 'k) parser
+
   val get_all : (Univ_map.t, _) parser
+
   val set_many : Univ_map.t -> ('a, 'k) parser -> ('a, 'k) parser
 
   (** Return the location of the list currently being parsed. *)
@@ -238,21 +251,17 @@ module Decoder : sig
 
   (** End of sequence condition. Uses [then_] if there are no more
       S-expressions to parse, [else_] otherwise. *)
-  val if_eos : then_:('a, 'b) parser -> else_:('a, 'b) parser -> ('a, 'b) parser
+  val if_eos :
+    then_:('a, 'b) parser -> else_:('a, 'b) parser -> ('a, 'b) parser
 
   (** If the next element of the sequence is a list, parse it with
       [then_], otherwise parse it with [else_]. *)
-  val if_list
-    :  then_:'a t
-    -> else_:'a t
-    -> 'a t
+  val if_list : then_:'a t -> else_:'a t -> 'a t
 
   (** If the next element of the sequence is of the form [(:<name>
       ...)], use [then_] to parse [...]. Otherwise use [else_]. *)
-  val if_paren_colon_form
-    :  then_:(Loc.t * string -> 'a) t
-    -> else_:'a t
-    -> 'a t
+  val if_paren_colon_form :
+    then_:(Loc.t * string -> 'a) t -> else_:'a t -> 'a t
 
   (** Expect the next element to be the following atom. *)
   val keyword : string -> unit t
@@ -261,18 +270,12 @@ module Decoder : sig
      the next element of the input sequence. If it is an atom equal to
      one of [k1], [k2], ... then the corresponding parser is used to
      parse the rest of the sequence. Other [fallback] is used. *)
-  val match_keyword
-    :  (string * 'a t) list
-    -> fallback:'a t
-    -> 'a t
+  val match_keyword : (string * 'a t) list -> fallback:'a t -> 'a t
 
   (** Use [before] to parse elements until the keyword is
       reached. Then use [after] to parse the rest. *)
-  val until_keyword
-    :  string
-    -> before:'a t
-    -> after:'b t
-    -> ('a list * 'b option) t
+  val until_keyword :
+    string -> before:'a t -> after:'b t -> ('a list * 'b option) t
 
   (** What is currently being parsed. The second argument is the atom
       at the beginnig of the list when inside a [sum ...] or [field
@@ -280,6 +283,7 @@ module Decoder : sig
   type kind =
     | Values of Loc.t * string option
     | Fields of Loc.t * string option
+
   val kind : (kind, _) parser
 
   (** [repeat t] use [t] to consume all remaning elements of the input
@@ -327,22 +331,13 @@ module Decoder : sig
 
   val fix : ('a t -> 'a t) -> 'a t
 
-  val of_sexp_error
-    :  ?hint:hint
-    -> Loc.t
-    -> string
-    -> _
-  val of_sexp_errorf
-    :  ?hint:hint
-    -> Loc.t
-    -> ('a, unit, string, 'b) format4
-    -> 'a
+  val of_sexp_error : ?hint:hint -> Loc.t -> string -> _
 
-  val no_templates
-    : ?hint:hint
-    -> Loc.t
-    -> ('a, unit, string, 'b) format4
-    -> 'a
+  val of_sexp_errorf :
+    ?hint:hint -> Loc.t -> ('a, unit, string, 'b) format4 -> 'a
+
+  val no_templates :
+    ?hint:hint -> Loc.t -> ('a, unit, string, 'b) format4 -> 'a
 
   val located : ('a, 'k) parser -> (Loc.t * 'a, 'k) parser
 
@@ -356,42 +351,38 @@ module Decoder : sig
 
   (** Check the result of a list parser, and raise a properly located
       error in case of failure. *)
-  val map_validate
-    :  'a fields_parser
-    -> f:('a -> ('b, string) Result.t)
-    -> 'b fields_parser
+  val map_validate :
+    'a fields_parser -> f:('a -> ('b, string) Result.t) -> 'b fields_parser
 
   (** {3 Parsing record fields} *)
 
-  val field
-    :  string
+  val field :
+       string
     -> ?default:'a
     -> ?on_dup:(Univ_map.t -> string -> Ast.t list -> unit)
     -> 'a t
     -> 'a fields_parser
-  val field_o
-    :  string
+
+  val field_o :
+       string
     -> ?on_dup:(Univ_map.t -> string -> Ast.t list -> unit)
     -> 'a t
     -> 'a option fields_parser
 
-  val field_b
-    :  ?check:(unit t)
+  val field_b :
+       ?check:unit t
     -> ?on_dup:(Univ_map.t -> string -> Ast.t list -> unit)
     -> string
     -> bool fields_parser
 
-  val field_o_b
-    :  ?check:(unit t)
+  val field_o_b :
+       ?check:unit t
     -> ?on_dup:(Univ_map.t -> string -> Ast.t list -> unit)
     -> string
     -> bool option fields_parser
 
   (** A field that can appear multiple times *)
-  val multi_field
-    :  string
-    -> 'a t
-    -> 'a list fields_parser
+  val multi_field : string -> 'a t -> 'a list fields_parser
 
   (** Default value for [on_dup]. It fails with an appropriate error
       message. *)
@@ -399,13 +390,16 @@ module Decoder : sig
 
   module Let_syntax : sig
     val ( $ ) : ('a -> 'b, 'k) parser -> ('a, 'k) parser -> ('b, 'k) parser
+
     val const : 'a -> ('a, _) parser
   end
 end
 
 module type Conv = sig
   type t
+
   val decode : t Decoder.t
+
   val encode : t Encoder.t
 end
 

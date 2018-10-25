@@ -1,11 +1,15 @@
 open! Stdune
 
 module Name = struct
-  module T = Interned.Make(struct
-      let initial_size = 16
-      let resize_policy = Interned.Conservative
-      let order = Interned.Natural
-    end)()
+  module T =
+    Interned.Make (struct
+        let initial_size = 16
+
+        let resize_policy = Interned.Conservative
+
+        let order = Interned.Natural
+      end)
+      ()
 
   include T
 
@@ -21,15 +25,13 @@ module Name = struct
 
   let decode = Dune_lang.Decoder.(map string ~f:of_string)
 
-  module Infix = Comparable.Operators(T)
+  module Infix = Comparable.Operators (T)
 end
 
-
 type t =
-  { name                   : Name.t
-  ; path                   : Path.t
-  ; version_from_opam_file : string option
-  }
+  { name : Name.t
+  ; path : Path.t
+  ; version_from_opam_file : string option }
 
 let opam_file t = Path.relative t.path (Name.opam_fn t.name)
 

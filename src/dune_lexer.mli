@@ -4,9 +4,8 @@ open! Stdune
 val is_script : Lexing.lexbuf -> bool
 
 type first_line =
-  { lang    : Loc.t * string
-  ; version : Loc.t * string
-  }
+  { lang : Loc.t * string
+  ; version : Loc.t * string }
 
 (** Parse the first line of a versioned file. *)
 val first_line : Lexing.lexbuf -> first_line

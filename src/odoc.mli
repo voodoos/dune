@@ -4,10 +4,11 @@ open! Stdune
 open Import
 open Dune_file
 
-module Gen (S : sig val sctx : Super_context.t end) : sig
-
-  val setup_library_odoc_rules
-    :  Library.t
+module Gen (S : sig
+  val sctx : Super_context.t
+end) : sig
+  val setup_library_odoc_rules :
+       Library.t
     -> scope:Scope.t
     -> modules:Module.t Module.Name.Map.t
     -> requires:Lib.t list Or_exn.t

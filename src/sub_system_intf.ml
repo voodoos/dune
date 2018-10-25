@@ -11,8 +11,8 @@ module type S = sig
   type t
 
   (** Create an instance of the sub-system *)
-  val instantiate
-    :  resolve:(Loc.t * Lib_name.t -> Lib.t Or_exn.t)
+  val instantiate :
+       resolve:(Loc.t * Lib_name.t -> Lib.t Or_exn.t)
     -> get:(loc:Loc.t -> Lib.t -> t option)
     -> Lib.t
     -> Info.t
@@ -53,6 +53,7 @@ module type Registered_backend = sig
       | Other of exn
 
     val to_exn : t -> loc:Loc.t -> exn
+
     val or_exn : ('a, t) result -> loc:Loc.t -> 'a Or_exn.t
   end
 
@@ -63,8 +64,8 @@ module type Registered_backend = sig
       allowed to have two different backend that are completely
       independent, i.e. none of them is in the transitive closure of
       the other one. *)
-  val select_extensible_backends
-    :  ?written_by_user:t list
+  val select_extensible_backends :
+       ?written_by_user:t list
     -> extends:(t -> t list Or_exn.t)
     -> Lib.t list
     -> (t list, Selection_error.t) result
@@ -73,8 +74,8 @@ module type Registered_backend = sig
       by scanning the dependencies.
 
       A backend can replace other backends *)
-  val select_replaceable_backend
-    :  ?written_by_user:t list
+  val select_replaceable_backend :
+       ?written_by_user:t list
     -> replaces:(t -> t list Or_exn.t)
     -> Lib.t list
     -> (t, Selection_error.t) result
@@ -83,13 +84,12 @@ end
 (* This is probably what we'll give to plugins *)
 module Library_compilation_context = struct
   type t =
-    { super_context  : Super_context.t
-    ; dir            : Path.t
-    ; stanza         : Dune_file.Library.t
-    ; scope          : Scope.t
+    { super_context : Super_context.t
+    ; dir : Path.t
+    ; stanza : Dune_file.Library.t
+    ; scope : Scope.t
     ; source_modules : Module.t Module.Name.Map.t
-    ; compile_info   : Lib.Compile.t
-    }
+    ; compile_info : Lib.Compile.t }
 end
 
 (** An end-point, for users of the systems *)
@@ -108,8 +108,8 @@ module type End_point = sig
     val backends : t -> (Loc.t * Lib_name.t) list option
   end
 
-  val gen_rules
-    :  Library_compilation_context.t
+  val gen_rules :
+       Library_compilation_context.t
     -> info:Info.t
     -> backends:Backend.t list
     -> unit

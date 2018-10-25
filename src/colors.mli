@@ -33,5 +33,4 @@ module Style : sig
     | Debug
 end
 
-module Render : Pp.Renderer.S
-  with type Tag.t = Style.t
+module Render : Pp.Renderer.S with type Tag.t = Style.t

@@ -19,10 +19,9 @@ module Name : sig
 end
 
 type t =
-  { name                   : Name.t
-  ; path                   : Path.t
-  ; version_from_opam_file : string option
-  }
+  { name : Name.t
+  ; path : Path.t
+  ; version_from_opam_file : string option }
 
 val opam_file : t -> Path.t
 

@@ -15,11 +15,8 @@ type hook =
 
 (** Create a new build system. [file_tree] represent the source
     tree. *)
-val create
-  :  contexts:Context.t list
-  -> file_tree:File_tree.t
-  -> hook:(hook -> unit)
-  -> t
+val create :
+  contexts:Context.t list -> file_tree:File_tree.t -> hook:(hook -> unit) -> t
 
 type extra_sub_directories_to_keep =
   | All
@@ -37,8 +34,8 @@ type extra_sub_directories_to_keep =
 
     It is expected that [f] only generate rules whose targets are
     descendant of [dir]. *)
-val set_rule_generators
-  :  t
+val set_rule_generators :
+     t
   -> (dir:Path.t -> string list -> extra_sub_directories_to_keep) String.Map.t
   -> unit
 
@@ -90,102 +87,107 @@ val set_package : t -> Path.t -> Package.Name.t -> unit
 (** Assuming [files] is the list of files in [_build/install] that
     belong to package [pkg], [package_deps t pkg files] is the set of
     direct package dependencies of [package]. *)
-val package_deps
-  :  t
-  -> Package.Name.t
-  -> Path.Set.t
-  -> (unit, Package.Name.Set.t) Build.t
+val package_deps :
+  t -> Package.Name.t -> Path.Set.t -> (unit, Package.Name.Set.t) Build.t
 
 (** {2 Aliases} *)
 
-module Alias : sig
-  type build_system = t
-  type t
+module Alias :
+  sig
+    type build_system = t
 
-  val pp : t Fmt.t
+    type t
 
-  val make : string -> dir:Path.t -> t
+    val pp : t Fmt.t
 
-  val of_user_written_path : loc:Loc.t -> Path.t -> t
+    val make : string -> dir:Path.t -> t
 
-  (** The following always holds:
+    val of_user_written_path : loc:Loc.t -> Path.t -> t
+
+    (** The following always holds:
 
       {[
         make (name t) ~dir:(dir t) = t
       ]}
   *)
-  val name : t -> string
-  val dir  : t -> Path.t
+    val name : t -> string
 
-  val fully_qualified_name : t -> Path.t
+    val dir : t -> Path.t
 
-  val default     : dir:Path.t -> t
-  val runtest     : dir:Path.t -> t
-  val install     : dir:Path.t -> t
-  val doc         : dir:Path.t -> t
-  val private_doc : dir:Path.t -> t
-  val lint        : dir:Path.t -> t
-  val all         : dir:Path.t -> t
-  val check       : dir:Path.t -> t
+    val fully_qualified_name : t -> Path.t
 
-  (** Alias for all the files in [_build/install] that belong to this
+    val default : dir:Path.t -> t
+
+    val runtest : dir:Path.t -> t
+
+    val install : dir:Path.t -> t
+
+    val doc : dir:Path.t -> t
+
+    val private_doc : dir:Path.t -> t
+
+    val lint : dir:Path.t -> t
+
+    val all : dir:Path.t -> t
+
+    val check : dir:Path.t -> t
+
+    (** Alias for all the files in [_build/install] that belong to this
       package *)
-  val package_install : context:Context.t -> pkg:Package.Name.t -> t
+    val package_install : context:Context.t -> pkg:Package.Name.t -> t
 
-  (** Return the underlying stamp file *)
-  val stamp_file : t -> Path.t
+    (** Return the underlying stamp file *)
+    val stamp_file : t -> Path.t
 
-  (** [dep t = Build.path (stamp_file t)] *)
-  val dep : t -> ('a, 'a) Build.t
+    (** [dep t = Build.path (stamp_file t)] *)
+    val dep : t -> ('a, 'a) Build.t
 
-  (** Implements [@@alias] on the command line *)
-  val dep_multi_contexts
-    :  dir:Path.t
-    -> name:string
-    -> file_tree:File_tree.t
-    -> contexts:string list
-    -> (unit, unit) Build.t
+    (** Implements [@@alias] on the command line *)
+    val dep_multi_contexts :
+         dir:Path.t
+      -> name:string
+      -> file_tree:File_tree.t
+      -> contexts:string list
+      -> (unit, unit) Build.t
 
-  (** Implements [(alias_rec ...)] in dependency specification *)
-  val dep_rec
-    :  t
-    -> loc:Loc.t
-    -> file_tree:File_tree.t
-    -> (unit, unit) Build.t
+    (** Implements [(alias_rec ...)] in dependency specification *)
+    val dep_rec :
+      t -> loc:Loc.t -> file_tree:File_tree.t -> (unit, unit) Build.t
 
-  (** Implements [@alias] on the command line *)
-  val dep_rec_multi_contexts
-    :  dir:Path.t
-    -> name:string
-    -> file_tree:File_tree.t
-    -> contexts:string list
-    -> (unit, unit) Build.t
+    (** Implements [@alias] on the command line *)
+    val dep_rec_multi_contexts :
+         dir:Path.t
+      -> name:string
+      -> file_tree:File_tree.t
+      -> contexts:string list
+      -> (unit, unit) Build.t
 
-  (** [add_deps store alias ?dyn_deps deps] arrange things so that all
+    (** [add_deps store alias ?dyn_deps deps] arrange things so that all
       [dyn_deps] and [deps] are built as part of the build of alias
       [alias]. *)
-  val add_deps
-    :  build_system
-    -> t
-    -> ?dyn_deps:(unit, Path.Set.t) Build.t
-    -> Path.Set.t
-    -> unit
+    val add_deps :
+         build_system
+      -> t
+      -> ?dyn_deps:(unit, Path.Set.t) Build.t
+      -> Path.Set.t
+      -> unit
 
-  (** [add_action store alias ~stamp action] arrange things so that
+    (** [add_action store alias ~stamp action] arrange things so that
       [action] is executed as part of the build of alias
       [alias]. [stamp] is any S-expression that is unique and
       persistent S-expression.
   *)
-  val add_action
-    :  build_system
-    -> t
-    -> context:Context.t
-    -> loc:Loc.t option
-    -> ?locks:Path.t list
-    -> stamp:_
-    -> (unit, Action.t) Build.t
-    -> unit
-end with type build_system := t
+    val add_action :
+         build_system
+      -> t
+      -> context:Context.t
+      -> loc:Loc.t option
+      -> ?locks:Path.t list
+      -> stamp:_
+      -> (unit, Action.t) Build.t
+      -> unit
+  end
+  with type build_system := t
 
 (** {1 Building} *)
 
@@ -193,10 +195,7 @@ end with type build_system := t
     callback. *)
 
 (** Do the actual build *)
-val do_build
-  :  t
-  -> request:(unit, 'a) Build.t
-  -> 'a Fiber.t
+val do_build : t -> request:(unit, 'a) Build.t -> 'a Fiber.t
 
 (** {2 Other queries} *)
 
@@ -207,26 +206,20 @@ val is_target : t -> Path.t -> bool
 
 (** Return all the library dependencies (as written by the user)
    needed to build this request *)
-val all_lib_deps
-  :  t
-  -> request:(unit, unit) Build.t
-  -> Lib_deps_info.t Path.Map.t
+val all_lib_deps :
+  t -> request:(unit, unit) Build.t -> Lib_deps_info.t Path.Map.t
 
 (** Return all the library dependencies required to build this
    request, by context name *)
-val all_lib_deps_by_context
-  :  t
-  -> request:(unit, unit) Build.t
-  -> Lib_deps_info.t String.Map.t
+val all_lib_deps_by_context :
+  t -> request:(unit, unit) Build.t -> Lib_deps_info.t String.Map.t
 
 (** List of all buildable targets *)
 val all_targets : t -> Path.t list
 
 (** Return the set of files that were created in the source tree and
     needs to be deleted *)
-val files_in_source_tree_to_delete
-  :  unit
-  -> Path.Set.t
+val files_in_source_tree_to_delete : unit -> Path.Set.t
 
 (** {2 Build rules} *)
 
@@ -234,25 +227,26 @@ val files_in_source_tree_to_delete
 module Rule : sig
   module Id : sig
     type t
+
     val to_int : t -> int
+
     val compare : t -> t -> Ordering.t
   end
 
   type t =
-    { id      : Id.t
-    ; dir     : Path.t
-    ; deps    : Deps.t
+    { id : Id.t
+    ; dir : Path.t
+    ; deps : Deps.t
     ; targets : Path.Set.t
     ; context : Context.t option
-    ; action  : Action.t
-    }
+    ; action : Action.t }
 end
 
 (** Return the list of rules used to build the given targets. If
     [recursive] is [true], return all the rules needed to build the
     given targets and their transitive dependencies. *)
-val build_rules
-  :  ?recursive:bool (* default false *)
+val build_rules :
+     ?recursive:bool (* default false *)
   -> t
   -> request:(unit, unit) Build.t
   -> Rule.t list Fiber.t

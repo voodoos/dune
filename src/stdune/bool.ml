@@ -1,9 +1,8 @@
 type t = bool
 
 let compare x y =
-  match x, y with
-  | true, true
-  | false, false -> Ordering.Eq
+  match (x, y) with
+  | true, true | false, false -> Ordering.Eq
   | true, false -> Gt
   | false, true -> Lt
 

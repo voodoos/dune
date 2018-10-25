@@ -12,17 +12,14 @@ module Entry = struct
     | Path p -> Utils.describe_target p
     | Alias p -> "alias " ^ Utils.describe_target p
     | Library (path, lib_name) ->
-      Format.asprintf "library %a in %s" Lib_name.pp_quoted lib_name
-        (Path.to_string_maybe_quoted path)
+        Format.asprintf "library %a in %s" Lib_name.pp_quoted lib_name
+          (Path.to_string_maybe_quoted path)
     | Preprocess l ->
-      Sexp.to_string
-        (List [ Atom "pps"
-              ; Sexp.Encoder.(list Lib_name.to_sexp) l])
-    | Loc loc ->
-      Loc.to_file_colon_line loc
+        Sexp.to_string
+          (List [Atom "pps"; Sexp.Encoder.(list Lib_name.to_sexp) l])
+    | Loc loc -> Loc.to_file_colon_line loc
 
-  let pp ppf x =
-    Format.pp_print_string ppf (to_string x)
+  let pp ppf x = Format.pp_print_string ppf (to_string x)
 end
 
 module Entries = struct
@@ -30,9 +27,8 @@ module Entries = struct
 
   let pp ppf t =
     Format.fprintf ppf "@[<v>%a@]"
-      (Format.pp_print_list
-         (fun ppf x ->
-            Format.fprintf ppf "-> required by %a" Entry.pp x))
+      (Format.pp_print_list (fun ppf x ->
+           Format.fprintf ppf "-> required by %a" Entry.pp x ))
       t
 end
 
@@ -52,4 +48,4 @@ let unwrap_exn = function
 let () =
   Printexc.register_printer (function
     | E (exn, _) -> Some (Printexc.to_string exn)
-    | _ -> None)
+    | _ -> None )

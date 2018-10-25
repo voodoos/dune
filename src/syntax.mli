@@ -20,23 +20,18 @@ module Version : sig
   val can_read : parser_version:t -> data_version:t -> bool
 
   val compare : t -> t -> Ordering.t
+
   module Infix : Comparable.OPS with type t = t
 end
 
 type t
 
 module Error : sig
-  val since      : Loc.t -> t -> Version.t -> what:string -> _
+  val since : Loc.t -> t -> Version.t -> what:string -> _
 
   val renamed_in : Loc.t -> t -> Version.t -> what:string -> to_:string -> _
 
-  val deleted_in
-    :  Loc.t
-    -> t
-    -> ?repl:string
-    -> Version.t
-    -> what:string
-    -> _
+  val deleted_in : Loc.t -> t -> ?repl:string -> Version.t -> what:string -> _
 end
 
 (** [create ~name ~desc supported_versions] defines a new
@@ -63,19 +58,20 @@ val deleted_in : t -> Version.t -> (unit, _) Dune_lang.Decoder.parser
 
 (** Indicate the field/constructor being parsed was renamed in the
     given version *)
-val renamed_in : t -> Version.t -> to_:string ->  (unit, _) Dune_lang.Decoder.parser
+val renamed_in :
+  t -> Version.t -> to_:string -> (unit, _) Dune_lang.Decoder.parser
 
 (** Indicate the field/constructor being parsed was introduced in the
     given version.
     When [fatal] is false, simply emit a warning instead of error. [fatal] defaults
     to true.
 *)
-val since : ?fatal:bool -> t -> Version.t ->  (unit, _) Dune_lang.Decoder.parser
+val since : ?fatal:bool -> t -> Version.t -> (unit, _) Dune_lang.Decoder.parser
 
 (** {2 Low-level functions} *)
 
-val set
-  :  t
+val set :
+     t
   -> Version.t
   -> ('a, 'k) Dune_lang.Decoder.parser
   -> ('a, 'k) Dune_lang.Decoder.parser

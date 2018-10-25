@@ -10,10 +10,9 @@ module Op = struct
     | Neq
 
   let eval t (x : Ordering.t) =
-    match t, x with
-    | (Eq  | Gte | Lte) , Eq
-    | (Neq | Lt  | Lte) , Lt
-    | (Neq | Gt  | Gte) , Gt -> true
+    match (t, x) with
+    | (Eq | Gte | Lte), Eq | (Neq | Lt | Lte), Lt | (Neq | Gt | Gte), Gt ->
+        true
     | _, _ -> false
 end
 
@@ -29,17 +28,16 @@ let true_ = Const true
 let rec eval t ~dir ~f =
   match t with
   | Const x -> x
-  | Expr sw ->
-    begin match String_with_vars.expand sw ~mode:Single ~dir ~f with
+  | Expr sw -> (
+    match String_with_vars.expand sw ~mode:Single ~dir ~f with
     | String "true" -> true
     | String "false" -> false
     | _ ->
-      let loc = String_with_vars.loc sw in
-      Errors.fail loc "This value must be either true or false"
-    end
+        let loc = String_with_vars.loc sw in
+        Errors.fail loc "This value must be either true or false" )
   | And xs -> List.for_all ~f:(eval ~f ~dir) xs
   | Or xs -> List.exists ~f:(eval ~f ~dir) xs
   | Compare (op, x, y) ->
-    let x = String_with_vars.expand x ~mode:Many ~dir ~f
-    and y = String_with_vars.expand y ~mode:Many ~dir ~f in
-    Op.eval op (Value.L.compare_vals ~dir x y)
+      let x = String_with_vars.expand x ~mode:Many ~dir ~f
+      and y = String_with_vars.expand y ~mode:Many ~dir ~f in
+      Op.eval op (Value.L.compare_vals ~dir x y)

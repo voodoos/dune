@@ -17,57 +17,49 @@ val describe_target : Path.t -> string
 
 (** Return the directory where the object files for the given
     library should be stored. *)
-val library_object_directory
-  :  dir:Path.t
-  -> Lib_name.Local.t
-  -> Path.t
+val library_object_directory : dir:Path.t -> Lib_name.Local.t -> Path.t
 
 val library_private_obj_dir : obj_dir:Path.t -> Path.t
 
 (** Return the directory where the object files for the given
     executable should be stored. *)
-val executable_object_directory
-  :  dir:Path.t
-  -> string
-  -> Path.t
+val executable_object_directory : dir:Path.t -> string -> Path.t
 
 type target_kind =
   | Regular of string (* build context *) * Path.t
-  | Alias   of string (* build context *) * Path.t
+  | Alias of string (* build context *) * Path.t
   | Other of Path.t
 
 (** Return the name of an alias from its stamp file *)
 val analyse_target : Path.t -> target_kind
 
 (** Raise an error about a program not found in the PATH or in the tree *)
-val program_not_found
-  :  ?context:string
-  -> ?hint:string
-  -> loc:Loc.t option
-  -> string
-  -> _
+val program_not_found :
+  ?context:string -> ?hint:string -> loc:Loc.t option -> string -> _
 
 (** Raise an error about a library not found *)
 val library_not_found : ?context:string -> ?hint:string -> string -> _
 
-val install_file
-  :  package:Package.Name.t
-  -> findlib_toolchain:string option
-  -> string
+val install_file :
+  package:Package.Name.t -> findlib_toolchain:string option -> string
 
 (** Produce a line directive *)
 val line_directive : filename:string -> line_number:int -> string
 
 module type Persistent_desc = sig
   type t
+
   val name : string
+
   val version : int
 end
 
 (** Persistent value stored on disk *)
-module Persistent(D : Persistent_desc) : sig
+module Persistent (D : Persistent_desc) : sig
   val to_out_string : D.t -> string
+
   val dump : Path.t -> D.t -> unit
+
   val load : Path.t -> D.t option
 end
 
@@ -84,5 +76,6 @@ module Cached_digest : sig
 
   (** Dump/load the cache to/from the disk *)
   val dump : unit -> unit
+
   val load : unit -> unit
 end

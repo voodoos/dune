@@ -6,7 +6,6 @@ module type S = sig
   type data
 
   module Lang : sig
-
     (** [register id data] registers a new language. Users will select
         this language by writing:
 
@@ -17,10 +16,9 @@ module type S = sig
 
     module Instance : sig
       type t =
-        { syntax  : Syntax.t
-        ; data    : data
-        ; version : Syntax.Version.t
-        }
+        { syntax : Syntax.t
+        ; data : data
+        ; version : Syntax.Version.t }
     end
 
     (** Return the latest version of a language. *)
@@ -34,14 +32,16 @@ module type S = sig
 
   (** Parse the contents of a versioned file after the first line has
       been read. *)
-  val parse_contents
-    :  Lexing.lexbuf
+  val parse_contents :
+       Lexing.lexbuf
     -> Dune_lexer.first_line
     -> f:(Lang.Instance.t -> 'a Dune_lang.Decoder.t)
     -> 'a
 end
 
-module Make(Data : sig type t end) : S with type data := Data.t
+module Make (Data : sig
+  type t
+end) : S with type data := Data.t
 
 (** Raise with an informative message when seeing a (lang ...) field. *)
 val no_more_lang : unit Dune_lang.Decoder.fields_parser

@@ -1,5 +1,5 @@
-open! Stdune
 (** Command line arguments specification *)
+open! Stdune
 
 (** This module implements a small DSL to specify the command line
     argument of a program as well as the dependencies and targets of
@@ -30,26 +30,29 @@ open! Import
     "src/foo.ml")] will translate to "../src/foo.ml" if the command is
     started from the "test" directory.  *)
 type 'a t =
-  | A        of string
-  | As       of string list
-  | S        of 'a t list
-  | Concat   of string * 'a t list (** Concatenation with a custom separator *)
-  | Dep      of Path.t (** A path that is a dependency *)
-  | Deps     of Path.t list
-  | Target   of Path.t
-  | Path     of Path.t
-  | Paths    of Path.t list
-  | Hidden_deps    of Path.t list
+  | A of string
+  | As of string list
+  | S of 'a t list
+  | Concat of string * 'a t list  (** Concatenation with a custom separator *)
+  | Dep of Path.t  (** A path that is a dependency *)
+  | Deps of Path.t list
+  | Target of Path.t
+  | Path of Path.t
+  | Paths of Path.t list
+  | Hidden_deps of Path.t list
   | Hidden_targets of Path.t list
-  (** Register dependencies but produce no argument *)
-  | Dyn      of ('a -> Nothing.t t)
+      (** Register dependencies but produce no argument *)
+  | Dyn of ('a -> Nothing.t t)
 
-val add_deps    : _ t list -> Path.Set.t -> Path.Set.t
+val add_deps : _ t list -> Path.Set.t -> Path.Set.t
+
 val add_targets : _ t list -> Path.t list -> Path.t list
-val expand      : dir:Path.t -> 'a t list -> 'a -> string list * Path.Set.t
+
+val expand : dir:Path.t -> 'a t list -> 'a -> string list * Path.Set.t
 
 (** [quote_args quote args] is [As \[quote; arg1; quote; arg2; ...\]] *)
 val quote_args : string -> string list -> _ t
 
 val of_result : 'a t Or_exn.t -> 'a t
+
 val of_result_map : 'a Or_exn.t -> f:('a -> 'b t) -> 'b t

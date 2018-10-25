@@ -3,15 +3,14 @@
 open! Stdune
 
 type status_line_config =
-  { message   : string option
-  ; show_jobs : bool
-  }
+  { message : string option
+  ; show_jobs : bool }
 
 (** [go ?log ?config ?gen_status_line fiber] runs the following fiber until it
     terminates. [gen_status_line] is used to print a status line when [config.display =
     Progress]. *)
-val go
-  :  ?log:Log.t
+val go :
+     ?log:Log.t
   -> ?config:Config.t
   -> ?gen_status_line:(unit -> status_line_config)
   -> 'a Fiber.t
@@ -23,8 +22,8 @@ val go
     If any source files change in the middle of iteration, it gets
     canceled, and [canceled] is called instead of [finally].
 *)
-val poll
-  :  ?log:Log.t
+val poll :
+     ?log:Log.t
   -> ?config:Config.t
   -> once:(unit -> unit Fiber.t)
   -> finally:(unit -> unit)

@@ -1,5 +1,5 @@
-open! Stdune
 (** Error reporting *)
+open! Stdune
 
 (** Captures the backtrace and report an error.
 
@@ -14,11 +14,11 @@ val report : exn -> unit
 type printer
 
 val make_printer :
-  ?backtrace:bool ->
-  ?hint:string ->
-  ?loc:Loc.t ->
-  (Format.formatter -> unit) ->
-  printer
+     ?backtrace:bool
+  -> ?hint:string
+  -> ?loc:Loc.t
+  -> (Format.formatter -> unit)
+  -> printer
 
 val set_loc : printer -> loc:Loc.t -> printer
 

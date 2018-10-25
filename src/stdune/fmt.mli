@@ -8,10 +8,12 @@ val string : string -> Format.formatter -> unit
 
 val text : string t
 
-val prefix
-  : (Format.formatter -> unit)
+val prefix :
+     (Format.formatter -> unit)
   -> (Format.formatter -> 'b -> 'c)
-  -> (Format.formatter -> 'b -> 'c)
+  -> Format.formatter
+  -> 'b
+  -> 'c
 
 val ocaml_list : 'a t -> 'a list t
 

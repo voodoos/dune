@@ -1,2 +1,5 @@
-type t = Dune | Jbuilder
+type t =
+  | Dune
+  | Jbuilder
+
 let t = Dune

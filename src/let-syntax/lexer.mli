@@ -1,9 +1,6 @@
 type t
 
-val create
-  :  output_fname:string
-  -> oc:out_channel
-  -> t
+val create : output_fname:string -> oc:out_channel -> t
 
 val apply : t -> fname:string -> unit
 

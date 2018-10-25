@@ -3,6 +3,7 @@ open Stdune
 type t
 
 val of_string_exn : loc:Loc.t option -> string -> t
+
 val to_string : t -> string
 
 include Dune_lang.Conv with type t := t
@@ -16,8 +17,10 @@ module Local : sig
     | Invalid
 
   val encode : t Dune_lang.Encoder.t
+
   val decode_loc : (Loc.t * result) Dune_lang.Decoder.t
-  val validate : (Loc.t * result) -> wrapped:bool -> t
+
+  val validate : Loc.t * result -> wrapped:bool -> t
 
   val to_sexp : t Sexp.Encoder.t
 
@@ -30,6 +33,7 @@ module Local : sig
   val invalid_message : string
 
   val pp_quoted : t Fmt.t
+
   val pp : t Fmt.t
 end
 
@@ -39,7 +43,7 @@ val pp : t Fmt.t
 
 val pp_quoted : t Fmt.t
 
-val of_local : (Loc.t * Local.t) -> t
+val of_local : Loc.t * Local.t -> t
 
 val to_local : t -> Local.result
 
@@ -50,8 +54,10 @@ val package_name : t -> Package.Name.t
 val root_lib : t -> t
 
 module Map : Map.S with type key = t
+
 module Set : sig
   include Set.S with type elt = t
+
   val to_string_list : t -> string list
 end
 
