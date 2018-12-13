@@ -160,8 +160,8 @@ let build_modules_map (d : _ Dir_with_dune.t) ~modules =
       match (stanza : Stanza.t) with
       | Library lib ->
         let obj_dir =
-          Obj_dir.make_local ~dir:d.ctx_dir (snd lib.name)
-            ~has_private_modules:(Option.is_some lib.private_modules)
+          Obj_dir.make_local ~dir:d.ctx_dir (snd lib.interface.name)
+            ~has_private_modules:(Option.is_some lib.interface.private_modules)
         in
         let modules =
           Modules_field_evaluator.eval ~modules
@@ -170,7 +170,7 @@ let build_modules_map (d : _ Dir_with_dune.t) ~modules =
             ~virtual_modules:lib.virtual_modules
             ~private_modules:(
               Option.value ~default:Ordered_set_lang.standard
-                lib.private_modules)
+                lib.interface.private_modules)
         in
         let (main_module_name, wrapped) =
          (* the common case are normal libs where this is all specified so we
@@ -181,7 +181,7 @@ let build_modules_map (d : _ Dir_with_dune.t) ~modules =
           | From _, This _ -> assert false
           | This mmn, This wrapped -> mmn, wrapped
           | From _, From _ ->
-            let name = (fst lib.name, Library.best_name lib) in
+            let name = (fst lib.interface.name, Library.best_name lib) in
             Result.ok_exn (
               let open Result.O in
               Lib.DB.resolve (Scope.libs scope) name >>= fun lib ->

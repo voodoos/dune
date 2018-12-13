@@ -374,7 +374,7 @@ module Gen(P : Params) = struct
                    ; src_dir = _
                    ; kind = dir_kind
                    } ->
-                let sub_dir = (Option.value_exn lib.public).sub_dir in
+                let sub_dir = (Option.value_exn lib.interface.public).sub_dir in
                 let dir_contents = Dir_contents.get sctx ~dir in
                 lib_install_files ~dir ~sub_dir lib ~scope
                   ~dir_kind ~dir_contents)

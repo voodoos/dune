@@ -116,7 +116,7 @@ let check_module_fields ~(lib : Dune_file.Library.t) ~virtual_modules
   in
   if private_virtual_modules <> [] then begin
     (* The loc here will never be none as we've some private modules *)
-    Errors.fail_opt (Option.bind lib.private_modules ~f:Ordered_set_lang.loc)
+    Errors.fail_opt (Option.bind lib.interface.private_modules ~f:Ordered_set_lang.loc)
       "These private modules cannot be private:\n%s"
       (module_list private_virtual_modules)
   end;
@@ -124,7 +124,7 @@ let check_module_fields ~(lib : Dune_file.Library.t) ~virtual_modules
     Errors.fail lib.buildable.loc
       "Library %a cannot implement %a because the following \
        modules lack an implementation:\n%s"
-      Lib_name.Local.pp (snd lib.name)
+      Lib_name.Local.pp (snd lib.interface.name)
       Lib_name.pp implements
       (module_list missing_modules)
   end;
@@ -235,7 +235,7 @@ let impl sctx ~dir ~(lib : Dune_file.Library.t) ~scope ~modules =
             ~obj_dir:(Obj_dir.obj_dir vlib_obj_dir) ~modules
         | External _ ->
           let impl_obj_dir =
-            Utils.library_object_directory ~dir (snd lib.name) in
+            Utils.library_object_directory ~dir (snd lib.interface.name) in
           let impl_cm_kind =
             let { Mode.Dict. byte; native = _ } = Lib.modes vlib in
             if byte then

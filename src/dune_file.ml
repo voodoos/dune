@@ -795,10 +795,63 @@ module Library = struct
     let field = field_o "wrapped" (located decode)
   end
 
+  module Interface = struct
+    type t =
+      { name                     : (Loc.t * Lib_name.Local.t)
+      ; public                   : Public_lib.t option
+      ; private_modules          : Ordered_set_lang.t option
+      ; synopsis                 : string option
+      }
+
+    let decode wrapped =
+      let%map name = field_o "name" Lib_name.Local.decode_loc
+      and public = Public_lib.public_name_field
+      and synopsis = field_o "synopsis" string
+      and private_modules =
+        field_o "private_modules" (
+          Syntax.since Stanza.syntax (1, 2)
+          >>= fun () -> Ordered_set_lang.decode)
+      and dune_version = Syntax.get_exn Stanza.syntax
+      and loc = loc
+      in
+      let name =
+        let open Syntax.Version.Infix in
+        match name, public with
+        | Some (loc, res), _ ->
+          let wrapped = Wrapped.value wrapped in
+          (loc, Lib_name.Local.validate (loc, res) ~wrapped)
+        | None, Some { name = (loc, name) ; _ }  ->
+          if dune_version >= (1, 1) then
+            match Lib_name.to_local name with
+            | Ok m -> (loc, m)
+            | Warn _ | Invalid ->
+              of_sexp_errorf loc
+                "%s.\n\
+                 Public library names don't have this restriction. \
+                 You can either change this public name to be a valid library \
+                 name or add a \"name\" field with a valid library name."
+                Lib_name.Local.invalid_message
+          else
+            of_sexp_error loc "name field cannot be omitted before version \
+                               1.1 of the dune language"
+        | None, None ->
+          of_sexp_error loc (
+            if dune_version >= (1, 1) then
+              "supply at least least one of name or public_name fields"
+            else
+              "name field is missing"
+          )
+      in
+      { name
+      ; public
+      ; private_modules
+      ; synopsis
+      }
+
+  end
+
   type t =
-    { name                     : (Loc.t * Lib_name.Local.t)
-    ; public                   : Public_lib.t option
-    ; synopsis                 : string option
+    { interface                : Interface.t
     ; install_c_headers        : string list
     ; ppx_runtime_libraries    : (Loc.t * Lib_name.t) list
     ; modes                    : Mode_conf.Set.t
@@ -821,17 +874,19 @@ module Library = struct
     ; dune_version             : Syntax.Version.t
     ; virtual_modules          : Ordered_set_lang.t option
     ; implements               : (Loc.t * Lib_name.t) option
-    ; private_modules          : Ordered_set_lang.t option
     ; stdlib                   : Stdlib.t option
     }
 
   let decode =
     record
-      (let%map buildable = Buildable.decode
-       and loc = loc
-       and name = field_o "name" Lib_name.Local.decode_loc
-       and public = Public_lib.public_name_field
-       and synopsis = field_o "synopsis" string
+      (Wrapped.field >>= fun wrapped ->
+       field_o "implements" (
+         Syntax.since Stanza.syntax (1, 7)
+         >>= fun () -> located Lib_name.decode)
+       >>= fun implements ->
+       let wrapped = Wrapped.make ~wrapped ~implements in
+       let%map buildable = Buildable.decode
+       and interface = Interface.decode wrapped
        and install_c_headers =
          field "install_c_headers" (list string) ~default:[]
        and ppx_runtime_libraries =
@@ -846,7 +901,6 @@ module Library = struct
          field "virtual_deps" (list (located Lib_name.decode)) ~default:[]
        and modes = field "modes" Mode_conf.Set.decode ~default:Mode_conf.Set.default
        and kind = field "kind" Lib_kind.decode ~default:Lib_kind.Normal
-       and wrapped = Wrapped.field
        and optional = field_b "optional"
        and self_build_stubs_archive =
          located (field "self_build_stubs_archive" (option string) ~default:None)
@@ -861,45 +915,8 @@ module Library = struct
          field_o "virtual_modules" (
            Syntax.since Stanza.syntax (1, 7)
            >>= fun () -> Ordered_set_lang.decode)
-       and implements =
-         field_o "implements" (
-           Syntax.since Stanza.syntax (1, 7)
-           >>= fun () -> located Lib_name.decode)
-       and private_modules =
-         field_o "private_modules" (
-           Syntax.since Stanza.syntax (1, 2)
-           >>= fun () -> Ordered_set_lang.decode)
        and stdlib =
          field_o "stdlib" (Syntax.since Stdlib.syntax (0, 1) >>> Stdlib.decode)
-       in
-       let wrapped = Wrapped.make ~wrapped ~implements in
-       let name =
-         let open Syntax.Version.Infix in
-         match name, public with
-         | Some (loc, res), _ ->
-           let wrapped = Wrapped.value wrapped in
-           (loc, Lib_name.Local.validate (loc, res) ~wrapped)
-         | None, Some { name = (loc, name) ; _ }  ->
-           if dune_version >= (1, 1) then
-             match Lib_name.to_local name with
-             | Ok m -> (loc, m)
-             | Warn _ | Invalid ->
-               of_sexp_errorf loc
-                 "%s.\n\
-                  Public library names don't have this restriction. \
-                  You can either change this public name to be a valid library \
-                  name or add a \"name\" field with a valid library name."
-                 Lib_name.Local.invalid_message
-           else
-             of_sexp_error loc "name field cannot be omitted before version \
-                                1.1 of the dune language"
-         | None, None ->
-           of_sexp_error loc (
-             if dune_version >= (1, 1) then
-               "supply at least least one of name or public_name fields"
-             else
-               "name field is missing"
-           )
        in
        Option.both virtual_modules implements
        |> Option.iter ~f:(fun (virtual_modules, (_, impl)) ->
@@ -925,9 +942,7 @@ module Library = struct
              "A library cannot use (self_build_stubs_archive ...) \
               and (%s ...) simultaneously." name
        in
-       { name
-       ; public
-       ; synopsis
+       { interface
        ; install_c_headers
        ; ppx_runtime_libraries
        ; modes
@@ -950,7 +965,6 @@ module Library = struct
        ; dune_version
        ; virtual_modules
        ; implements
-       ; private_modules
        ; stdlib
        })
 
@@ -962,7 +976,7 @@ module Library = struct
   let stubs_name t =
     let name =
       match t.self_build_stubs_archive with
-      | None -> Lib_name.Local.to_string (snd t.name)
+      | None -> Lib_name.Local.to_string (snd t.interface.name)
       | Some s -> s
     in
     name ^ "_stubs"
@@ -976,11 +990,11 @@ module Library = struct
     Path.relative dir (sprintf "dll%s%s" (stubs_name t) ext_dll)
 
   let archive t ~dir ~ext =
-    Path.relative dir (Lib_name.Local.to_string (snd t.name) ^ ext)
+    Path.relative dir (Lib_name.Local.to_string (snd t.interface.name) ^ ext)
 
   let best_name t =
-    match t.public with
-    | None -> Lib_name.of_local t.name
+    match t.interface.public with
+    | None -> Lib_name.of_local t.interface.name
     | Some p -> snd p.name
 
   let is_virtual t = Option.is_some t.virtual_modules
@@ -988,8 +1002,8 @@ module Library = struct
 
   let obj_dir ~dir t =
     Obj_dir.make_local ~dir
-      ~has_private_modules:(t.private_modules <> None)
-      (snd t.name)
+      ~has_private_modules:(Option.is_some t.interface.private_modules)
+      (snd t.interface.name)
 
   module Main_module_name = struct
     type t = Module.Name.t option Inherited.t
@@ -1002,7 +1016,7 @@ module Library = struct
     | None, From _ -> assert false (* cannot inherit for normal libs *)
     | None, This (Simple false) -> This None
     | None, This (Simple true | Yes_with_transition _) ->
-      This (Some (Module.Name.of_local_lib_name (snd t.name)))
+      This (Some (Module.Name.of_local_lib_name (snd t.interface.name)))
 
   let special_compiler_module t (m : Module.t) =
     match t.stdlib with
@@ -2031,7 +2045,7 @@ module Stanzas = struct
 end
 
 let stanza_package = function
-  | Library { public = Some { package; _ }; _ }
+  | Library { interface = { public = Some { package; _ }; _ }; _ }
   | Alias { package = Some package ;  _ }
   | Install { package; _ }
   | Documentation { package; _ }

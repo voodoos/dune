@@ -84,10 +84,10 @@ let user_written_deps t =
 
 let of_library_stanza ~dir ~has_native ~ext_lib ~ext_obj
       (conf : Dune_file.Library.t) =
-  let (_loc, lib_name) = conf.name in
+  let (_loc, lib_name) = conf.interface.name in
   let obj_dir =
     Obj_dir.make_local ~dir
-      ~has_private_modules:(conf.private_modules <> None) lib_name in
+      ~has_private_modules:(conf.interface.private_modules <> None) lib_name in
   let gen_archive_file ~dir ext =
     Path.relative dir (Lib_name.Local.to_string lib_name ^ ext) in
   let archive_file = gen_archive_file ~dir in
@@ -99,7 +99,7 @@ let of_library_stanza ~dir ~has_native ~ext_lib ~ext_obj
       ~f:(Path.relative dir)
   in
   let status =
-    match conf.public with
+    match conf.interface.public with
     | None   -> Status.Private (Dune_project.name conf.project)
     | Some p -> Public p.package
   in
@@ -159,7 +159,7 @@ let of_library_stanza ~dir ~has_native ~ext_lib ~ext_obj
   ; orig_src_dir = None
   ; obj_dir
   ; version  = None
-  ; synopsis = conf.synopsis
+  ; synopsis = conf.interface.synopsis
   ; archives
   ; plugins
   ; optional = conf.optional

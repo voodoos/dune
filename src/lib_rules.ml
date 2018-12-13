@@ -429,7 +429,7 @@ module Gen (P : Install_rules.Params) = struct
         ~preprocessor_deps:
           (SC.Deps.interpret sctx ~expander lib.buildable.preprocessor_deps)
         ~lint:lib.buildable.lint
-        ~lib_name:(Some (snd lib.name))
+        ~lib_name:(Some (snd lib.interface.name))
         ~dir_kind
     in
 
@@ -536,7 +536,7 @@ module Gen (P : Install_rules.Params) = struct
        ~requires:requires_compile
        ~flags
        ~preprocess:(Buildable.single_preprocess lib.buildable)
-       ~libname:(snd lib.name)
+       ~libname:(snd lib.interface.name)
        ~objs_dirs
     )
 
