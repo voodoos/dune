@@ -734,6 +734,7 @@ module Library = struct
     ; private_modules : Ordered_set_lang.t option
     ; stdlib : Ocaml_stdlib.t option
     ; special_builtin_support : Lib_info.Special_builtin_support.t option
+    ; link_time_code_gen : Lib_info.Link_time_code_gen.t option
     ; enabled_if : Blang.t
     }
 
@@ -804,6 +805,10 @@ module Library = struct
          field_o "special_builtin_support"
            ( Dune_lang.Syntax.since Stanza.syntax (1, 10)
            >>> Lib_info.Special_builtin_support.decode )
+       and+ link_time_code_gen =
+         field_o "link_time_code_gen"
+           ( Dune_lang.Syntax.since Stanza.syntax (2, 5) (* TODO 2.7 ou 2.6 *)
+           >>> Lib_info.Link_time_code_gen.decode )
        and+ enabled_if = enabled_if ~since:(Some (1, 10)) in
        let wrapped =
          Wrapped.make ~wrapped ~implements ~special_builtin_support
@@ -906,6 +911,7 @@ module Library = struct
        ; private_modules
        ; stdlib
        ; special_builtin_support
+       ; link_time_code_gen
        ; enabled_if
        })
 
@@ -1039,13 +1045,14 @@ module Library = struct
     let default_implementation = conf.default_implementation in
     let wrapped = Some conf.wrapped in
     let special_builtin_support = conf.special_builtin_support in
+    let link_time_code_gen = conf.link_time_code_gen in
     Lib_info.create ~loc ~name ~kind ~status ~src_dir ~orig_src_dir ~obj_dir
       ~version ~synopsis ~main_module_name ~sub_systems ~requires
       ~foreign_objects ~plugins ~archives ~ppx_runtime_deps ~foreign_archives
       ~native_archives ~foreign_dll_files ~jsoo_runtime ~jsoo_archive ~pps
       ~enabled ~virtual_deps ~dune_version ~virtual_ ~implements ~variant
       ~known_implementations ~default_implementation ~modes ~wrapped
-      ~special_builtin_support ~exit_module
+      ~special_builtin_support ~link_time_code_gen ~exit_module
 end
 
 module Install_conf = struct

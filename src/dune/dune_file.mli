@@ -202,6 +202,7 @@ module Library : sig
     ; private_modules : Ordered_set_lang.t option
     ; stdlib : Ocaml_stdlib.t option
     ; special_builtin_support : Lib_info.Special_builtin_support.t option
+    ; link_time_code_gen : Lib_info.Link_time_code_gen.t option
     ; enabled_if : Blang.t
     }
 

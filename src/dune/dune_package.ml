@@ -154,6 +154,10 @@ module Lib = struct
          field_o "special_builtin_support"
            ( Dune_lang.Syntax.since Stanza.syntax (1, 10)
            >>> Lib_info.Special_builtin_support.decode )
+       and+ link_time_code_gen =
+         field_o "link_time_code_gen"
+           ( Dune_lang.Syntax.since Stanza.syntax (2, 5) (* TODO 2.7 ou 2.6 *)
+           >>> Lib_info.Link_time_code_gen.decode )
        in
        let known_implementations =
          Variant.Map.of_list_exn known_implementations
@@ -189,7 +193,7 @@ module Lib = struct
            ~jsoo_runtime ~jsoo_archive ~pps ~enabled ~virtual_deps ~dune_version
            ~virtual_ ~implements ~variant ~known_implementations
            ~default_implementation ~modes ~wrapped ~special_builtin_support
-           ~exit_module:None
+           ~link_time_code_gen ~exit_module:None
        in
        { info; main_module_name; modules })
 

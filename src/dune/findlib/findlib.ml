@@ -313,6 +313,8 @@ end = struct
           | "findlib.dynload" -> Some Findlib_dynload
           | _ -> None
         in
+        let link_time_code_gen = None in
+        (* TODO LTCG check *)
         let foreign_objects = Lib_info.Source.External [] in
         let plugins = plugins t in
         let jsoo_runtime = jsoo_runtime t in
@@ -367,7 +369,8 @@ end = struct
           ~foreign_archives ~native_archives ~foreign_dll_files:[] ~jsoo_runtime
           ~jsoo_archive ~pps ~enabled ~virtual_deps ~dune_version ~virtual_
           ~implements ~variant ~known_implementations ~default_implementation
-          ~modes ~wrapped ~special_builtin_support ~exit_module:None
+          ~modes ~wrapped ~special_builtin_support ~link_time_code_gen
+          ~exit_module:None
       in
       Dune_package.Lib.make ~info ~modules:None ~main_module_name:None
   end

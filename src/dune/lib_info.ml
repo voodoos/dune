@@ -137,6 +137,23 @@ module Special_builtin_support = struct
       Dune_lang.List (Dune_lang.atom "configurator" :: Configurator.encode x)
 end
 
+module Link_time_code_gen = struct
+  type t =
+    { data_module : string
+    ; action : string (* TODO compelte actions *)
+    }
+
+  let decode =
+    let open Dune_lang.Decoder in
+    let+ ltcg =
+      fields
+        (let+ data_module = field "module" string
+         and+ action = field "gen" string in
+         { data_module; action })
+    in
+    ltcg
+end
+
 module Status = struct
   type t =
     | Installed
@@ -236,6 +253,7 @@ type 'path t =
   ; main_module_name : Main_module_name.t
   ; modes : Mode.Dict.Set.t
   ; special_builtin_support : Special_builtin_support.t option
+  ; link_time_code_gen : Link_time_code_gen.t option
   ; exit_module : Module_name.t option
   }
 
@@ -297,6 +315,8 @@ let wrapped t = t.wrapped
 
 let special_builtin_support t = t.special_builtin_support
 
+let link_time_code_gen t = t.link_time_code_gen
+
 let jsoo_runtime t = t.jsoo_runtime
 
 let jsoo_archive t = t.jsoo_archive
@@ -347,7 +367,7 @@ let create ~loc ~name ~kind ~status ~src_dir ~orig_src_dir ~obj_dir ~version
     ~foreign_dll_files ~jsoo_runtime ~jsoo_archive ~pps ~enabled ~virtual_deps
     ~dune_version ~virtual_ ~implements ~variant ~known_implementations
     ~default_implementation ~modes ~wrapped ~special_builtin_support
-    ~exit_module =
+    ~link_time_code_gen ~exit_module =
   { loc
   ; name
   ; kind
@@ -381,6 +401,7 @@ let create ~loc ~name ~kind ~status ~src_dir ~orig_src_dir ~obj_dir ~version
   ; modes
   ; wrapped
   ; special_builtin_support
+  ; link_time_code_gen
   ; exit_module
   }
 
@@ -447,6 +468,7 @@ let to_dyn path
     ; modes
     ; wrapped
     ; special_builtin_support
+    ; link_time_code_gen = _ (* TODO LTCG *)
     ; exit_module
     } =
   let open Dyn.Encoder in
@@ -488,5 +510,6 @@ let to_dyn path
     ; ("modes", Mode.Dict.Set.to_dyn modes)
     ; ( "special_builtin_support"
       , option Special_builtin_support.to_dyn special_builtin_support )
+    ; ("link_time_code_gen", failwith "TODO") (* TODO LTCG *)
     ; ("exit_module", option Module_name.to_dyn exit_module)
     ]

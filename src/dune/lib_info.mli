@@ -58,6 +58,15 @@ module Special_builtin_support : sig
   include Dune_lang.Conv.S with type t := t
 end
 
+module Link_time_code_gen : sig
+  type t =
+    { data_module : string
+    ; action : string (* TODO compelte actions *)
+    }
+
+  val decode : (t, Dune_lang.Decoder.values) Dune_lang.Decoder.parser
+end
+
 module Inherited : sig
   type 'a t =
     | This of 'a
@@ -126,6 +135,8 @@ val main_module_name : _ t -> Main_module_name.t
 val wrapped : _ t -> Wrapped.t Inherited.t option
 
 val special_builtin_support : _ t -> Special_builtin_support.t option
+
+val link_time_code_gen : _ t -> Link_time_code_gen.t option
 
 val modes : _ t -> Mode.Dict.Set.t
 
@@ -212,6 +223,7 @@ val create :
   -> modes:Mode.Dict.Set.t
   -> wrapped:Wrapped.t Inherited.t option
   -> special_builtin_support:Special_builtin_support.t option
+  -> link_time_code_gen:Link_time_code_gen.t option
   -> exit_module:Module_name.t option
   -> 'a t
 
