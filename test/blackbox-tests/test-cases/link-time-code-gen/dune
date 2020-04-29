@@ -1,3 +1,7 @@
+(executable
+ (name generator)
+ (modules generator))
+
 (library
  (name gen)
  (modules generated_module)
@@ -5,7 +9,8 @@
  (modules_without_implementation generated_module)
  (link_time_code_gen
   (module generated_module)
-  (gen generator.ml)))
+  (action (echo "let test = \"foobars\"")
+  )))
 
 (executable
  (name foo)
