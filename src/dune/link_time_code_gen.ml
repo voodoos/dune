@@ -7,10 +7,11 @@ type t =
   ; force_linkall : bool
   }
 
-let generate_and_compile_module cctx ~precompiled_cmi ~name:basename ~lib ~code
-    ~requires =
+let generate_and_compile_module cctx ~precompiled_cmi ~name:basename ~lib
+    ~in_src ~code ~requires =
   let sctx = CC.super_context cctx in
   let obj_dir = CC.obj_dir cctx in
+  (* let obj_dir = Lib_info.obj_dir (Lib.info lib) in *)
   let dir = CC.dir cctx in
   let module_ =
     let name =
@@ -19,7 +20,13 @@ let generate_and_compile_module cctx ~precompiled_cmi ~name:basename ~lib ~code
       Module_name.of_string_allow_invalid (loc, basename)
     in
     let wrapped = Result.ok_exn (Lib.wrapped lib) in
-    let src_dir = Path.build (Obj_dir.obj_dir obj_dir) in
+    let src_dir =
+      if in_src then
+        Obj_dir.obj_dir (Lib_info.obj_dir (Lib.info lib))
+      else
+        Path.build (Obj_dir.obj_dir obj_dir)
+    in
+    (* let src_dir = (Obj_dir.obj_dir obj_dir) in *)
     let gen_module = Module.generated ~src_dir name in
     match wrapped with
     | None -> gen_module
@@ -169,6 +176,8 @@ let build_info_code cctx ~libs ~api_version =
       pr buf "%S, %s" (Lib_name.to_string name) v);
   Buffer.contents buf
 
+let generate_code _cctx ~libs:_ ~action:_ = "let test = \"foobar\"" (* TODO *)
+
 let handle_special_libs cctx =
   let open Result.O in
   let+ all_libs = CC.requires_link cctx in
@@ -179,56 +188,72 @@ let handle_special_libs cctx =
     match libs with
     | [] -> { to_link = List.rev to_link_rev; force_linkall }
     | lib :: libs -> (
-      match Lib_info.special_builtin_support (Lib.info lib) with
-      | None ->
+      match Lib_info.link_time_code_gen (Lib.info lib) with
+      | Some { data_module; action } ->
+        let module_ =
+          generate_and_compile_module cctx ~name:data_module ~lib ~in_src:false
+            ~code:(Build.return (generate_code cctx ~libs:all_libs ~action))
+            ~requires:(Ok [ lib ])
+            ~precompiled_cmi:true
+        in
+        (* let obj_dir = Lib_info.obj_dir (Lib.info lib) in *)
         process_libs libs
-          ~to_link_rev:(LM.Lib lib :: to_link_rev)
+          ~to_link_rev:(LM.Lib lib :: Module (obj_dir, module_) :: to_link_rev)
           ~force_linkall
-      | Some special -> (
-        match special with
-        | Build_info { data_module; api_version } ->
-          let module_ =
-            generate_and_compile_module cctx ~name:data_module ~lib
-              ~code:
-                (Build.return
-                   (build_info_code cctx ~libs:all_libs ~api_version))
-              ~requires:(Ok [ lib ])
-              ~precompiled_cmi:true
-          in
-          process_libs libs
-            ~to_link_rev:(LM.Lib lib :: Module (obj_dir, module_) :: to_link_rev)
-            ~force_linkall
-        | Findlib_dynload ->
-          (* If findlib.dynload is linked, we stores in the binary the packages
-             linked by linking just after findlib.dynload a module containing
-             the info *)
-          let requires =
-            (* This shouldn't fail since findlib.dynload depends on dynlink and
-               findlib. That's why it's ok to use a dummy location. *)
-            let+ dynlink =
-              Lib.DB.resolve (SC.public_libs sctx)
-                (Loc.none, Lib_name.of_string "dynlink")
-            and+ findlib =
-              Lib.DB.resolve (SC.public_libs sctx)
-                (Loc.none, Lib_name.of_string "findlib")
-            in
-            [ dynlink; findlib ]
-          in
-          let module_ =
-            generate_and_compile_module cctx ~lib ~name:"findlib_initl"
-              ~code:
-                (Build.return
-                   (findlib_init_code
-                      ~preds:Findlib.findlib_predicates_set_by_dune
-                      ~libs:all_libs))
-              ~requires ~precompiled_cmi:false
-          in
-          process_libs libs
-            ~to_link_rev:(LM.Module (obj_dir, module_) :: Lib lib :: to_link_rev)
-            ~force_linkall:true
-        | Configurator _ ->
+      | None -> (
+        match Lib_info.special_builtin_support (Lib.info lib) with
+        | None ->
           process_libs libs
             ~to_link_rev:(LM.Lib lib :: to_link_rev)
-            ~force_linkall ) )
+            ~force_linkall
+        | Some special -> (
+          match special with
+          | Build_info { data_module; api_version } ->
+            let module_ =
+              generate_and_compile_module cctx ~name:data_module ~lib
+                ~code:
+                  (Build.return
+                     (build_info_code cctx ~libs:all_libs ~api_version))
+                ~in_src:false
+                ~requires:(Ok [ lib ])
+                ~precompiled_cmi:true
+            in
+            process_libs libs
+              ~to_link_rev:
+                (LM.Lib lib :: Module (obj_dir, module_) :: to_link_rev)
+              ~force_linkall
+          | Findlib_dynload ->
+            (* If findlib.dynload is linked, we stores in the binary the
+               packages linked by linking just after findlib.dynload a module
+               containing the info *)
+            let requires =
+              (* This shouldn't fail since findlib.dynload depends on dynlink
+                 and findlib. That's why it's ok to use a dummy location. *)
+              let+ dynlink =
+                Lib.DB.resolve (SC.public_libs sctx)
+                  (Loc.none, Lib_name.of_string "dynlink")
+              and+ findlib =
+                Lib.DB.resolve (SC.public_libs sctx)
+                  (Loc.none, Lib_name.of_string "findlib")
+              in
+              [ dynlink; findlib ]
+            in
+            let module_ =
+              generate_and_compile_module cctx ~lib ~name:"findlib_initl"
+                ~code:
+                  (Build.return
+                     (findlib_init_code
+                        ~preds:Findlib.findlib_predicates_set_by_dune
+                        ~libs:all_libs))
+                ~in_src:false ~requires ~precompiled_cmi:false
+            in
+            process_libs libs
+              ~to_link_rev:
+                (LM.Module (obj_dir, module_) :: Lib lib :: to_link_rev)
+              ~force_linkall:true
+          | Configurator _ ->
+            process_libs libs
+              ~to_link_rev:(LM.Lib lib :: to_link_rev)
+              ~force_linkall ) ) )
   in
   process_libs all_libs ~to_link_rev:[] ~force_linkall:false
