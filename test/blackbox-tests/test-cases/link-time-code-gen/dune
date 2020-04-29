@@ -1,0 +1,13 @@
+(library
+ (name gen)
+ (modules generated_module)
+ ; TODO LTCG SHOULD NOT BE NECESSARY
+ (modules_without_implementation generated_module)
+ (link_time_code_gen
+  (module generated_module)
+  (gen generator.ml)))
+
+(executable
+ (name foo)
+ (modules foo)
+ (libraries gen))

@@ -1357,6 +1357,14 @@
    (progn (run dune-cram run run.t) (diff? run.t run.t.corrected)))))
 
 (rule
+ (alias link-time-code-gen)
+ (deps (package dune) (source_tree test-cases/link-time-code-gen))
+ (action
+  (chdir
+   test-cases/link-time-code-gen
+   (progn (run dune-cram run run.t) (diff? run.t run.t.corrected)))))
+
+(rule
  (alias lint)
  (deps (package dune) (source_tree test-cases/lint))
  (action
@@ -2613,6 +2621,7 @@
   (alias lib-errors)
   (alias link-deps)
   (alias link-includes)
+  (alias link-time-code-gen)
   (alias lint)
   (alias loop)
   (alias macro-expand-error)
@@ -2896,6 +2905,7 @@
   (alias lib-errors)
   (alias link-deps)
   (alias link-includes)
+  (alias link-time-code-gen)
   (alias loop)
   (alias macro-expand-error)
   (alias menhir-env)
