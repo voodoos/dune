@@ -140,7 +140,7 @@ end
 module Link_time_code_gen = struct
   type t =
     { data_module : string
-    ; action : Action.t (* TODO compelte actions *)
+    ; action : Action_dune_lang.t (* TODO compelte actions *)
     }
 
   let decode =
@@ -148,7 +148,7 @@ module Link_time_code_gen = struct
     let+ ltcg =
       fields
         (let+ data_module = field "module" string
-          and+ action = field "action" Action.decode in
+          and+ action = field "action" Action_dune_lang.decode in
           { data_module; action })
     in
     ltcg

@@ -171,23 +171,86 @@ let build_info_code cctx ~libs ~api_version =
       pr buf "%S, %s" (Lib_name.to_string name) v);
   Buffer.contents buf
 
-let generate_code cctx ~libs:_ ~action =
-  let path = Path.Build.relative Path.Build.root "default/action-gen.ml-gen" in
-  Printf.eprintf "path: %s\n%!" (Path.to_absolute_filename (Path.build path));
-  let action = Action.with_stdout_to path action in
-  let fiber = Action_exec.exec
+let generate_code cctx ~obj_dir:_ ~action =
+  let sctx = (Compilation_context.super_context cctx) in
+  let dir = (Expander.dir (Compilation_context.expander cctx)) in
+  (* let objdir =  (Obj_dir.obj_dir obj_dir) in *)
+  (* let root = Path.Build.relative root objdir in *)
+  let file = "action-gen.ml-gen" in
+  let target = Path.Build.relative dir file in
+  Printf.eprintf "file: %s; path: %s\n%!" (file)
+      (Path.Build.to_string target);
+  (* let action = Action_dune_lang.with_stdout_to
+    (String_with_vars.make_text
+      Loc.none
+      (file))
+    action in *)
+  let act =
+    Super_context.Action.run sctx
+    ~loc: Loc.none
+    ~expander:(Compilation_context.expander cctx)
+    ~dep_kind:Required
+    (* ~targets:(Targets (Infer)) *)
+    (* ~targets:(Forbidden "LTCG actions") *)
+    ~targets:(Targets (Static
+      { targets = [target]; multiplicity = One}
+    ))
+    ~targets_dir:dir
+    action
+    (Build.return Bindings.empty)
+  in
+
+  let _act_redirect =
+    Build.With_targets.map
+      ~f:(fun act ->
+      Printf.eprintf "pouet";
+      let act = Action.with_stdout_to target act in
+      ignore (Fiber.run (Action_exec.exec
+      ~targets:(Path.Build.Set.of_list [target])
+      ~context:(Some (Compilation_context.context cctx))
+      ~env:Env.initial (* TODO check arguments *)
+      ~rule_loc:Loc.none
+      ~build_deps:(fun _ -> Fiber.return ())
+      act))
+      ; act )
+      (Build.With_targets.add ~targets:[ target ] act)
+  in
+(*
+  Build.
+
+  Rule.make
+    ~context:(SC.context sctx)
+    ~env:None
+    act_redirect *)
+
+  (* SC.add_rule sctx
+    ~dir act_redirect; *)
+
+
+  (* Action_exec.exec
     ~targets:(Path.Build.Set.of_list [path])
     ~context:(Some (Compilation_context.context cctx))
     ~env:Env.initial (* TODO check arguments *)
     ~rule_loc:Loc.none
     ~build_deps:(fun _ -> Fiber.return ())
-    action
-  in
-  ignore (Fiber.run fiber);
-
-  let res, _ = Build.exec (Build.contents (Path.build path)) in
+    action*)
+  (* ignore (Build.With_targets.map act
+    ~f:(fun action ->
+    Fiber.run (Action_exec.exec
+    ~targets:(Path.Build.Set.of_list [target])
+    ~context:(Some (Compilation_context.context cctx))
+    ~env:Env.initial (* TODO check arguments *)
+    ~rule_loc:Loc.none
+    ~build_deps:(fun _ -> Fiber.return ())
+    action)
+        )
+  ); *)
+  try
+  let res, _ = Build.exec (Build.contents (
+    Path.build target)) in
   Printf.eprintf "file_content: %s\n%!" (res);
   res
+  with _ -> "let test = \"arg\""
   (* let program : Exe.Program.t = { name; main_module_name = Module_name.of_string name ; loc =
   Loc.none } in
  Exe.build_and_link ~program ~linkages:[] ~promote:None cctx; *)
@@ -208,7 +271,7 @@ let handle_special_libs cctx =
       | Some { data_module; action } ->
         let module_ =
           generate_and_compile_module cctx ~name:data_module ~lib
-            ~code:(Build.return (generate_code cctx ~libs:all_libs ~action))
+            ~code:(Build.return (generate_code cctx ~obj_dir:obj_dir ~action))
             ~requires:(Ok [ lib ])
             ~precompiled_cmi:true
         in

@@ -61,7 +61,7 @@ end
 module Link_time_code_gen : sig
   type t =
     { data_module : string
-    ; action : Action.t (* TODO compelte actions *)
+    ; action : Action_dune_lang.t (* TODO compelte actions *)
     }
 
   val decode : (t, Dune_lang.Decoder.values) Dune_lang.Decoder.parser

@@ -2,6 +2,10 @@
  (name generator)
  (modules generator))
 
+; (rule
+;  (alias dodo)
+;  (action (run ./generator.exe)))
+
 (library
  (name gen)
  (modules generated_module)
@@ -9,8 +13,11 @@
  (modules_without_implementation generated_module)
  (link_time_code_gen
   (module generated_module)
-  (action (echo "let test = \"foobars\"")
+  ; (action (echo "let test = \"foobars\"")
+   (action (run ./generator.exe)
+
   )))
+
 
 (executable
  (name foo)
