@@ -8,7 +8,7 @@ type t =
   }
 
 let generate_and_compile_module cctx ~precompiled_cmi ~name:basename ~lib
-    ~in_src ~code ~requires =
+    ~code ~requires =
   let sctx = CC.super_context cctx in
   let obj_dir = CC.obj_dir cctx in
   (* let obj_dir = Lib_info.obj_dir (Lib.info lib) in *)
@@ -20,12 +20,7 @@ let generate_and_compile_module cctx ~precompiled_cmi ~name:basename ~lib
       Module_name.of_string_allow_invalid (loc, basename)
     in
     let wrapped = Result.ok_exn (Lib.wrapped lib) in
-    let src_dir =
-      if in_src then
-        Obj_dir.obj_dir (Lib_info.obj_dir (Lib.info lib))
-      else
-        Path.build (Obj_dir.obj_dir obj_dir)
-    in
+    let src_dir = Path.build (Obj_dir.obj_dir obj_dir) in
     (* let src_dir = (Obj_dir.obj_dir obj_dir) in *)
     let gen_module = Module.generated ~src_dir name in
     match wrapped with
@@ -191,7 +186,7 @@ let handle_special_libs cctx =
       match Lib_info.link_time_code_gen (Lib.info lib) with
       | Some { data_module; action } ->
         let module_ =
-          generate_and_compile_module cctx ~name:data_module ~lib ~in_src:false
+          generate_and_compile_module cctx ~name:data_module ~lib
             ~code:(Build.return (generate_code cctx ~libs:all_libs ~action))
             ~requires:(Ok [ lib ])
             ~precompiled_cmi:true
@@ -214,7 +209,6 @@ let handle_special_libs cctx =
                 ~code:
                   (Build.return
                      (build_info_code cctx ~libs:all_libs ~api_version))
-                ~in_src:false
                 ~requires:(Ok [ lib ])
                 ~precompiled_cmi:true
             in
@@ -245,7 +239,7 @@ let handle_special_libs cctx =
                      (findlib_init_code
                         ~preds:Findlib.findlib_predicates_set_by_dune
                         ~libs:all_libs))
-                ~in_src:false ~requires ~precompiled_cmi:false
+                ~requires ~precompiled_cmi:false
             in
             process_libs libs
               ~to_link_rev:
