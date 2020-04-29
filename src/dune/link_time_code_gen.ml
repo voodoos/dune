@@ -171,12 +171,33 @@ let build_info_code cctx ~libs ~api_version =
       pr buf "%S, %s" (Lib_name.to_string name) v);
   Buffer.contents buf
 
-let generate_code _cctx ~libs:_ ~action:_ = "let test = \"foobar\"" (* TODO *)
+let generate_code cctx ~libs:_ ~action =
+  let path = Path.Build.relative Path.Build.root "default/action-gen.ml-gen" in
+  Printf.eprintf "path: %s\n%!" (Path.to_absolute_filename (Path.build path));
+  let action = Action.with_stdout_to path action in
+  let fiber = Action_exec.exec
+    ~targets:(Path.Build.Set.of_list [path])
+    ~context:(Some (Compilation_context.context cctx))
+    ~env:Env.initial (* TODO check arguments *)
+    ~rule_loc:Loc.none
+    ~build_deps:(fun _ -> Fiber.return ())
+    action
+  in
+  ignore (Fiber.run fiber);
+
+  let res, _ = Build.exec (Build.contents (Path.build path)) in
+  Printf.eprintf "file_content: %s\n%!" (res);
+  res
+  (* let program : Exe.Program.t = { name; main_module_name = Module_name.of_string name ; loc =
+  Loc.none } in
+ Exe.build_and_link ~program ~linkages:[] ~promote:None cctx; *)
+ (* "let test = \"foobar\"" *)
+ (* TODO *)
 
 let handle_special_libs cctx =
   let open Result.O in
   let+ all_libs = CC.requires_link cctx in
-  let obj_dir = Compilation_context.obj_dir cctx |> Obj_dir.of_local in
+  let obj_dir = CC.obj_dir cctx |> Obj_dir.of_local in
   let sctx = CC.super_context cctx in
   let module LM = Lib.Lib_and_module in
   let rec process_libs ~to_link_rev ~force_linkall libs =
