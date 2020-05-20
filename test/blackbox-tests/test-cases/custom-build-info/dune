@@ -3,4 +3,5 @@
  (public_name foo)
  (promote (until-clean))
  (libraries dune-build-info)
- (custom_build_info))
+ (custom_build_info
+  (action (echo "pouet_echo"))))
