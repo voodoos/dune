@@ -84,7 +84,9 @@ let findlib_init_code ~preds ~libs =
 
 let build_info_code cctx ~libs ~api_version =
   ( match api_version with
-  | Lib_info.Special_builtin_support.Build_info.V1 -> () );
+  | Lib_info.Special_builtin_support.Build_info.V1
+  | Lib_info.Special_builtin_support.Build_info.V2 ->
+    () );
   (* [placeholders] is a mapping from source path to variable names. For each
      binding [(p, v)], we will generate the following code:
 
@@ -167,6 +169,13 @@ let build_info_code cctx ~libs ~api_version =
   pr buf "";
   prlist buf "statically_linked_libraries" libs ~f:(fun (name, v) ->
       pr buf "%S, %s" (Lib_name.to_string name) v);
+  pr buf "";
+  if api_version = Lib_info.Special_builtin_support.Build_info.V2 then (
+    let var = gen_placeholder_var () in
+    pr buf "let %s = eval %S" var
+      (Artifact_substitution.encode ~min_len:64 Artifact_substitution.Custom);
+    pr buf "let custom = %s" var
+  );
   Buffer.contents buf
 
 let handle_special_libs cctx =

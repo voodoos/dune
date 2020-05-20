@@ -30,16 +30,19 @@ open Import
 
 type t =
   | Vcs_describe of Path.Source.t
+  | Custom
   | Repeat of int * string
 
 let to_dyn = function
   | Vcs_describe p -> Dyn.Variant ("Vcs_describe", [ Path.Source.to_dyn p ])
+  | Custom -> Dyn.Variant ("Custom", [])
   | Repeat (n, s) -> Dyn.Variant ("Repeat", [ Int n; String s ])
 
 let eval t ~get_vcs =
   match t with
   | Repeat (n, s) ->
     Fiber.return (Array.make n s |> Array.to_list |> String.concat ~sep:"")
+  | Custom -> Fiber.return "pouet_custom"
   | Vcs_describe p -> (
     match get_vcs p with
     | None -> Fiber.return ""
@@ -65,6 +68,7 @@ let encode ?(min_len = 0) t =
       | Vcs_describe p ->
         let s = Path.Source.to_string p in
         sprintf "vcs-describe:%d:%s" (String.length s) s
+      | Custom -> sprintf "custom:0:"
       | Repeat (n, s) -> sprintf "repeat:%d:%d:%s" n (String.length s) s )
   in
   let len =
@@ -127,6 +131,7 @@ let decode s =
     | "vcs-describe" :: rest ->
       let path = Path.Source.of_string (read_string_payload rest) in
       Vcs_describe path
+    | "custom" :: _rest -> Custom
     | "repeat" :: repeat :: rest ->
       Repeat (parse_int repeat, read_string_payload rest)
     | _ -> fail ()
