@@ -1,0 +1,6 @@
+(executable
+ (name foo)
+ (public_name foo)
+ (promote (until-clean))
+ (libraries dune-build-info)
+ (custom_build_info))
