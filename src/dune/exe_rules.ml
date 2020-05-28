@@ -163,7 +163,8 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
   in
   let requires_compile = Compilation_context.requires_compile cctx in
   Exe.build_and_link_many cctx ~programs ~linkages ~link_args ~o_files
-    ~promote:exes.promote ~embed_in_plugin_libraries;
+    ~custom_build_info:exes.custom_build_info ~promote:exes.promote
+    ~embed_in_plugin_libraries;
   ( cctx
   , Merlin.make () ~requires:requires_compile ~flags ~modules
       ~preprocess:(Dune_file.Buildable.single_preprocess exes.buildable)

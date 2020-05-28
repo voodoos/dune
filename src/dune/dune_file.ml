@@ -1468,6 +1468,7 @@ module Executables = struct
     ; forbidden_libraries : (Loc.t * Lib_name.t) list
     ; bootstrap_info : string option
     ; enabled_if : Blang.t
+    ; custom_build_info : Custom_build_info.t
     }
 
   let bootstrap_info_extension =
@@ -1532,7 +1533,7 @@ module Executables = struct
     and+ enabled_if =
       let allowed_vars = Enabled_if.common_vars ~since:(2, 6) in
       Enabled_if.decode ~allowed_vars ~since:(Some (2, 3)) ()
-    and+ _custom_build_info = Custom_build_info.decode () in
+    and+ custom_build_info = Custom_build_info.decode () in
     fun names ~multi ->
       let has_public_name = Names.has_public_name names in
       let private_names = Names.names names in
@@ -1588,6 +1589,7 @@ module Executables = struct
       ; forbidden_libraries
       ; bootstrap_info
       ; enabled_if
+      ; custom_build_info
       }
 
   let single, multi =
@@ -1933,6 +1935,7 @@ module Tests = struct
            ; forbidden_libraries
            ; bootstrap_info = None
            ; enabled_if
+           ; custom_build_info = None
            }
        ; locks
        ; package

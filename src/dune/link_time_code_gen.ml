@@ -82,7 +82,7 @@ let findlib_init_code ~preds ~libs =
   pr buf "Findlib.record_package_predicates preds;;";
   Buffer.contents buf
 
-let build_info_code cctx ~libs ~api_version =
+let build_info_code cctx ~libs ~api_version ~custom_build_info =
   ( match api_version with
   | Lib_info.Special_builtin_support.Build_info.V1
   | Lib_info.Special_builtin_support.Build_info.V2 ->
@@ -170,15 +170,16 @@ let build_info_code cctx ~libs ~api_version =
   prlist buf "statically_linked_libraries" libs ~f:(fun (name, v) ->
       pr buf "%S, %s" (Lib_name.to_string name) v);
   pr buf "";
-  if api_version = Lib_info.Special_builtin_support.Build_info.V2 then (
-    let var = gen_placeholder_var () in
-    pr buf "let %s = eval %S" var
-      (Artifact_substitution.encode ~min_len:64 Artifact_substitution.Custom);
-    pr buf "let custom = %s" var
-  );
+  if api_version = Lib_info.Special_builtin_support.Build_info.V2 then
+    (* let var = gen_placeholder_var () in pr buf "let %s = eval %S" var
+       (Artifact_substitution.encode ~min_len:64 Artifact_substitution.Custom); *)
+    pr buf "let custom = %s"
+      ( match custom_build_info with
+      | None -> "Some \"n/a\""
+      | Some _ -> "Some \"some action\"" );
   Buffer.contents buf
 
-let handle_special_libs cctx =
+let handle_special_libs ~custom_build_info cctx =
   let open Result.O in
   let+ all_libs = CC.requires_link cctx in
   let obj_dir = Compilation_context.obj_dir cctx |> Obj_dir.of_local in
@@ -200,7 +201,8 @@ let handle_special_libs cctx =
             generate_and_compile_module cctx ~name:data_module ~lib
               ~code:
                 (Build.return
-                   (build_info_code cctx ~libs:all_libs ~api_version))
+                   (build_info_code cctx ~libs:all_libs ~api_version
+                      ~custom_build_info))
               ~requires:(Ok [ lib ])
               ~precompiled_cmi:true
           in
