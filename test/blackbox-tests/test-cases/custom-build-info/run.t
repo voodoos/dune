@@ -13,3 +13,4 @@
 
   $ _install/bin/foo
   version: 1.0
+  custom: some custom information

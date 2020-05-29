@@ -4,4 +4,5 @@
  (promote (until-clean))
  (libraries dune-build-info)
  (custom_build_info
-  (action (echo "pouet_echo"))))
+  (max_size 8)
+  (action (echo "some custom information"))))
