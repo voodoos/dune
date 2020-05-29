@@ -171,12 +171,15 @@ let build_info_code cctx ~libs ~api_version ~custom_build_info =
       pr buf "%S, %s" (Lib_name.to_string name) v);
   pr buf "";
   if api_version = Lib_info.Special_builtin_support.Build_info.V2 then
-    (* let var = gen_placeholder_var () in pr buf "let %s = eval %S" var
-       (Artifact_substitution.encode ~min_len:64 Artifact_substitution.Custom); *)
-    pr buf "let custom = %s"
-      ( match custom_build_info with
-      | None -> "Some \"n/a\""
-      | Some _ -> "Some \"some action\"" );
+    if Option.is_some custom_build_info then (
+      let var = gen_placeholder_var () in
+      let dir = Obj_dir.obj_dir (CC.obj_dir cctx) in
+      pr buf "let %s = eval %S" var
+        Artifact_substitution.(encode ~min_len:64 (Custom dir));
+      pr buf "let custom = %s" var
+    ) else
+      pr buf "let custom = None";
+  pr buf "";
   Buffer.contents buf
 
 let handle_special_libs ~custom_build_info cctx =
