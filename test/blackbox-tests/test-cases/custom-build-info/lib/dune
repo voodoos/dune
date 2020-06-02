@@ -1,0 +1,7 @@
+(library
+ (public_name foo)
+ (modules foo)
+ (libraries dune-build-info)
+ (custom_build_info
+  (max_size 40)
+  (action (echo "Some custom information in lib foo"))))

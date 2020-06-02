@@ -1,0 +1,1 @@
+let () = Printf.printf "From lib: %s\n" Foo.custom_info

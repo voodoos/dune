@@ -232,6 +232,17 @@
    (progn (run dune-cram run run.t) (diff? run.t run.t.corrected)))))
 
 (rule
+ (alias custom-build-info-lib)
+ (deps
+  (package dune)
+  (source_tree test-cases/custom-build-info/lib)
+  (alias test-deps))
+ (action
+  (chdir
+   test-cases/custom-build-info/lib
+   (progn (run dune-cram run run.t) (diff? run.t run.t.corrected)))))
+
+(rule
  (alias custom-cross-compilation)
  (deps
   (package dune)
@@ -3040,6 +3051,7 @@
   (alias cross-compilation)
   (alias custom-build-dir)
   (alias custom-build-info-exe)
+  (alias custom-build-info-lib)
   (alias custom-cross-compilation)
   (alias cxx-extension)
   (alias cycle-detection-symlinks-2863)
@@ -3338,6 +3350,7 @@
   (alias corrections)
   (alias custom-build-dir)
   (alias custom-build-info-exe)
+  (alias custom-build-info-lib)
   (alias custom-cross-compilation)
   (alias cxx-extension)
   (alias cycle-detection-symlinks-2863)
