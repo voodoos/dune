@@ -150,11 +150,9 @@ Resolution
 
 All targets that dune knows how to build live in the ``_build``
 directory.  Although, some are sometimes copied to the source tree for
-the need of external tools. These includes:
-
-- ``.merlin`` files
-- ``<package>.install`` files (when either ``-p`` or
-  ``--promote-install-files`` is passed on the command line)
+the need of external tools. These includes ``<package>.install`` files
+(when either ``-p`` or ``--promote-install-files`` is passed on the
+command line)
 
 As a result, if you want to ask ``dune`` to produce a particular ``.exe``
 file you would have to type:
