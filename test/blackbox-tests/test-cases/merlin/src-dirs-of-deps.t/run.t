@@ -13,12 +13,13 @@ library also has more than one src dir.
   $ cat >lib2/dune <<EOF
   > (library (name lib2) (libraries lib1) (modules ()))
   > EOF
-  $ dune build lib2/.merlin
-  $ cat lib2/.merlin
-  EXCLUDE_QUERY_DIR
-  B ../_build/default/lib1/.lib1.objs/byte
-  B ../_build/default/lib2/.lib2.objs/byte
-  S ../lib1
-  S ../lib1/sub
-  S .
-  FLG -open Lib2 -w @1..3@5..28@30..39@43@46..47@49..57@61..62-40 -strict-sequence -strict-formats -short-paths -keep-locs
+  $ dune build lib2/.merlin-conf
+  $ cat _build/default/lib2/.merlin-conf |
+  > sed 's/[0-9]*:/?:/g' | sed 's/)(/)|(/g' | tr '|' '\n'
+  ((?:EXCLUDE_QUERY_DIR)
+  (?:B?:$TESTCASE_ROOT/_build/default/lib1/.lib1.objs/byte)
+  (?:B?:$TESTCASE_ROOT/_build/default/lib2/.lib2.objs/byte)
+  (?:S?:$TESTCASE_ROOT/lib1)
+  (?:S?:$TESTCASE_ROOT/lib1/sub)
+  (?:S?:$TESTCASE_ROOT/lib2)
+  (?:FLG(?:-open?:Lib?:-w?:@1..3@5..28@30..39@43@46..47@49..57@61..62-?:-strict-sequence?:-strict-formats?:-short-paths?:-keep-locs)))
