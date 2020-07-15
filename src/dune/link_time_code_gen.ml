@@ -32,6 +32,7 @@ let generate_and_compile_module cctx ~precompiled_cmi ~name:basename ~lib ~code
       Module.with_wrapper gen_module ~main_module_name
   in
   SC.add_rule ~dir sctx
+    (* TODO CBI : changer ce dir là opour générer dans sous dossier *)
     (let ml =
        Module.file module_ ~ml_kind:Impl
        |> Option.value_exn |> Path.as_in_build_dir_exn

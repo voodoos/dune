@@ -111,7 +111,7 @@ let find_errors ~modules ~intf_only ~virtual_modules ~private_modules
                  && not impl_vmodule )
                  Forbidden_new_public_module
              ++ add_if
-                  ((not has_impl) && (not !?intf_only) && not !?virtual_)
+                  ((not has_impl) && (not !?intf_only) && not !?virtual_ (* TODO CBI : && not CBI *))
                   Missing_intf_only
              ++ add_if (impl_vmodule && not has_impl) Vmodule_impl_missing_impl
              ++ add_if (impl_vmodule && has_intf) Vmodule_impls_with_own_intf )

@@ -23,7 +23,7 @@ let setup_rules ~sctx ~dir (def:Dune_file.Generate_custom_build_info.t) =
     Package.Name.Map.iteri plugins ~f:(plugins_code sctx buf);
     pr buf "end"
   end; *)
-  pr buf "val pouet : string";
+  pr buf "val custom : string";
   let mli = Buffer.contents buf in
   let module_ = (Module_name.to_string def.module_) ^ ".mli" in
   let file = Path.Build.relative dir module_ in
