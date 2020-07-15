@@ -397,6 +397,15 @@ module Generate_module : sig
     }
 end
 
+module Generate_custom_build_info : sig
+  type t =
+    { loc : Loc.t
+    ; module_ : Module_name.t
+    ; max_size : int
+    ; link_time_action : Loc.t * Action_dune_lang.t
+    }
+end
+
 type Stanza.t +=
   | Library of Library.t
   | Foreign_library of Foreign.Library.t
@@ -414,6 +423,7 @@ type Stanza.t +=
   | Cram of Cram_stanza.t
   | Generate_module of Generate_module.t
   | Plugin of Plugin.t
+  | Generate_custom_build_info of Generate_custom_build_info.t
 
 val stanza_package : Stanza.t -> Package.t option
 
