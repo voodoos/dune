@@ -3,7 +3,7 @@
   >    git commit -q -m _;
   >    git tag -a 1.0 -m _)
 
-  $ dune build --display=verbose
+  $ dune build
 
   $ dune install --prefix _install
   Installing _install/lib/foo/META

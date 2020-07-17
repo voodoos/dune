@@ -211,7 +211,7 @@ let build_info_code cctx ~libs ~api_version ~custom_build_info =
   pr buf "";
   Buffer.contents buf
 
-let handle_special_libs ~custom_build_info cctx =
+let handle_special_libs ~custom_build_info ~cbi:_ cctx =
   let open Result.O in
   let+ all_libs = CC.requires_link cctx in
   let obj_dir = Compilation_context.obj_dir cctx |> Obj_dir.of_local in
@@ -225,6 +225,8 @@ let handle_special_libs ~custom_build_info cctx =
     match libs with
     | [] -> { to_link = List.rev to_link_rev; force_linkall }
     | lib :: libs -> (
+      Printf.eprintf "Libs: [%s]\n%!"
+        (Lib_info.name (Lib.info lib) |> Lib_name.to_string);
       match Lib_info.special_builtin_support (Lib.info lib) with
       | None ->
         process_libs libs
@@ -279,4 +281,40 @@ let handle_special_libs ~custom_build_info cctx =
             ~to_link_rev:(LM.Lib lib :: to_link_rev)
             ~force_linkall ) )
   in
-  process_libs all_libs ~to_link_rev:[] ~force_linkall:false
+
+  let generate_and_compile_module cctx ~precompiled_cmi ~name:basename ~code
+      ~requires =
+    let sctx = CC.super_context cctx in
+    let obj_dir = CC.obj_dir cctx in
+    let dir = CC.dir cctx in
+    let module_ =
+      let name = Module_name.of_string_allow_invalid (Loc.none, basename) in
+      let src_dir = Path.build (Obj_dir.obj_dir obj_dir) in
+      let gen_module = Module.generated ~src_dir name in
+      gen_module
+    in
+    SC.add_rule ~dir sctx
+      (* TODO CBI : changer ce dir là opour générer dans sous dossier *)
+      (let ml =
+         Module.file module_ ~ml_kind:Impl
+         |> Option.value_exn |> Path.as_in_build_dir_exn
+       in
+       Build.write_file_dyn ml code);
+    let cctx =
+      Compilation_context.for_module_generated_at_link_time cctx ~requires
+        ~module_
+    in
+    Module_compilation.build_module
+      ~dep_graphs:(Dep_graph.Ml_kind.dummy module_)
+      ~precompiled_cmi cctx module_;
+    module_
+  in
+  let cbi2 =
+    let module_ =
+      let code = Build.return "let custom = \"pouet\"" in
+      generate_and_compile_module cctx ~name:"My_cbi" ~code ~requires:(Ok [])
+        ~precompiled_cmi:false
+    in
+    LM.Module (obj_dir, module_)
+  in
+  process_libs all_libs ~to_link_rev:[ cbi2 ] ~force_linkall:false

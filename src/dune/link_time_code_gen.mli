@@ -10,5 +10,6 @@ type t =
 (** Generate link time code for special libraries such as [findlib.dynload] *)
 val handle_special_libs :
      custom_build_info:Custom_build_info.t option
+  -> cbi:Dune_file.Generate_custom_build_info.t list
   -> Compilation_context.t
   -> t Or_exn.t

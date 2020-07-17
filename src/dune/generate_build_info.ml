@@ -1,34 +1,46 @@
-
-open !Stdune
+open! Stdune
 
 let pr buf fmt = Printf.bprintf buf (fmt ^^ "\n")
 
-let setup_rules ~sctx ~dir (def:Dune_file.Generate_custom_build_info.t) =
+let setup_rules ~sctx ~dir (def : Dune_file.Generate_custom_build_info.t) =
   let buf = Buffer.create 1024 in
-  (* if def.sourceroot then sourceroot_code buf;
-  if def.relocatable then relocatable_code buf;
-  let sites =
-    List.sort_uniq
-      ~compare:(fun (_,pkga) (_,pkgb) -> Package.Name.compare pkga pkgb)
-      (def.sites@(List.map ~f:(fun (loc,(pkg,_)) -> (loc,pkg)) def.plugins))
-  in
-  if List.is_non_empty sites then begin
-    pr buf "module Sites = struct";
-    List.iter sites ~f:(sites_code sctx buf);
-    pr buf "end"
-  end;
-  let plugins = Package.Name.Map.of_list_multi (List.map ~f:snd def.plugins) in
-  if not (Package.Name.Map.is_empty plugins) then begin
-    pr buf "module Plugins = struct";
-    Package.Name.Map.iteri plugins ~f:(plugins_code sctx buf);
-    pr buf "end"
-  end; *)
+  (* if def.sourceroot then sourceroot_code buf; if def.relocatable then
+     relocatable_code buf; let sites = List.sort_uniq ~compare:(fun (_,pkga)
+     (_,pkgb) -> Package.Name.compare pkga pkgb) (def.sites@(List.map ~f:(fun
+     (loc,(pkg,_)) -> (loc,pkg)) def.plugins)) in if List.is_non_empty sites
+     then begin pr buf "module Sites = struct"; List.iter sites ~f:(sites_code
+     sctx buf); pr buf "end" end; let plugins = Package.Name.Map.of_list_multi
+     (List.map ~f:snd def.plugins) in if not (Package.Name.Map.is_empty plugins)
+     then begin pr buf "module Plugins = struct"; Package.Name.Map.iteri plugins
+     ~f:(plugins_code sctx buf); pr buf "end" end; *)
   pr buf "val custom : string";
   let mli = Buffer.contents buf in
-  let module_ = (Module_name.to_string def.module_) ^ ".mli" in
+  let module_ = Module_name.to_string def.module_ ^ ".mli" in
   let file = Path.Build.relative dir module_ in
-  Super_context.add_rule
-    sctx
-    ~dir
-    (Build.write_file file mli);
+  Super_context.add_rule sctx ~dir (Build.write_file file mli);
   module_
+
+let is_cbi_module sctx ~dir (module_ : Module.t) =
+  match Super_context.stanzas_in sctx ~dir with
+  | Some { data = stanzas; _ } ->
+    List.fold_left ~init:false
+      ~f:(fun acc -> function
+        | Dune_file.Generate_custom_build_info cbi ->
+          let has_same_name =
+            Ordering.is_eq
+              (Module_name.compare cbi.module_ (Module.name module_))
+          in
+          acc || has_same_name
+        | _ -> acc)
+      stanzas
+  | None -> false
+
+let cbi_modules sctx ~dir =
+  match Super_context.stanzas_in sctx ~dir with
+  | Some { data = stanzas; _ } ->
+    List.filter_map
+      ~f:(function
+        | Dune_file.Generate_custom_build_info cbi -> Some cbi
+        | _ -> None)
+      stanzas
+  | None -> []

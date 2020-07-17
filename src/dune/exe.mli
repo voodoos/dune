@@ -42,6 +42,7 @@ val build_and_link :
   -> ?link_args:Command.Args.static Command.Args.t Build.t
   -> ?o_files:Path.t list
   -> custom_build_info:Custom_build_info.t option
+  -> cbi:Dune_file.Generate_custom_build_info.t list
   -> ?embed_in_plugin_libraries:(Loc.t * Lib_name.t) list
   -> Compilation_context.t
   -> unit
@@ -53,6 +54,7 @@ val build_and_link_many :
   -> ?link_args:Command.Args.static Command.Args.t Build.t
   -> ?o_files:Path.t list
   -> custom_build_info:Custom_build_info.t option
+  -> cbi:Dune_file.Generate_custom_build_info.t list
   -> ?embed_in_plugin_libraries:(Loc.t * Lib_name.t) list
   -> Compilation_context.t
   -> unit

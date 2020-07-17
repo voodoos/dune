@@ -225,12 +225,12 @@ let link_js ~name ~cm_files ~promote cctx =
     ~flags:(Command.Args.dyn flags) ~promote
 
 let build_and_link_many ~programs ~linkages ~promote ?link_args ?o_files
-    ~custom_build_info ?(embed_in_plugin_libraries = []) cctx =
+    ~custom_build_info ~cbi ?(embed_in_plugin_libraries = []) cctx =
   let modules = Compilation_context.modules cctx in
   let dep_graphs = Dep_rules.rules cctx ~modules in
   Module_compilation.build_all cctx ~dep_graphs;
   let link_time_code_gen =
-    Link_time_code_gen.handle_special_libs ~custom_build_info cctx
+    Link_time_code_gen.handle_special_libs ~custom_build_info ~cbi cctx
   in
   List.iter programs ~f:(fun { Program.name; main_module_name; loc } ->
       let cm_files =
@@ -250,7 +250,7 @@ let build_and_link_many ~programs ~linkages ~promote ?link_args ?o_files
           else
             let link_time_code_gen =
               if Linkage.is_plugin linkage then
-                Link_time_code_gen.handle_special_libs ~custom_build_info
+                Link_time_code_gen.handle_special_libs ~custom_build_info ~cbi
                   (CC.for_plugin_executable cctx ~embed_in_plugin_libraries)
               else
                 link_time_code_gen

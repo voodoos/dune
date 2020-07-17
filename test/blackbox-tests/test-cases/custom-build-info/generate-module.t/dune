@@ -4,7 +4,7 @@
  (promote (until-clean))
  (libraries dune-build-info)
  (modules foo my_cbi)
- (modules_without_implementation my_cbi)
+; (modules_without_implementation my_cbi)
  (custom_build_info
   (max_size 66)
   (action (echo "toto")))
