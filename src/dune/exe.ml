@@ -230,7 +230,7 @@ let build_and_link_many ~programs ~linkages ~promote ?link_args ?o_files
   let dep_graphs = Dep_rules.rules cctx ~modules in
   Module_compilation.build_all cctx ~dep_graphs;
   let link_time_code_gen =
-    Link_time_code_gen.handle_special_libs ~custom_build_info ~cbi cctx
+    Link_time_code_gen.handle_special_libs ~custom_build_info cctx
   in
   List.iter programs ~f:(fun { Program.name; main_module_name; loc } ->
       let cm_files =
@@ -244,13 +244,16 @@ let build_and_link_many ~programs ~linkages ~promote ?link_args ?o_files
         Cm_files.make ~obj_dir ~modules ~top_sorted_modules
           ~ext_obj:ctx.lib_config.ext_obj
       in
+      let link_time_code_gen =
+        Link_time_code_gen.handle_custom_build_infos cctx cbi ~ltcg:link_time_code_gen 
+      in
       List.iter linkages ~f:(fun linkage ->
           if linkage = Linkage.js then
             link_js ~name ~cm_files ~promote cctx
           else
             let link_time_code_gen =
               if Linkage.is_plugin linkage then
-                Link_time_code_gen.handle_special_libs ~custom_build_info ~cbi
+                Link_time_code_gen.handle_special_libs ~custom_build_info
                   (CC.for_plugin_executable cctx ~embed_in_plugin_libraries)
               else
                 link_time_code_gen
