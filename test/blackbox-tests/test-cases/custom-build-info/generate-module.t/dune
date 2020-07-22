@@ -2,12 +2,9 @@
  (name foo)
  (public_name foo)
  (promote (until-clean))
- (libraries dune-build-info)
+ (modes byte)
  (modules foo my_cbi)
 ; (modules_without_implementation my_cbi)
- (custom_build_info
-  (max_size 66)
-  (action (echo "toto")))
  )
 
 (generate_custom_build_info
