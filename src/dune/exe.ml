@@ -245,7 +245,8 @@ let build_and_link_many ~programs ~linkages ~promote ?link_args ?o_files
           ~ext_obj:ctx.lib_config.ext_obj
       in
       let link_time_code_gen =
-        Link_time_code_gen.handle_custom_build_infos cctx cbi ~ltcg:link_time_code_gen 
+        Link_time_code_gen.handle_custom_build_infos cctx cbi
+          ~ltcg:link_time_code_gen
       in
       List.iter linkages ~f:(fun linkage ->
           if linkage = Linkage.js then

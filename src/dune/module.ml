@@ -316,15 +316,16 @@ let ml_source =
 
 let set_src_dir t ~src_dir = map_files t ~f:(fun _ -> File.set_src_dir ~src_dir)
 
-let generated ~src_dir name =
+let generated ~src_dir ?intf name =
   let basename = String.uncapitalize (Module_name.to_string name) in
   let obj_name = Module_name.Unique.of_name_assuming_needs_no_mangling name in
   let source =
+    let intf = Option.map intf ~f:(File.make Dialect.ocaml) in
     let impl =
       (* XXX should we use the obj_name here? *)
       File.make Dialect.ocaml (Path.relative src_dir (basename ^ ml_gen))
     in
-    Source.make ~impl name
+    Source.make ~impl ?intf name
   in
   of_source ~visibility:Public ~kind:Impl ~obj_name source
 

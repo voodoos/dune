@@ -215,11 +215,9 @@ let handle_special_libs ~custom_build_info cctx =
   let open Result.O in
   let+ all_libs = CC.requires_link cctx in
   let obj_dir = Compilation_context.obj_dir cctx |> Obj_dir.of_local in
-  (* Printf.eprintf "Libs: [%s]\n%!"
-    (String.concat ~sep:"; " (
-      List.map all_libs ~f:(fun lib -> (Lib_info.name (Lib.info lib) |> Lib_name.to_string))
-    ))
-    ; *)
+  (* Printf.eprintf "Libs: [%s]\n%!" (String.concat ~sep:"; " ( List.map
+     all_libs ~f:(fun lib -> (Lib_info.name (Lib.info lib) |>
+     Lib_name.to_string)) )) ; *)
   let sctx = CC.super_context cctx in
   let module LM = Lib.Lib_and_module in
   let cbis =
@@ -246,7 +244,7 @@ let handle_special_libs ~custom_build_info cctx =
             in
             generate_and_compile_module cctx ~name:data_module ~lib ~code
               ~requires:(Ok [ lib ])
-              ~precompiled_cmi:true
+              ~precompiled_cmi:Module_compilation.Precompiled_cmi.External
           in
           process_libs libs
             ~to_link_rev:(LM.Lib lib :: Module (obj_dir, module_) :: to_link_rev)
@@ -274,7 +272,7 @@ let handle_special_libs ~custom_build_info cctx =
                    (findlib_init_code
                       ~preds:Findlib.findlib_predicates_set_by_dune
                       ~libs:all_libs))
-              ~requires ~precompiled_cmi:false
+              ~requires ~precompiled_cmi:Module_compilation.Precompiled_cmi.No
           in
           process_libs libs
             ~to_link_rev:(LM.Module (obj_dir, module_) :: Lib lib :: to_link_rev)
@@ -286,46 +284,49 @@ let handle_special_libs ~custom_build_info cctx =
   in
   process_libs all_libs ~to_link_rev:[] ~force_linkall:false
 
-  let generate_and_compile_module cctx ~precompiled_cmi ~name ~code
-  ~requires =
-let sctx = CC.super_context cctx in
-let obj_dir = CC.obj_dir cctx in
-let dir = CC.dir cctx in
-let module_ =
-  let src_dir = Path.build (Obj_dir.obj_dir obj_dir) in
-  (* Module.with_wrapper ( *)
-  Module.generated ~src_dir name 
-   (* ~main_module_name:(Module_name.of_string_opt "dune__exe" |> Option.value_exn) *)
-in
-SC.add_rule ~dir sctx
-  (* TODO CBI : changer ce dir là opour générer dans sous dossier *)
-  (let ml =
-     Module.file module_ ~ml_kind:Impl
-     |> Option.value_exn |> Path.as_in_build_dir_exn
-   in
-   Build.write_file_dyn ml code);
-let cctx =
-  Compilation_context.for_module_generated_at_link_time cctx ~requires
-    ~module_
-in
-Module_compilation.build_module
-  ~dep_graphs:(Dep_graph.Ml_kind.dummy module_)
-  ~precompiled_cmi cctx module_;
-module_
+let generate_and_compile_module cctx ~name ~code ~requires =
+  let sctx = CC.super_context cctx in
+  let obj_dir = CC.obj_dir cctx in
+  let dir = CC.dir cctx in
+  let module_ =
+    let src_dir = Path.build (Obj_dir.obj_dir obj_dir) in
+    let intf = Path.relative (Path.build dir) "my_cbi.mli" in
+    (* Module.with_wrapper ( *)
+    Module.generated ~src_dir ~intf name
+    (* ~main_module_name:(Module_name.of_string_opt "dune__exe" |>
+       Option.value_exn) *)
+  in
+  SC.add_rule ~dir sctx
+    (* TODO CBI : changer ce dir là opour générer dans sous dossier *)
+    (let ml =
+       Module.file module_ ~ml_kind:Impl
+       |> Option.value_exn |> Path.as_in_build_dir_exn
+     in
+     Build.write_file_dyn ml code);
+  let cctx =
+    Compilation_context.for_module_generated_at_link_time cctx ~requires
+      ~module_
+  in
+  Module_compilation.(
+    build_module
+      ~dep_graphs:(Dep_graph.Ml_kind.dummy module_)
+      ~precompiled_cmi:Precompiled_cmi.Generated cctx module_);
+  module_
 
-let handle_custom_build_infos cctx cbis ~ltcg : (t, exn) result = 
+let handle_custom_build_infos cctx cbis ~ltcg : (t, exn) result =
   let open Dune_file.Generate_custom_build_info in
   let module LM = Lib.Lib_and_module in
   let obj_dir = Compilation_context.obj_dir cctx |> Obj_dir.of_local in
-  Printf.eprintf "plop\n"; 
+
   Result.bind ltcg ~f:(fun ltcg ->
-    let modules = List.map cbis ~f:(fun cbi ->
-      let name = cbi.module_ in
-      let code = Build.return "let custom = \"toto\"" in
-      let mod_ = generate_and_compile_module cctx ~precompiled_cmi:false ~name ~code ~requires:(Ok []) in
-      Printf.eprintf "cbi: %s\n" (Module_name.to_string cbi.module_);
-      LM.Module (obj_dir, mod_)
-    ) in
-    Ok { ltcg with to_link = modules @ ltcg.to_link }
-  )
- 
+      let modules =
+        List.map cbis ~f:(fun cbi ->
+            let name = cbi.module_ in
+            let code = Build.return "let custom = \"toto\"" in
+            let mod_ =
+              generate_and_compile_module cctx ~name ~code ~requires:(Ok [])
+            in
+            (* Printf.eprintf "cbi: %s\n" (Module_name.to_string cbi.module_); *)
+            LM.Module (obj_dir, mod_))
+      in
+      Ok { ltcg with to_link = modules @ ltcg.to_link })

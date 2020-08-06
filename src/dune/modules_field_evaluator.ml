@@ -259,8 +259,8 @@ let check_invalid_module_listing ~(buildable : Buildable.t) ~cbi ~intf_only
 let eval ~modules:(all_modules : Module.Source.t Module_name.Map.t)
     ~(cbi : Module_name.t list) ~buildable:(conf : Buildable.t) ~private_modules
     ~kind =
-  (* Printf.eprintf "[%s]\n%!"
-    (String.concat ~sep:"; " (List.map cbi ~f:Module_name.to_string)); *)
+  (* Printf.eprintf "[%s]\n%!" (String.concat ~sep:"; " (List.map cbi
+     ~f:Module_name.to_string)); *)
   (* Fake modules are modules that do not exist but it doesn't matter because
      they are only removed from a set (for jbuild file compatibility) *)
   let fake_modules = ref Module_name.Map.empty in

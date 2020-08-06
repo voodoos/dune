@@ -14,7 +14,7 @@ val handle_special_libs :
   -> t Or_exn.t
 
 val handle_custom_build_infos :
-    Compilation_context.t
+     Compilation_context.t
   -> Dune_file.Generate_custom_build_info.t list
-  -> ltcg: t Or_exn.t
+  -> ltcg:t Or_exn.t
   -> t Or_exn.t

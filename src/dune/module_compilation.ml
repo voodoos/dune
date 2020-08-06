@@ -4,6 +4,13 @@ open! No_io
 module CC = Compilation_context
 module SC = Super_context
 
+module Precompiled_cmi = struct
+  type t =
+    | No
+    | External
+    | Generated
+end
+
 (* Arguments for the compiler to prevent it from being too clever.
 
    The compiler creates the cmi when it thinks a .ml file has no corresponding
@@ -70,9 +77,14 @@ let build_cm cctx ~dep_graphs ~precompiled_cmi ~cm_kind (m : Module.t) ~phase =
     Obj_dir.Module.obj_file obj_dir m ~kind:Cmx ~ext:Fdo.linear_fdo_ext
   in
   let extra_args, extra_deps, other_targets =
-    if precompiled_cmi then
-      (force_read_cmi src, [], [])
-    else
+    match precompiled_cmi with
+    | Precompiled_cmi.External -> (force_read_cmi src, [], [])
+    | Generated ->
+      let cmi_path =
+        Obj_dir.Module.cm_file_unsafe (CC.obj_dir cctx) m ~kind:Cm_kind.Cmi
+      in
+      (force_read_cmi src, [ Path.build cmi_path ], [])
+    | No -> (
       (* If we're compiling an implementation, then the cmi is present *)
       let public_vlib_module = Module.kind m = Impl_vmodule in
       match phase with
@@ -94,7 +106,7 @@ let build_cm cctx ~dep_graphs ~precompiled_cmi ~cm_kind (m : Module.t) ~phase =
           , [] )
         | Cmi, _, _ ->
           copy_interface ~dir ~obj_dir ~sctx m;
-          ([], [], []) )
+          ([], [], []) ) )
   in
   let other_targets =
     match cm_kind with
@@ -194,7 +206,7 @@ let build_cm cctx ~dep_graphs ~precompiled_cmi ~cm_kind (m : Module.t) ~phase =
           ]))
   |> Option.value ~default:()
 
-let build_module ~dep_graphs ?(precompiled_cmi = false) cctx m =
+let build_module ~dep_graphs ?(precompiled_cmi = Precompiled_cmi.No) cctx m =
   build_cm cctx m ~dep_graphs ~precompiled_cmi ~cm_kind:Cmo ~phase:None;
   let ctx = CC.context cctx in
   let can_split =
@@ -213,7 +225,7 @@ let build_module ~dep_graphs ?(precompiled_cmi = false) cctx m =
     Fdo.opt_rule cctx m;
     build_cm cctx m ~dep_graphs ~precompiled_cmi ~cm_kind:Cmx
       ~phase:(Some Fdo.Emit) );
-  if not precompiled_cmi then
+  if precompiled_cmi = Precompiled_cmi.No then
     build_cm cctx m ~dep_graphs ~precompiled_cmi ~cm_kind:Cmi ~phase:None;
   Compilation_context.js_of_ocaml cctx
   |> Option.iter ~f:(fun js_of_ocaml ->
