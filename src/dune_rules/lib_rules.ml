@@ -37,7 +37,7 @@ let build_lib (lib : Library.t) ~sctx ~dir_contents ~expander ~flags ~dir ~mode
         (* https://github.com/ocaml/dune/issues/119 *)
         match ctx.lib_config.ccomp_type with
         | Msvc -> msvc_hack_cclibs
-        | Other _ -> Fun.id
+        | _ -> Fun.id
       in
       let obj_deps =
         Build.paths (Cm_files.unsorted_objects_and_cms cm_files ~mode)
@@ -148,7 +148,7 @@ let ocamlmklib ~loc ~c_library_flags ~sctx ~dir ~expander ~o_files ~archive_name
                   | Msvc ->
                     let cclibs = msvc_hack_cclibs cclibs in
                     Command.quote_args "-ldopt" cclibs
-                  | Other _ -> As cclibs))
+                  | _ -> As cclibs))
          ; Hidden_targets targets
          ])
   in

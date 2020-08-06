@@ -901,7 +901,7 @@ let best_mode t : Mode.t =
 let cc_g (ctx : t) =
   match ctx.lib_config.ccomp_type with
   | Msvc -> []
-  | Other _ -> [ "-g" ]
+  | _ -> [ "-g" ]
 
 let name t = t.name
 

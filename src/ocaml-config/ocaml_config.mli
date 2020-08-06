@@ -52,6 +52,8 @@ end
 module Ccomp_type : sig
   type t =
     | Msvc
+    | Gcc
+    | Clang
     | Other of string
 
   val to_dyn : t -> Stdune.Dyn.t
