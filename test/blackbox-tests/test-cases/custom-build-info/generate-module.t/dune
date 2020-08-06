@@ -2,7 +2,6 @@
  (name foo)
  (public_name foo)
  (promote (until-clean))
- (modes byte)
  (modules foo my_cbi)
 ; (modules_without_implementation my_cbi)
  )
