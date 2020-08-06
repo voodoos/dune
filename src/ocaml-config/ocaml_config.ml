@@ -55,20 +55,57 @@ end
 module Ccomp_type = struct
   type t =
     | Msvc
+    | Gcc
+    | Clang
     | Other of string
 
   let to_dyn =
     let open Dyn.Encoder in
     function
     | Msvc -> constr "Msvc" []
+    | Gcc -> constr "Gcc" []
+    | Clang -> constr "Clang" []
     | Other s -> constr "Other" [ string s ]
 
-  let of_string = function
-    | "msvc" -> Msvc
-    | s -> Other s
+  let readlinks bin =
+    let path = Env.(path initial) in
+    let rec aux i start =
+      (* Enfore same depth limit as (old) linux [path_resolution] *)
+      if i >= 8 then
+        start
+      else
+        let path =
+          Bin.which ~path start
+          |> Option.map ~f:Path.to_absolute_filename
+          |> Option.value ~default:bin
+        in
+        try
+          let end_ = Unix.readlink path in
+          if end_ = start then
+            start
+          else
+            aux (i + 1) end_
+        with Unix.Unix_error _ -> start
+    in
+    aux 0 bin
+
+  let of_string ~c_compiler ccomp_type =
+    let re name =
+      Dune_re.(seq [ rep any; char '-'; str name; rep any ]) |> Dune_re.compile
+    in
+    let c_compiler = readlinks c_compiler in
+    match (ccomp_type, c_compiler) with
+    | "msvc", _ -> Msvc
+    | _, "gcc" -> Gcc
+    | _, "clang" -> Clang
+    | _, s when Dune_re.execp (re "gcc") s -> Gcc
+    | _, s when Dune_re.execp (re "clang") s -> Clang
+    | s, _ -> Other s
 
   let to_string = function
     | Msvc -> "msvc"
+    | Gcc -> "gcc"
+    | Clang -> "clang"
     | Other s -> s
 end
 
@@ -456,7 +493,7 @@ let make vars =
         (get_opt vars "standard_runtime")
         ~default:"the_standard_runtime_variable_was_deleted"
     in
-    let ccomp_type = Ccomp_type.of_string (get vars "ccomp_type") in
+    let ccomp_type = Ccomp_type.of_string ~c_compiler (get vars "ccomp_type") in
     let bytecomp_c_libraries = get_words vars "bytecomp_c_libraries" in
     let native_c_libraries = get_words vars "native_c_libraries" in
     let cc_profile = get_words vars "cc_profile" in

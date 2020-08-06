@@ -53,4 +53,4 @@ let get_for_enabled_if t ~var =
 let linker_can_create_empty_archives t =
   match t.ccomp_type with
   | Msvc -> false
-  | Other _ -> true
+  | _ -> true
