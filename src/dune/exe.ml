@@ -201,13 +201,13 @@ let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
              from_libs
            |> Build.With_targets.all
          and+ cbi_exe =
-           match custom_build_info with
-           | None -> Build.With_targets.return Action.empty
-           | Some { Custom_build_info.action; _ } ->
-             expand_custom_build_info ~cctx "exe" action
+          List.map custom_build_info ~f:(
+              fun { Dune_file.Generate_custom_build_info.link_time_action; _ } ->
+              expand_custom_build_info ~cctx "exe" link_time_action)
+              |> Build.With_targets.all
          in
 
-         Action.progn (List.concat [ cbi_exe :: cbi_libs; [ cmd_run ] ]))
+         Action.progn (List.concat [ cbi_exe; cbi_libs; [ cmd_run ] ]))
 
 let link_js ~name ~cm_files ~promote cctx =
   let sctx = CC.super_context cctx in
@@ -260,7 +260,7 @@ let build_and_link_many ~programs ~linkages ~promote ?link_args ?o_files
                 link_time_code_gen
             in
             link_exe cctx ~loc ~name ~linkage ~cm_files ~link_time_code_gen
-              ~custom_build_info ~promote ?link_args ?o_files))
+              ~custom_build_info:cbi ~promote ?link_args ?o_files))
 
 let build_and_link ~program = build_and_link_many ~programs:[ program ]
 

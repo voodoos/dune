@@ -284,15 +284,15 @@ let handle_special_libs ~custom_build_info cctx =
   in
   process_libs all_libs ~to_link_rev:[] ~force_linkall:false
 
-let generate_and_compile_module cctx ~name ~code ~requires =
+let generate_and_compile_module cctx ~name ~code =
   let sctx = CC.super_context cctx in
   let obj_dir = CC.obj_dir cctx in
   let dir = CC.dir cctx in
   let module_ =
     let src_dir = Path.build (Obj_dir.obj_dir obj_dir) in
-    let intf = Path.relative (Path.build dir) "my_cbi.mli" in
+    let src_dir = Path.relative src_dir "pouet" in
     (* Module.with_wrapper ( *)
-    Module.generated ~src_dir ~intf name
+    Module.generated ~src_dir name
     (* ~main_module_name:(Module_name.of_string_opt "dune__exe" |>
        Option.value_exn) *)
   in
@@ -304,7 +304,7 @@ let generate_and_compile_module cctx ~name ~code ~requires =
      in
      Build.write_file_dyn ml code);
   let cctx =
-    Compilation_context.for_module_generated_at_link_time cctx ~requires
+    Compilation_context.for_module_generated_at_link_time cctx ~requires:(Ok [])
       ~module_
   in
   Module_compilation.(
@@ -324,7 +324,7 @@ let handle_custom_build_infos cctx cbis ~ltcg : (t, exn) result =
             let name = cbi.module_ in
             let code = Build.return "let custom = \"toto\"" in
             let mod_ =
-              generate_and_compile_module cctx ~name ~code ~requires:(Ok [])
+              generate_and_compile_module cctx ~name ~code
             in
             (* Printf.eprintf "cbi: %s\n" (Module_name.to_string cbi.module_); *)
             LM.Module (obj_dir, mod_))
