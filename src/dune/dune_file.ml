@@ -1805,24 +1805,7 @@ module Deprecated_library_name = struct
        { loc; project; old_public_name; new_public_name })
 end
 
-module Generate_custom_build_info = struct
-  type t =
-    { loc : Loc.t
-    ; module_ : Module_name.t
-    ; max_size : int
-    ; link_time_action : Loc.t * Action_dune_lang.t
-    }
-
-  let decode =
-    fields
-      (let+ loc = loc
-       and+ module_ = field "module" Module_name.decode
-       and+ max_size = field "max_size" int
-       and+ link_time_action =
-         field "link_time_action" (located Action_dune_lang.decode)
-       in
-       { loc; module_; max_size; link_time_action })
-end
+module Custom_build_info = Custom_build_info
 
 type Stanza.t +=
   | Library of Library.t
@@ -1837,7 +1820,7 @@ type Stanza.t +=
   | Include_subdirs of Loc.t * Include_subdirs.t
   | Toplevel of Toplevel.t
   | Deprecated_library_name of Deprecated_library_name.t
-  | Generate_custom_build_info of Generate_custom_build_info.t
+  | Custom_build_info of Custom_build_info.t
 
 module Stanzas = struct
   type t = Stanza.t list
@@ -1936,8 +1919,8 @@ module Stanzas = struct
         [ Deprecated_library_name t ] )
     ; ( "generate_custom_build_info"
       , let+ () = Dune_lang.Syntax.since Stanza.syntax (2, 7)
-        and+ t = Generate_custom_build_info.decode in
-        [ Generate_custom_build_info t ] )
+        and+ t = Custom_build_info.decode in
+        [ Custom_build_info t ] )
     ]
 
   let () = Dune_project.Lang.register Stanza.syntax stanzas

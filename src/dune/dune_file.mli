@@ -343,14 +343,7 @@ module Deprecated_library_name : sig
     }
 end
 
-module Generate_custom_build_info : sig
-  type t =
-    { loc : Loc.t
-    ; module_ : Module_name.t
-    ; max_size : int
-    ; link_time_action : Loc.t * Action_dune_lang.t
-    }
-end
+module Custom_build_info = Custom_build_info
 
 type Stanza.t +=
   | Library of Library.t
@@ -365,7 +358,7 @@ type Stanza.t +=
   | Include_subdirs of Loc.t * Include_subdirs.t
   | Toplevel of Toplevel.t
   | Deprecated_library_name of Deprecated_library_name.t
-  | Generate_custom_build_info of Generate_custom_build_info.t
+  | Custom_build_info of Custom_build_info.t
 
 val stanza_package : Stanza.t -> Package.t option
 

@@ -494,7 +494,8 @@ let to_dyn path
     ; ("modes", Mode.Dict.Set.to_dyn modes)
     ; ( "special_builtin_support"
       , option Special_builtin_support.to_dyn special_builtin_support )
-    ; ("custom_build_info", option Custom_build_info_old.to_dyn custom_build_info)
+    ; ( "custom_build_info"
+      , option Custom_build_info_old.to_dyn custom_build_info )
     ; ("exit_module", option Module_name.to_dyn exit_module)
     ; ( "instrumentation_backend"
       , option (snd Lib_name.to_dyn) instrumentation_backend )

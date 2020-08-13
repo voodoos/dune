@@ -201,10 +201,10 @@ let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
              from_libs
            |> Build.With_targets.all
          and+ cbi_exe =
-          List.map custom_build_info ~f:(
-              fun { Dune_file.Generate_custom_build_info.link_time_action; _ } ->
-              expand_custom_build_info ~cctx "exe" link_time_action)
-              |> Build.With_targets.all
+           List.map custom_build_info
+             ~f:(fun { Custom_build_info.link_time_action; _ } ->
+               expand_custom_build_info ~cctx "exe" link_time_action)
+           |> Build.With_targets.all
          in
 
          Action.progn (List.concat [ cbi_exe; cbi_libs; [ cmd_run ] ]))

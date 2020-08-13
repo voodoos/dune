@@ -2,7 +2,7 @@ open! Stdune
 
 let pr buf fmt = Printf.bprintf buf (fmt ^^ "\n")
 
-let setup_rules ~sctx ~dir (def : Dune_file.Generate_custom_build_info.t) =
+let setup_rules ~sctx ~dir (def : Custom_build_info.t) =
   let buf = Buffer.create 1024 in
   pr buf "val custom : string";
   let mli = Buffer.contents buf in
@@ -16,7 +16,7 @@ let is_cbi_module sctx ~dir (module_ : Module.t) =
   | Some { data = stanzas; _ } ->
     List.fold_left ~init:false
       ~f:(fun acc -> function
-        | Dune_file.Generate_custom_build_info cbi ->
+        | Dune_file.Custom_build_info cbi ->
           let has_same_name =
             Ordering.is_eq
               (Module_name.compare cbi.module_ (Module.name module_))
@@ -31,7 +31,7 @@ let cbi_modules sctx ~dir =
   | Some { data = stanzas; _ } ->
     List.filter_map
       ~f:(function
-        | Dune_file.Generate_custom_build_info cbi -> Some cbi
+        | Dune_file.Custom_build_info cbi -> Some cbi
         | _ -> None)
       stanzas
   | None -> []

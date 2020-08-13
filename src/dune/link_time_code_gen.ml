@@ -48,13 +48,17 @@ let generate_and_compile_module cctx ~precompiled_cmi ~name:basename ~lib ~code
   module_
 
 module Code_gen : sig
-  val dune_build_info : CC.t ->
-    libs:Lib.t list ->
-    api_version:Lib_info.Special_builtin_support.Build_info.api_version
+  val dune_build_info :
+       CC.t
+    -> libs:Lib.t list
+    -> api_version:Lib_info.Special_builtin_support.Build_info.api_version
     -> string
+
   val findlib_init : preds:Variant.Set.t -> libs:Lib.t list -> string
-  val custom_build_info : cctx:CC.t -> custom_build_info:Custom_build_info_old.t option * 'a -> string
-  end = struct
+
+  val custom_build_info :
+    cctx:CC.t -> custom_build_info:Custom_build_info_old.t option * 'a -> string
+end = struct
   let pr buf fmt = Printf.bprintf buf (fmt ^^ "\n")
 
   let prlist buf name l ~f =
@@ -123,9 +127,9 @@ module Code_gen : sig
 
   let build_info_code_v1 ~cctx ~libs buf =
     (* [placeholders] is a mapping from source path to variable names. For each
-      binding [(p, v)], we will generate the following code:
+       binding [(p, v)], we will generate the following code:
 
-      {[ let v = Placeholder "%%DUNE_PLACEHOLDER:...:vcs-describe:...:p%%" ]} *)
+       {[ let v = Placeholder "%%DUNE_PLACEHOLDER:...:vcs-describe:...:p%%" ]} *)
     let placeholders = ref Path.Source.Map.empty in
     let placeholder p =
       match File_tree.nearest_vcs p with
@@ -134,10 +138,10 @@ module Code_gen : sig
         let p =
           Option.value
             (Path.as_in_source_tree vcs.root)
-            (* The only VCS root that is potentially not in the source tree is the
-              VCS at the root of the repo. For this VCS, it is enough to use the
-              source tree root in the placeholder given that we take the nearest
-              VCS when performing the actual substitution. *)
+            (* The only VCS root that is potentially not in the source tree is
+               the VCS at the root of the repo. For this VCS, it is enough to
+               use the source tree root in the placeholder given that we take
+               the nearest VCS when performing the actual substitution. *)
             ~default:Path.Source.root
         in
         match Path.Source.Map.find !placeholders p with
@@ -177,7 +181,7 @@ module Code_gen : sig
     Path.Source.Map.iteri !placeholders ~f:(fun path var ->
         pr buf "let %s = %s" var
           (fmt_eval ~cctx
-            (Artifact_substitution.encode ~min_len:64 (Vcs_describe path))));
+             (Artifact_substitution.encode ~min_len:64 (Vcs_describe path))));
     if not (Path.Source.Map.is_empty !placeholders) then pr buf "";
     pr buf "let version = %s" version;
     pr buf "";
@@ -191,10 +195,9 @@ module Code_gen : sig
     let encode min_len name =
       Artifact_substitution.(encode ~min_len (Custom (name, dir)))
     in
-    (* let lib_cbi (name, { Custom_build_info.max_size; _ }) =
-      let name = Lib_name.to_string name in
-      pr buf "%S, %s" name (fmt_eval ~cctx (encode max_size name))
-    in *)
+    (* let lib_cbi (name, { Custom_build_info.max_size; _ }) = let name =
+       Lib_name.to_string name in pr buf "%S, %s" name (fmt_eval ~cctx (encode
+       max_size name)) in *)
     let exe_cbi =
       match exe_cbi with
       | Some { Custom_build_info_old.max_size; _ } ->
@@ -203,10 +206,8 @@ module Code_gen : sig
     in
     eval_code buf;
     pr buf "let custom = %s" exe_cbi;
-    (* pr buf "";
-    prlist buf "lib_customs" lib_cbis ~f:lib_cbi;
-    pr buf "";
-    pr buf "let custom_lib name = List.assoc name lib_customs" *)
+    (* pr buf ""; prlist buf "lib_customs" lib_cbis ~f:lib_cbi; pr buf ""; pr
+       buf "let custom_lib name = List.assoc name lib_customs" *)
     Buffer.contents buf
 
   let dune_build_info cctx ~libs ~api_version =
@@ -216,8 +217,8 @@ module Code_gen : sig
       match api_version with
       | Build_info.V1 -> build_info_code_v1 ~cctx ~libs buf
       | Build_info.V2 -> ()
-        (* build_info_code_v1 ~cctx ~libs buf; *)
-        (* build_info_code_v2 ~cctx ~custom_build_info buf *)
+      (* build_info_code_v1 ~cctx ~libs buf; *)
+      (* build_info_code_v2 ~cctx ~custom_build_info buf *)
     in
     (* Parse the replacement format described in [artifact_substitution.ml]. *)
     eval_code buf;
@@ -225,6 +226,7 @@ module Code_gen : sig
     pr buf "";
     Buffer.contents buf
 end
+
 let handle_special_libs ~custom_build_info cctx =
   let open Result.O in
   let+ all_libs = CC.requires_link cctx in
@@ -327,7 +329,7 @@ let generate_and_compile_module cctx ~name ~code =
   module_
 
 let handle_custom_build_infos cctx cbis ~ltcg : (t, exn) result =
-  let open Dune_file.Generate_custom_build_info in
+  let open Custom_build_info in
   let module LM = Lib.Lib_and_module in
   let obj_dir = Compilation_context.obj_dir cctx |> Obj_dir.of_local in
 
@@ -336,10 +338,9 @@ let handle_custom_build_infos cctx cbis ~ltcg : (t, exn) result =
         List.map cbis ~f:(fun cbi ->
             let name = cbi.module_ in
             let code = Build.return "let custom = \"toto\"" in
-            (* let code = Code_gen.custom_build_info ~cctx ~custom_build_info:cbi in *)
-            let mod_ =
-              generate_and_compile_module cctx ~name ~code
-            in
+            (* let code = Code_gen.custom_build_info ~cctx
+               ~custom_build_info:cbi in *)
+            let mod_ = generate_and_compile_module cctx ~name ~code in
             (* Printf.eprintf "cbi: %s\n" (Module_name.to_string cbi.module_); *)
             LM.Module (obj_dir, mod_))
       in

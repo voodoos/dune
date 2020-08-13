@@ -206,7 +206,7 @@ let virtual_modules lookup_vlib vlib =
 let cbi_modules stanzas =
   List.filter_map
     ~f:(function
-      | Dune_file.Generate_custom_build_info cbi -> Some cbi.module_
+      | Dune_file.Custom_build_info cbi -> Some cbi.module_
       | _ -> None)
     stanzas
 
