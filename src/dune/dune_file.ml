@@ -530,7 +530,7 @@ module Library = struct
     ; special_builtin_support : Lib_info.Special_builtin_support.t option
     ; enabled_if : Blang.t
     ; instrumentation_backend : (Loc.t * Lib_name.t) option
-    ; custom_build_info : Custom_build_info.t option
+    ; custom_build_info : Custom_build_info_old.t option
     }
 
   let decode =
@@ -604,7 +604,7 @@ module Library = struct
          field_o "instrumentation.backend"
            ( Dune_lang.Syntax.since Stanza.syntax (2, 7)
            >>> fields (field "ppx" (located Lib_name.decode)) )
-       and+ custom_build_info = Custom_build_info.decode () in
+       and+ custom_build_info = Custom_build_info_old.decode () in
        let wrapped =
          Wrapped.make ~wrapped ~implements ~special_builtin_support
        in
@@ -1204,7 +1204,7 @@ module Executables = struct
     ; forbidden_libraries : (Loc.t * Lib_name.t) list
     ; bootstrap_info : string option
     ; enabled_if : Blang.t
-    ; custom_build_info : Custom_build_info.t option
+    ; custom_build_info : Custom_build_info_old.t option
     }
 
   let bootstrap_info_extension =
@@ -1272,7 +1272,7 @@ module Executables = struct
         Dune_lang.Syntax.Version.Infix.(syntax_version >= (2, 6))
       in
       Enabled_if.decode ~allowed_vars ~is_error ~since:(Some (2, 3)) ()
-    and+ custom_build_info = Custom_build_info.decode () in
+    and+ custom_build_info = Custom_build_info_old.decode () in
     fun names ~multi ->
       let has_public_name = Names.has_public_name names in
       let private_names = Names.names names in

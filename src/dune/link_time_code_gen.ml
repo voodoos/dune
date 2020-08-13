@@ -167,13 +167,13 @@ let build_info_code_v2 ~cctx ~custom_build_info:(exe_cbi, lib_cbis) buf =
   let encode min_len name =
     Artifact_substitution.(encode ~min_len (Custom (name, dir)))
   in
-  let lib_cbi (name, { Custom_build_info.max_size; _ }) =
+  let lib_cbi (name, { Custom_build_info_old.max_size; _ }) =
     let name = Lib_name.to_string name in
     pr buf "%S, %s" name (fmt_eval ~cctx (encode max_size name))
   in
   let exe_cbi =
     match exe_cbi with
-    | Some { Custom_build_info.max_size; _ } ->
+    | Some { Custom_build_info_old.max_size; _ } ->
       fmt_eval ~cctx (encode max_size "exe")
     | None -> "None"
   in

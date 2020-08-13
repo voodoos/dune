@@ -124,7 +124,7 @@ let exe_path_from_name cctx ~name ~(linkage : Linkage.t) =
 
 let expand_custom_build_info ~cctx name (loc, action) =
   let dir = CC.dir cctx in
-  let raw_filename = Custom_build_info.output_file name in
+  let raw_filename = Custom_build_info_old.output_file name in
   let filename = String_with_vars.make_text Loc.none raw_filename in
   let action = Action_unexpanded.with_stdout_to filename action in
   let path = Path.Build.relative dir raw_filename in
@@ -196,7 +196,7 @@ let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
            let lib_infos = List.map ~f:Lib.info all_libs in
            let from_libs = Lib_info.gather_custom_build_info lib_infos in
            List.map
-             ~f:(fun (name, { Custom_build_info.action; _ }) ->
+             ~f:(fun (name, { Custom_build_info_old.action; _ }) ->
                expand_custom_build_info ~cctx (Lib_name.to_string name) action)
              from_libs
            |> Build.With_targets.all

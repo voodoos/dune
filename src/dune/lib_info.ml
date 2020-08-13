@@ -141,7 +141,7 @@ module Special_builtin_support = struct
       Dune_lang.List (Dune_lang.atom "configurator" :: Configurator.encode x)
 end
 
-module Custom_build_info = Custom_build_info
+module Custom_build_info = Custom_build_info_old
 
 module Status = struct
   type t =
@@ -240,7 +240,7 @@ type 'path t =
   ; main_module_name : Main_module_name.t
   ; modes : Mode.Dict.Set.t
   ; special_builtin_support : Special_builtin_support.t option
-  ; custom_build_info : Custom_build_info.t option
+  ; custom_build_info : Custom_build_info_old.t option
   ; exit_module : Module_name.t option
   ; instrumentation_backend : (Loc.t * Lib_name.t) option
   }
@@ -494,7 +494,7 @@ let to_dyn path
     ; ("modes", Mode.Dict.Set.to_dyn modes)
     ; ( "special_builtin_support"
       , option Special_builtin_support.to_dyn special_builtin_support )
-    ; ("custom_build_info", option Custom_build_info.to_dyn custom_build_info)
+    ; ("custom_build_info", option Custom_build_info_old.to_dyn custom_build_info)
     ; ("exit_module", option Module_name.to_dyn exit_module)
     ; ( "instrumentation_backend"
       , option (snd Lib_name.to_dyn) instrumentation_backend )
