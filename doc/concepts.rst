@@ -1176,6 +1176,7 @@ Here is a complete list of supported subfields:
 - ``flags`` are passed when compiling source files. This field is specified
   using the :ref:`ordered-set-language`, where the ``:standard`` value comes
   from the environment settings ``c_flags`` and ``cxx_flags``, respectively.
+  Note that dune will also add some :ref:`basic flags <c-cxx-flags>`.
 - ``include_dirs`` are tracked as dependencies and passed to the compiler
   via the ``-I`` flag. You can use :ref:`variables` in this field, and
   refer to a library source directory using the ``(lib library-name)`` syntax.
@@ -1238,3 +1239,22 @@ foreign archive is a bit like a foreign library, hence the name of the stanza.
 Foreign archives are particularly useful when embedding a library written in
 a foreign language and/or built with another build system. See
 :ref:`foreign-sandboxing` for more details.
+
+.. _c-cxx-flags:
+
+Always-added flags
+------------------
+
+Starting with Dune 2.8.0, the system will always prepend a few necessary flags
+when compiling C++ code with some of the most common compilers:
+
+======== ==================================
+Compiler C++ flags
+======== ==================================
+gcc      ``-x c++ -lstdc++ -shared-libgcc``
+clang    ``-x c++``
+msvc     ``/TP`` 
+======== ==================================
+
+Dune also mimics `ocamlc` and always adds config flags from `ocamlc_cflags` and
+`ocamlc_cppflags` to the command line when compiling C code.
