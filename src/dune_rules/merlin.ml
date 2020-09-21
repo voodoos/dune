@@ -86,7 +86,8 @@ module Dot_file = struct
       (Sexp.List (List.concat [ exclude_query_dir; obj_dirs; src_dirs; flags ]))
 end
 
-type t =
+(* We store separate merlin configuration for each "module" *)
+type cu_config =
   { requires : Lib.Set.t
   ; flags : string list Build.t
   ; preprocess : Preprocess.Without_instrumentation.t Preprocess.t
@@ -94,6 +95,27 @@ type t =
   ; source_dirs : Path.Source.Set.t
   ; objs_dirs : Path.Set.t
   }
+
+type t = cu_config Module_name.Map.t
+
+let merge_cu_config ~allow_approx_merlin a b =
+  { requires = Lib.Set.union a.requires b.requires
+  ; flags =
+      (let+ a = a.flags
+       and+ b = b.flags in
+       a @ b)
+  ; preprocess = Pp.merge ~allow_approx_merlin a.preprocess b.preprocess
+  ; libname =
+      ( match a.libname with
+      | Some _ as x -> x
+      | None -> b.libname )
+  ; source_dirs = Path.Source.Set.union a.source_dirs b.source_dirs
+  ; objs_dirs = Path.Set.union a.objs_dirs b.objs_dirs
+  }
+
+let merge_all = function
+  | [] -> None
+  | init :: ts -> Some (List.fold_left ~init ~f:Module_name.Map.superpose ts)
 
 let make ?(requires = Ok []) ~flags ?(preprocess = Preprocess.No_preprocessing)
     ?libname ?(source_dirs = Path.Source.Set.empty) ~modules ~obj_dir () =
@@ -115,18 +137,33 @@ let make ?(requires = Ok []) ~flags ?(preprocess = Preprocess.No_preprocessing)
         flags
       |> Ocaml_flags.common
   in
-  { requires
-  ; flags = Build.catch flags ~on_error:(fun _ -> [])
-  ; preprocess
-  ; libname
-  ; source_dirs
-  ; objs_dirs
-  }
+  let cu_config =
+    { requires
+    ; flags = Build.catch flags ~on_error:(fun _ -> [])
+    ; preprocess
+    ; libname
+    ; source_dirs
+    ; objs_dirs
+    }
+  in
+
+  let modules =
+    List.map
+      ~f:(fun m -> (Module.name m, cu_config))
+      (Modules.impl_only modules)
+  in
+
+  (* We use [of_list_reduce] to merge configs *)
+  Module_name.Map.of_list_reduce modules
+    ~f:(merge_cu_config ~allow_approx_merlin:false)
 
 let merlin_file_name = ".merlin-conf"
 
 let add_source_dir t dir =
-  { t with source_dirs = Path.Source.Set.add t.source_dirs dir }
+  Module_name.Map.map t ~f:(fun cu_config ->
+      { cu_config with
+        source_dirs = Path.Source.Set.add cu_config.source_dirs dir
+      })
 
 let quote_if_needed s =
   if String.need_quoting s then
@@ -220,8 +257,7 @@ let lib_src_dirs ~sctx lib =
     Path.Set.map ~f:Path.drop_optional_build_context
       (Modules.source_dirs modules)
 
-let dot_merlin sctx ~dir ~more_src_dirs ~expander ({ requires; flags; _ } as t)
-    =
+let dot_merlin sctx ~dir ~more_src_dirs ~expander t =
   let open Build.With_targets.O in
   let merlin_file = Path.Build.relative dir merlin_file_name in
 
@@ -237,47 +273,36 @@ let dot_merlin sctx ~dir ~more_src_dirs ~expander ({ requires; flags; _ } as t)
     >>> Build.create_file (Path.Build.relative dir ".merlin-exists") );
   Path.Set.singleton (Path.build merlin_file)
   |> Rules.Produce.Alias.add_deps (Alias.check ~dir);
-  let pp_flags = pp_flags sctx ~expander t in
   let action =
     Build.With_targets.write_file_dyn merlin_file
-      (let+ flags = Build.with_no_targets flags
-       and+ pp = pp_flags in
-       let src_dirs, obj_dirs =
-         Lib.Set.fold requires
-           ~init:(Path.set_of_source_paths t.source_dirs, t.objs_dirs)
-           ~f:(fun (lib : Lib.t) (src_dirs, obj_dirs) ->
-             let more_src_dirs = lib_src_dirs ~sctx lib in
-             ( Path.Set.union src_dirs more_src_dirs
-             , let public_cmi_dir = Obj_dir.public_cmi_dir (Lib.obj_dir lib) in
-               Path.Set.add obj_dirs public_cmi_dir ))
-       in
-       let src_dirs =
-         Path.Set.union src_dirs
-           (Path.Set.of_list_map ~f:Path.source more_src_dirs)
-       in
-       Dot_file.to_string ~pp ~flags ~src_dirs ~obj_dirs)
+      (Module_name.Map.foldi t ~init:(Build.With_targets.return "")
+         ~f:(fun module_name ({ requires; flags; _ } as cu_config) acc ->
+           let pp_flags = pp_flags sctx ~expander cu_config in
+           let+ flags = Build.with_no_targets flags
+           and+ pp = pp_flags
+           and+ acc = acc in
+           let src_dirs, obj_dirs =
+             Lib.Set.fold requires
+               ~init:
+                 ( Path.set_of_source_paths cu_config.source_dirs
+                 , cu_config.objs_dirs )
+               ~f:(fun (lib : Lib.t) (src_dirs, obj_dirs) ->
+                 let more_src_dirs = lib_src_dirs ~sctx lib in
+                 ( Path.Set.union src_dirs more_src_dirs
+                 , let public_cmi_dir =
+                     Obj_dir.public_cmi_dir (Lib.obj_dir lib)
+                   in
+                   Path.Set.add obj_dirs public_cmi_dir ))
+           in
+           let src_dirs =
+             Path.Set.union src_dirs
+               (Path.Set.of_list_map ~f:Path.source more_src_dirs)
+           in
+           Printf.sprintf "%s\n%s:%s" acc
+             (Module_name.to_string module_name |> String.lowercase)
+             (Dot_file.to_string ~pp ~flags ~src_dirs ~obj_dirs)))
   in
   SC.add_rule sctx ~dir action
-
-let merge_two ~allow_approx_merlin a b =
-  { requires = Lib.Set.union a.requires b.requires
-  ; flags =
-      (let+ a = a.flags
-       and+ b = b.flags in
-       a @ b)
-  ; preprocess = Pp.merge ~allow_approx_merlin a.preprocess b.preprocess
-  ; libname =
-      ( match a.libname with
-      | Some _ as x -> x
-      | None -> b.libname )
-  ; source_dirs = Path.Source.Set.union a.source_dirs b.source_dirs
-  ; objs_dirs = Path.Set.union a.objs_dirs b.objs_dirs
-  }
-
-let merge_all ~allow_approx_merlin = function
-  | [] -> None
-  | init :: ts ->
-    Some (List.fold_left ~init ~f:(merge_two ~allow_approx_merlin) ts)
 
 let add_rules sctx ~dir ~more_src_dirs ~expander merlin =
   if (SC.context sctx).merlin then
