@@ -287,7 +287,7 @@ let dot_merlin sctx ~dir ~more_src_dirs ~expander t =
              Path.Set.union src_dirs
                (Path.Set.of_list_map ~f:Path.source more_src_dirs)
            in
-           Printf.sprintf "%s\n%s:%s" acc
+           Printf.sprintf "%s%s\n%s\n" acc
              (Module_name.to_string module_name |> String.lowercase)
              (Dot_file.to_string ~pp ~flags ~src_dirs ~obj_dirs)))
   in
