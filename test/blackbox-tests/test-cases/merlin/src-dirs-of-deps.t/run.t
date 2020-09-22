@@ -16,6 +16,7 @@ library also has more than one src dir.
   $ dune build lib2/.merlin-conf
   $ cat _build/default/lib2/.merlin-conf |
   > sed 's/[0-9]*:/?:/g' | sed 's/)(/)|(/g' | tr '|' '\n'
+  lib2
   ((?:EXCLUDE_QUERY_DIR)
   (?:B?:$TESTCASE_ROOT/_build/default/lib1/.lib1.objs/byte)
   (?:B?:$TESTCASE_ROOT/_build/default/lib2/.lib2.objs/byte)
