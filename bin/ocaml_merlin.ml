@@ -16,12 +16,24 @@ let man =
 let info = Term.info "ocaml-merlin" ~doc ~man
 
 let term =
-  let+ common = Common.term in
+  let+ common = Common.term
+  and+ dump_config =
+    Arg.(
+      value
+      & opt (some string) None
+      & info [ "dump-config" ]
+          ~doc:
+            "Print the entire content of the merlin configuration in the \
+             given folder in the form of a S-expression.")
+  in
   Common.set_common common ~targets:[];
   Scheduler.go ~common (fun () ->
       Dune_engine.File_tree.init ~recognize_jbuilder_projects:true
         ~ancestor_vcs:None;
       Dune_rules.Workspace.init ();
-      Dune_rules.Merlin_server.start () |> Fiber.return)
+      ( match dump_config with
+      | Some s -> Dune_rules.Merlin_server.dump s
+      | None -> Dune_rules.Merlin_server.start () )
+      |> Fiber.return)
 
 let command = (term, info)
