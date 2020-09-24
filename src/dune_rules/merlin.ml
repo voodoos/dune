@@ -79,7 +79,7 @@ module Processed = struct
 
   module Persist = Persistent.Make (D)
 
-  let load = Persist.load
+  let load_file = Persist.load
 
   let to_sexp { obj_dirs; src_dirs; flags; pp } =
     let serialize_path = Path.to_absolute_filename in
@@ -115,6 +115,16 @@ module Processed = struct
     | Some result -> Some result
     | None when String.equal file filename -> None
     | None -> get config ~filename:file
+
+  let print_file path =
+    match load_file path with
+    | None -> Printf.eprintf "No merlin config found"
+    | Some t ->
+      String.Map.iteri
+        ~f:(fun name config ->
+          let sexp = to_sexp config in
+          Format.printf "@[<v>%s@,%a@]@." name Sexp.pp sexp)
+        t
 
   let dot_merlin sctx ~dir (t : t Build.With_targets.t) =
     let open Build.With_targets.O in
