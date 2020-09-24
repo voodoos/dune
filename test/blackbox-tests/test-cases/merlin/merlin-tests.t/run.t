@@ -1,77 +1,110 @@
-  $ dune build @print-merlins --profile release
-  sanitize_dot_merlin alias print-merlins
-  # Processing exe/.merlin-conf
+CRAM sanitization
+  $ OPAM_PREFIX=$(opam config var prefix)
+  $ BUILD_PATH_PREFIX_MAP="OPAM=$OPAM_PREFIX:$BUILD_PATH_PREFIX_MAP"
+
+  $ dune build ./exe/.merlin-conf --profile release
+  $ dune ocaml-merlin --dump-config=$(pwd)/exe
   x
-  ((?:EXCLUDE_QUERY_DIR)
-  (?:B?:$LIB_PREFIX/lib/bytes)
-  (?:B?:$LIB_PREFIX/lib/findlib)
-  (?:B?:$LIB_PREFIX/lib/ocaml)
-  (?:B?:$TESTCASE_ROOT/_build/default/exe/.x.eobjs/byte)
-  (?:B?:$LIB_PREFIX/lib/.foo.objs/public_cmi)
-  (?:S?:$LIB_PREFIX/lib/bytes)
-  (?:S?:$LIB_PREFIX/lib/findlib)
-  (?:S?:$LIB_PREFIX/lib/ocaml)
-  (?:S?:$TESTCASE_ROOT/exe)
-  (?:S?:$LIB_PREFIX/lib)
-  (?:FLG(?:-pp?:$TESTCASE_ROOT/_build/default/pp/pp.exe))
-  (?:FLG(?:-w?:-40)))
-  # Processing lib/.merlin-conf
+  ((EXCLUDE_QUERY_DIR)
+   (B OPAM/lib/bytes)
+   (B OPAM/lib/findlib)
+   (B OPAM/lib/ocaml)
+   (B
+    $TESTCASE_ROOT/_build/default/exe/.x.eobjs/byte)
+   (B
+    $TESTCASE_ROOT/_build/default/lib/.foo.objs/public_cmi)
+   (S OPAM/lib/bytes)
+   (S OPAM/lib/findlib)
+   (S OPAM/lib/ocaml)
+   (S
+    $TESTCASE_ROOT/exe)
+   (S
+    $TESTCASE_ROOT/lib)
+   (FLG
+    (-pp
+     $TESTCASE_ROOT/_build/default/pp/pp.exe))
+   (FLG (-w -40)))
+
+  $ dune build ./lib/.merlin-conf --profile release
+  $ dune ocaml-merlin --dump-config=$(pwd)/lib
   bar
-  ((?:EXCLUDE_QUERY_DIR)
-  (?:B?:$LIB_PREFIX/lib/.bar.objs/byte)
-  (?:S?:$LIB_PREFIX/lib)
-  (?:S?:$LIB_PREFIX/lib/subdir)
-  (?:FLG(?:-ppx?:$TESTCASE_ROOT/_build/default/.ppx/4128e43a9cfb141a37f547484cc9bf46/ppx.exe --as-ppx --cookie 'library-name="bar"'))
-  (?:FLG(?:-open?:Bar?:-w?:-40)))
+  ((EXCLUDE_QUERY_DIR)
+   (B
+    $TESTCASE_ROOT/_build/default/lib/.bar.objs/byte)
+   (S
+    $TESTCASE_ROOT/lib)
+   (S
+    $TESTCASE_ROOT/lib/subdir)
+   (FLG
+    (-ppx
+     "$TESTCASE_ROOT/_build/default/.ppx/4128e43a9cfb141a37f547484cc9bf46/ppx.exe --as-ppx --cookie 'library-name="bar"'"))
+   (FLG (-open Bar -w -40)))
   file
-  ((?:EXCLUDE_QUERY_DIR)
-  (?:B?:$LIB_PREFIX/lib/.bar.objs/byte)
-  (?:S?:$LIB_PREFIX/lib)
-  (?:S?:$LIB_PREFIX/lib/subdir)
-  (?:FLG(?:-ppx?:$TESTCASE_ROOT/_build/default/.ppx/4128e43a9cfb141a37f547484cc9bf46/ppx.exe --as-ppx --cookie 'library-name="bar"'))
-  (?:FLG(?:-open?:Bar?:-w?:-40)))
+  ((EXCLUDE_QUERY_DIR)
+   (B
+    $TESTCASE_ROOT/_build/default/lib/.bar.objs/byte)
+   (S
+    $TESTCASE_ROOT/lib)
+   (S
+    $TESTCASE_ROOT/lib/subdir)
+   (FLG
+    (-ppx
+     "$TESTCASE_ROOT/_build/default/.ppx/4128e43a9cfb141a37f547484cc9bf46/ppx.exe --as-ppx --cookie 'library-name="bar"'"))
+   (FLG (-open Bar -w -40)))
   foo
-  ((?:EXCLUDE_QUERY_DIR)
-  (?:B?:$LIB_PREFIX/lib/bytes)
-  (?:B?:$LIB_PREFIX/lib/findlib)
-  (?:B?:$LIB_PREFIX/lib/ocaml)
-  (?:B?:$LIB_PREFIX/lib/.foo.objs/byte)
-  (?:S?:$LIB_PREFIX/lib/bytes)
-  (?:S?:$LIB_PREFIX/lib/findlib)
-  (?:S?:$LIB_PREFIX/lib/ocaml)
-  (?:S?:$LIB_PREFIX/lib)
-  (?:S?:$LIB_PREFIX/lib/subdir)
-  (?:FLG(?:-ppx?:$TESTCASE_ROOT/_build/default/.ppx/4128e43a9cfb141a37f547484cc9bf46/ppx.exe --as-ppx --cookie 'library-name="foo"'))
-  (?:FLG(?:-open?:Foo?:-w?:-40)))
+  ((EXCLUDE_QUERY_DIR)
+   (B OPAM/lib/bytes)
+   (B OPAM/lib/findlib)
+   (B OPAM/lib/ocaml)
+   (B
+    $TESTCASE_ROOT/_build/default/lib/.foo.objs/byte)
+   (S OPAM/lib/bytes)
+   (S OPAM/lib/findlib)
+   (S OPAM/lib/ocaml)
+   (S
+    $TESTCASE_ROOT/lib)
+   (S
+    $TESTCASE_ROOT/lib/subdir)
+   (FLG
+    (-ppx
+     "$TESTCASE_ROOT/_build/default/.ppx/4128e43a9cfb141a37f547484cc9bf46/ppx.exe --as-ppx --cookie 'library-name="foo"'"))
+   (FLG (-open Foo -w -40)))
   privmod
-  ((?:EXCLUDE_QUERY_DIR)
-  (?:B?:$LIB_PREFIX/lib/bytes)
-  (?:B?:$LIB_PREFIX/lib/findlib)
-  (?:B?:$LIB_PREFIX/lib/ocaml)
-  (?:B?:$LIB_PREFIX/lib/.foo.objs/byte)
-  (?:S?:$LIB_PREFIX/lib/bytes)
-  (?:S?:$LIB_PREFIX/lib/findlib)
-  (?:S?:$LIB_PREFIX/lib/ocaml)
-  (?:S?:$LIB_PREFIX/lib)
-  (?:S?:$LIB_PREFIX/lib/subdir)
-  (?:FLG(?:-ppx?:$TESTCASE_ROOT/_build/default/.ppx/4128e43a9cfb141a37f547484cc9bf46/ppx.exe --as-ppx --cookie 'library-name="foo"'))
-  (?:FLG(?:-open?:Foo?:-w?:-40)))
+  ((EXCLUDE_QUERY_DIR)
+   (B OPAM/lib/bytes)
+   (B OPAM/lib/findlib)
+   (B OPAM/lib/ocaml)
+   (B
+    $TESTCASE_ROOT/_build/default/lib/.foo.objs/byte)
+   (S OPAM/lib/bytes)
+   (S OPAM/lib/findlib)
+   (S OPAM/lib/ocaml)
+   (S
+    $TESTCASE_ROOT/lib)
+   (S
+    $TESTCASE_ROOT/lib/subdir)
+   (FLG
+    (-ppx
+     "$TESTCASE_ROOT/_build/default/.ppx/4128e43a9cfb141a37f547484cc9bf46/ppx.exe --as-ppx --cookie 'library-name="foo"'"))
+   (FLG (-open Foo -w -40)))
 
 Make sure a ppx directive is generated
-
-  $ grep -q ppx _build/default/lib/.merlin-conf
+  $ dune ocaml-merlin --dump-config=$(pwd)/lib | grep -q ppx
 
 Make sure pp flag is correct and variables are expanded
 
-  $ dune build @print-merlins-pp
-  sanitize_dot_merlin alias print-merlins-pp
-  # Processing pp-with-expand/.merlin-conf
+  $ dune build ./pp-with-expand/.merlin-conf --profile release
+  $ dune ocaml-merlin --dump-config=$(pwd)/pp-with-expand
   foobar
-  ((?:EXCLUDE_QUERY_DIR)
-  (?:B?:$TESTCASE_ROOT/_build/default/pp-with-expand/.foobar.eobjs/byte)
-  (?:S?:$TESTCASE_ROOT/pp-with-expand)
-  (?:FLG(?:-pp?:$TESTCASE_ROOT/_build/default/pp/pp.exe -nothing))
-  (?:FLG(?:-w?:@1..3@5..28@30..39@43@46..47@49..57@61..62-?:-strict-sequence?:-strict-formats?:-short-paths?:-keep-locs)))
+  ((EXCLUDE_QUERY_DIR)
+   (B
+    $TESTCASE_ROOT/_build/default/pp-with-expand/.foobar.eobjs/byte)
+   (S
+    $TESTCASE_ROOT/pp-with-expand)
+   (FLG
+    (-pp
+     "$TESTCASE_ROOT/_build/default/pp/pp.exe -nothing"))
+   (FLG (-w -40)))
 
 We want future-syntax to either be applied, or not, depending on OCaml version.
 Adding the `echo` with expected output to the set of lines is a way of achieving that.
