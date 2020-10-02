@@ -14,7 +14,7 @@ library also has more than one src dir.
   > (library (name lib2) (libraries lib1) (modules ()))
   > EOF
 
-  $ dune build lib2/.merlin-conf
+  $ dune build lib2/.merlin-conf/lib-lib2
   $ dune ocaml-merlin --dump-config=$(pwd)/lib2
   lib2
   ((EXCLUDE_QUERY_DIR)

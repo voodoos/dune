@@ -2,7 +2,7 @@ CRAM sanitization
   $ OPAM_PREFIX=$(opam config var prefix)
   $ BUILD_PATH_PREFIX_MAP="OPAM=$OPAM_PREFIX:$BUILD_PATH_PREFIX_MAP"
 
-  $ dune build ./exe/.merlin-conf --profile release
+  $ dune build ./exe/.merlin-conf/exe-x --profile release
   $ dune ocaml-merlin --dump-config=$(pwd)/exe
   x
   ((EXCLUDE_QUERY_DIR)
@@ -25,7 +25,7 @@ CRAM sanitization
      $TESTCASE_ROOT/_build/default/pp/pp.exe))
    (FLG (-w -40)))
 
-  $ dune build ./lib/.merlin-conf --profile release
+  $ dune build ./lib/.merlin-conf/lib-foo ./lib/.merlin-conf/lib-bar --profile release
   $ dune ocaml-merlin --dump-config=$(pwd)/lib
   bar
   ((EXCLUDE_QUERY_DIR)
@@ -93,7 +93,7 @@ Make sure a ppx directive is generated
 
 Make sure pp flag is correct and variables are expanded
 
-  $ dune build ./pp-with-expand/.merlin-conf --profile release
+  $ dune build ./pp-with-expand/.merlin-conf/exe-foobar --profile release
   $ dune ocaml-merlin --dump-config=$(pwd)/pp-with-expand
   foobar
   ((EXCLUDE_QUERY_DIR)

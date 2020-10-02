@@ -1,3 +1,3 @@
-  $ dune build .merlin-conf
-  $ ls _build/default/.merlin-conf
-  _build/default/.merlin-conf
+  $ dune build .merlin-conf/lib-foo
+  $ ls _build/default/.merlin-conf/lib-foo
+  _build/default/.merlin-conf/lib-foo
