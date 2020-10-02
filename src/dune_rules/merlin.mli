@@ -12,8 +12,6 @@ type t
 
 val add_source_dir : t -> Path.Source.t -> t
 
-val merge_all : t list -> t option
-
 module Processed : sig
   type t
 

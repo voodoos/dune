@@ -358,10 +358,6 @@ let dot_merlin sctx ~stanza ~dir ~more_src_dirs ~expander (t : Unprocessed.t) =
   in
   SC.add_rule sctx ~dir action
 
-let merge_all = function
-  | [] -> None
-  | init :: ts -> Some (List.fold_left ~init ~f:Module_name.Map.superpose ts)
-
 let add_rules sctx ~stanza ~dir ~more_src_dirs ~expander merlin =
   if (SC.context sctx).merlin then
     dot_merlin sctx ~stanza ~more_src_dirs ~expander ~dir merlin
