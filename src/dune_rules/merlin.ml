@@ -5,7 +5,9 @@ open Build.O
 open! No_io
 module SC = Super_context
 
-let merlin_file_name = ".merlin-conf"
+let merlin_file_name = ".merlin-conf/"
+
+let merlin_exist_name = ".merlin-exist"
 
 let warn_dropped_pp loc ~allow_approx_merlin ~reason =
   if not allow_approx_merlin then
@@ -330,8 +332,10 @@ end
 
 include Unprocessed
 
-let dot_merlin sctx ~dir ~more_src_dirs ~expander (t : Unprocessed.t) =
+let dot_merlin sctx ~stanza ~dir ~more_src_dirs ~expander (t : Unprocessed.t) =
   let open Build.With_targets.O in
+  let merlin_file_name = merlin_file_name ^ stanza in
+  let merlin_exist_name = merlin_exist_name ^ stanza in
   let merlin_file = Path.Build.relative dir merlin_file_name in
 
   (* We make the compilation of .ml/.mli files depend on the existence of
@@ -343,7 +347,7 @@ let dot_merlin sctx ~dir ~more_src_dirs ~expander (t : Unprocessed.t) =
      of a file, so we have to use this trick. *)
   SC.add_rule sctx ~dir
     ( Build.with_no_targets (Build.path (Path.build merlin_file))
-    >>> Build.create_file (Path.Build.relative dir ".merlin-exists") );
+    >>> Build.create_file (Path.Build.relative dir merlin_exist_name) );
   Path.Set.singleton (Path.build merlin_file)
   |> Rules.Produce.Alias.add_deps (Alias.check ~dir);
 
@@ -358,6 +362,6 @@ let merge_all = function
   | [] -> None
   | init :: ts -> Some (List.fold_left ~init ~f:Module_name.Map.superpose ts)
 
-let add_rules sctx ~dir ~more_src_dirs ~expander merlin =
+let add_rules sctx ~stanza ~dir ~more_src_dirs ~expander merlin =
   if (SC.context sctx).merlin then
-    dot_merlin sctx ~more_src_dirs ~expander ~dir merlin
+    dot_merlin sctx ~stanza ~more_src_dirs ~expander ~dir merlin

@@ -24,7 +24,7 @@ module For_stanza : sig
     -> dir_contents:Dir_contents.t
     -> expander:Expander.t
     -> files_to_install:(Install_conf.t -> unit)
-    -> ( Merlin.t list
+    -> ( (string * Merlin.t) list
        , (Loc.t * Compilation_context.t) list
        , Path.Build.t list
        , Path.Source.t list )
@@ -76,7 +76,11 @@ end = struct
       let cctx, merlin =
         Lib_rules.rules lib ~sctx ~dir ~scope ~dir_contents ~expander
       in
-      { merlin = Some merlin
+      let merlin_ident =
+        Printf.sprintf "lib-%s"
+          (Dune_file.Library.best_name lib |> Lib_name.to_string)
+      in
+      { merlin = Some (merlin_ident, merlin)
       ; cctx = Some (lib.buildable.loc, cctx)
       ; js = None
       ; source_dirs = None
@@ -89,7 +93,11 @@ end = struct
       let cctx, merlin =
         Exe_rules.rules exes ~sctx ~dir ~scope ~expander ~dir_contents
       in
-      { merlin = Some merlin
+      let merlin_ident =
+        Printf.sprintf "exe-%s"
+          (String.concat ~sep:"-" (List.map ~f:snd exes.names))
+      in
+      { merlin = Some (merlin_ident, merlin)
       ; cctx = Some (exes.buildable.loc, cctx)
       ; js =
           Some
@@ -106,7 +114,11 @@ end = struct
       let cctx, merlin =
         Test_rules.rules tests ~sctx ~dir ~scope ~expander ~dir_contents
       in
-      { merlin = Some merlin
+      let merlin_ident =
+        Printf.sprintf "exe-%s"
+          (String.concat ~sep:"-" (List.map ~f:snd tests.exes.names))
+      in
+      { merlin = Some (merlin_ident, merlin)
       ; cctx = Some (tests.exes.buildable.loc, cctx)
       ; js = None
       ; source_dirs = None
@@ -222,12 +234,12 @@ let gen_rules sctx dir_contents cctxs expander
     For_stanza.of_stanzas stanzas ~cctxs ~sctx ~src_dir ~ctx_dir ~scope
       ~dir_contents ~expander ~files_to_install
   in
-  Option.iter (Merlin.merge_all merlins) ~f:(fun m ->
+  List.iter merlins ~f:(fun (stanza, merlin) ->
       let more_src_dirs =
         lib_src_dirs ~dir_contents |> List.rev_append source_dirs
       in
-      Merlin.add_rules sctx ~dir:ctx_dir ~more_src_dirs ~expander
-        (Merlin.add_source_dir m src_dir));
+      Merlin.add_rules sctx ~stanza ~dir:ctx_dir ~more_src_dirs ~expander
+        (Merlin.add_source_dir merlin src_dir));
   List.iter stanzas ~f:(fun stanza ->
       match (stanza : Stanza.t) with
       | Menhir.T m when Expander.eval_blang expander m.enabled_if -> (

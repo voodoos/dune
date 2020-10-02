@@ -6,6 +6,8 @@ open Import
 
 val merlin_file_name : string
 
+val merlin_exist_name : string
+
 type t
 
 val add_source_dir : t -> Path.Source.t -> t
@@ -36,6 +38,7 @@ val make :
 (** Add rules for generating the .merlin in a directory *)
 val add_rules :
      Super_context.t
+  -> stanza:string
   -> dir:Path.Build.t
   -> more_src_dirs:Path.Source.t list
   -> expander:Expander.t
