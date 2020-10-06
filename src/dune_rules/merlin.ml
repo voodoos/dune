@@ -111,11 +111,7 @@ module Processed = struct
       String.Map.iteri
         ~f:(fun name config ->
           let sexp = to_sexp config in
-          Printf.printf "%s\n" name;
-          Sexp.pp Format.std_formatter sexp;
-          Format.print_flush ();
-          print_newline ();
-          flush stdout)
+          Format.printf "@[<v>%s@,%a@]@." name Sexp.pp sexp)
         t
 end
 
