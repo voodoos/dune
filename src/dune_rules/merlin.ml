@@ -9,53 +9,39 @@ let merlin_file_name = ".merlin-conf/"
 
 let merlin_exist_name = ".merlin-exist"
 
-let warn_dropped_pp loc ~allow_approx_merlin ~reason =
-  if not allow_approx_merlin then
-    User_warning.emit ~loc
-      [ Pp.textf ".merlin generated is inaccurate. %s." reason
-      ; Pp.text
-          "Split the stanzas into different directories or silence this \
-           warning by adding (allow_approximate_merlin) to your dune-project."
-      ]
-
 module Pp = struct
-  let merge ~allow_approx_merlin (a : _ Preprocess.t) (b : _ Preprocess.t) =
+  let merge (a : _ Preprocess.t) (b : _ Preprocess.t) =
+    let raise ?loc () =
+      Code_error.raise ?loc
+        "Merging incompatible PP configuration should not happen anymore." []
+    in
     match (a, b) with
     | No_preprocessing, No_preprocessing -> Preprocess.No_preprocessing
+    | (Future_syntax _ as future_syntax), _
+    | _, (Future_syntax _ as future_syntax) ->
+      future_syntax
     | No_preprocessing, pp
     | pp, No_preprocessing ->
       let loc =
         Preprocess.loc pp |> Option.value_exn
         (* only No_preprocessing has no loc*)
       in
-      warn_dropped_pp loc ~allow_approx_merlin
-        ~reason:"Cannot mix preprocessed and non preprocessed specifications";
-      Preprocess.No_preprocessing
-    | (Future_syntax _ as future_syntax), _
-    | _, (Future_syntax _ as future_syntax) ->
-      future_syntax
+      raise ~loc ()
     | Action (loc, a1), Action (_, a2) ->
       if Action_dune_lang.compare_no_locs a1 a2 <> Ordering.Eq then
-        warn_dropped_pp loc ~allow_approx_merlin
-          ~reason:
-            "this action preprocessor is not equivalent to other preprocessor \
-             specifications.";
+        raise ~loc ();
       Action (loc, a1)
     | Pps _, Action (loc, _)
     | Action (loc, _), Pps _ ->
-      warn_dropped_pp loc ~allow_approx_merlin
-        ~reason:"cannot mix action and pps preprocessors";
-      No_preprocessing
+      raise ~loc ()
     | (Pps pp1 as pp), Pps pp2 ->
       if
         Ordering.neq
           (Preprocess.Pps.compare_no_locs
              Preprocess.Without_instrumentation.compare_no_locs pp1 pp2)
-      then (
-        warn_dropped_pp pp1.loc ~allow_approx_merlin
-          ~reason:"pps specification isn't identical in all stanzas";
-        No_preprocessing
-      ) else
+      then
+        raise ~loc:pp1.loc ()
+      else
         pp
 end
 
@@ -161,7 +147,7 @@ module Unprocessed = struct
         (let+ a = a.flags
          and+ b = b.flags in
          a @ b)
-    ; preprocess = Pp.merge ~allow_approx_merlin:false a.preprocess b.preprocess
+    ; preprocess = Pp.merge a.preprocess b.preprocess
     ; libname =
         ( match a.libname with
         | Some _ as x -> x
