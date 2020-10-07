@@ -1,49 +1,12 @@
 open! Dune_engine
 open! Stdune
 open Import
-open Build.O
 open! No_io
 module SC = Super_context
 
 let merlin_file_name = ".merlin-conf/"
 
 let merlin_exist_name = ".merlin-exist"
-
-module Pp = struct
-  let merge (a : _ Preprocess.t) (b : _ Preprocess.t) =
-    let raise ?loc () =
-      Code_error.raise ?loc
-        "Merging incompatible PP configuration should not happen anymore." []
-    in
-    match (a, b) with
-    | No_preprocessing, No_preprocessing -> Preprocess.No_preprocessing
-    | (Future_syntax _ as future_syntax), _
-    | _, (Future_syntax _ as future_syntax) ->
-      future_syntax
-    | No_preprocessing, pp
-    | pp, No_preprocessing ->
-      let loc =
-        Preprocess.loc pp |> Option.value_exn
-        (* only No_preprocessing has no loc*)
-      in
-      raise ~loc ()
-    | Action (loc, a1), Action (_, a2) ->
-      if Action_dune_lang.compare_no_locs a1 a2 <> Ordering.Eq then
-        raise ~loc ();
-      Action (loc, a1)
-    | Pps _, Action (loc, _)
-    | Action (loc, _), Pps _ ->
-      raise ~loc ()
-    | (Pps pp1 as pp), Pps pp2 ->
-      if
-        Ordering.neq
-          (Preprocess.Pps.compare_no_locs
-             Preprocess.Without_instrumentation.compare_no_locs pp1 pp2)
-      then
-        raise ~loc:pp1.loc ()
-      else
-        pp
-end
 
 module Processed = struct
   (* The actual content of the merlin file as built by the [Unprocessed.process]
@@ -137,20 +100,7 @@ module Unprocessed = struct
           source_dirs = Path.Source.Set.add cu_config.source_dirs dir
         })
 
-  let merge_config a b =
-    { requires = Lib.Set.union a.requires b.requires
-    ; flags =
-        (let+ a = a.flags
-         and+ b = b.flags in
-         a @ b)
-    ; preprocess = Pp.merge a.preprocess b.preprocess
-    ; libname =
-        ( match a.libname with
-        | Some _ as x -> x
-        | None -> b.libname )
-    ; source_dirs = Path.Source.Set.union a.source_dirs b.source_dirs
-    ; objs_dirs = Path.Set.union a.objs_dirs b.objs_dirs
-    }
+  let merge_config _a b = b
 
   let make ?(requires = Ok []) ~flags
       ?(preprocess = Preprocess.No_preprocessing) ?libname
