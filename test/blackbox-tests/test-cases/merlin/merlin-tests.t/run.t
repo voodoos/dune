@@ -1,21 +1,19 @@
 CRAM sanitization
-  $ OPAM_PREFIX=$(opam config var prefix)
-  $ BUILD_PATH_PREFIX_MAP="OPAM=$OPAM_PREFIX:$BUILD_PATH_PREFIX_MAP"
-
   $ dune build ./exe/.merlin-conf/exe-x --profile release
-  $ dune ocaml-merlin --dump-config=$(pwd)/exe
+  $ dune ocaml-merlin --dump-config=$(pwd)/exe |
+  > sed 's#'$(opam config var prefix)'#OPAM_PREFIX#'
   x
   ((EXCLUDE_QUERY_DIR)
-   (B OPAM/lib/bytes)
-   (B OPAM/lib/findlib)
-   (B OPAM/lib/ocaml)
+   (B OPAM_PREFIX/lib/bytes)
+   (B OPAM_PREFIX/lib/findlib)
+   (B OPAM_PREFIX/lib/ocaml)
    (B
     $TESTCASE_ROOT/_build/default/exe/.x.eobjs/byte)
    (B
     $TESTCASE_ROOT/_build/default/lib/.foo.objs/public_cmi)
-   (S OPAM/lib/bytes)
-   (S OPAM/lib/findlib)
-   (S OPAM/lib/ocaml)
+   (S OPAM_PREFIX/lib/bytes)
+   (S OPAM_PREFIX/lib/findlib)
+   (S OPAM_PREFIX/lib/ocaml)
    (S
     $TESTCASE_ROOT/exe)
    (S
@@ -26,7 +24,8 @@ CRAM sanitization
    (FLG (-w -40)))
 
   $ dune build ./lib/.merlin-conf/lib-foo ./lib/.merlin-conf/lib-bar --profile release
-  $ dune ocaml-merlin --dump-config=$(pwd)/lib
+  $ dune ocaml-merlin --dump-config=$(pwd)/lib |
+  > sed 's#'$(opam config var prefix)'#OPAM_PREFIX#'
   bar
   ((EXCLUDE_QUERY_DIR)
    (B
@@ -53,14 +52,14 @@ CRAM sanitization
    (FLG (-open Bar -w -40)))
   foo
   ((EXCLUDE_QUERY_DIR)
-   (B OPAM/lib/bytes)
-   (B OPAM/lib/findlib)
-   (B OPAM/lib/ocaml)
+   (B OPAM_PREFIX/lib/bytes)
+   (B OPAM_PREFIX/lib/findlib)
+   (B OPAM_PREFIX/lib/ocaml)
    (B
     $TESTCASE_ROOT/_build/default/lib/.foo.objs/byte)
-   (S OPAM/lib/bytes)
-   (S OPAM/lib/findlib)
-   (S OPAM/lib/ocaml)
+   (S OPAM_PREFIX/lib/bytes)
+   (S OPAM_PREFIX/lib/findlib)
+   (S OPAM_PREFIX/lib/ocaml)
    (S
     $TESTCASE_ROOT/lib)
    (S
@@ -71,14 +70,14 @@ CRAM sanitization
    (FLG (-open Foo -w -40)))
   privmod
   ((EXCLUDE_QUERY_DIR)
-   (B OPAM/lib/bytes)
-   (B OPAM/lib/findlib)
-   (B OPAM/lib/ocaml)
+   (B OPAM_PREFIX/lib/bytes)
+   (B OPAM_PREFIX/lib/findlib)
+   (B OPAM_PREFIX/lib/ocaml)
    (B
     $TESTCASE_ROOT/_build/default/lib/.foo.objs/byte)
-   (S OPAM/lib/bytes)
-   (S OPAM/lib/findlib)
-   (S OPAM/lib/ocaml)
+   (S OPAM_PREFIX/lib/bytes)
+   (S OPAM_PREFIX/lib/findlib)
+   (S OPAM_PREFIX/lib/ocaml)
    (S
     $TESTCASE_ROOT/lib)
    (S
@@ -94,7 +93,8 @@ Make sure a ppx directive is generated
 Make sure pp flag is correct and variables are expanded
 
   $ dune build ./pp-with-expand/.merlin-conf/exe-foobar --profile release
-  $ dune ocaml-merlin --dump-config=$(pwd)/pp-with-expand
+  $ dune ocaml-merlin --dump-config=$(pwd)/pp-with-expand |
+  > sed 's#'$(opam config var prefix)'#OPAM_PREFIX#'
   foobar
   ((EXCLUDE_QUERY_DIR)
    (B
