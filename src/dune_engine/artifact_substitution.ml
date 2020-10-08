@@ -34,6 +34,7 @@ type configpath =
 
 type t =
   | Vcs_describe of Path.Source.t
+  | Custom_build_info of string * Path.Build.t
   | Location of Section.t * Package.Name.t
   | Configpath of configpath
   | Hardcoded_ocaml_path
@@ -106,6 +107,8 @@ let conf_dummy =
 
 let to_dyn = function
   | Vcs_describe p -> Dyn.Variant ("Vcs_describe", [ Path.Source.to_dyn p ])
+  | Custom_build_info (name, dir) ->
+    Dyn.Variant ("Custom", [ String name; Path.Build.to_dyn dir ])
   | Location (kind, lib_name) ->
     Dyn.Variant
       ("Location", [ Section.to_dyn kind; Package.Name.to_dyn lib_name ])
@@ -134,6 +137,13 @@ let eval t ~conf =
     match conf.get_vcs p with
     | None -> Fiber.return ""
     | Some vcs -> Vcs.describe vcs )
+  | Custom_build_info (name, dir) ->
+    let f =
+      Path.Build.relative dir
+        (Printf.sprintf ".%s_custom_build_info.txt-gen" name)
+    in
+    let s, _ = Build.(contents (Path.build f) |> exec) in
+    Fiber.return s
   | Location (name, lib_name) ->
     Fiber.return (relocatable (conf.get_location name lib_name))
   | Configpath d ->
@@ -170,6 +180,9 @@ let encode ?(min_len = 0) t =
       | Vcs_describe p ->
         let s = Path.Source.to_string p in
         sprintf "vcs-describe:%d:%s" (String.length s) s
+      | Custom_build_info (name, dir) ->
+        let s = Path.Build.to_string dir in
+        sprintf "custom:%s:%d:%s" name (String.length s) s
       | Location (kind, name) ->
         let name = Package.Name.to_string name in
         sprintf "location:%s:%d:%s" (Section.to_string kind)

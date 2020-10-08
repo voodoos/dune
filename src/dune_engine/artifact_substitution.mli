@@ -9,6 +9,7 @@ type configpath =
 (** A symbolic representation of the value to substitute to *)
 type t =
   | Vcs_describe of Path.Source.t
+  | Custom_build_info of string * Path.Build.t
   | Location of Section.t * Package.Name.t
   | Configpath of configpath
   | Hardcoded_ocaml_path
