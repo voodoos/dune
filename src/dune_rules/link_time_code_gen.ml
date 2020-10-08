@@ -214,7 +214,7 @@ let dune_site_plugins_code ~libs ~builtins =
         (Dyn.to_string (Meta.to_dyn meta)));
   Buffer.contents buf
 
-let handle_special_libs cctx =
+let handle_special_libs cctx ~cbi:_ =
   let open Result.O in
   let+ all_libs = CC.requires_link cctx in
   let obj_dir = Compilation_context.obj_dir cctx |> Obj_dir.of_local in

@@ -175,8 +175,9 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
       o_files sctx ~dir ~expander ~exes ~linkages ~dir_contents
         ~requires_compile
     in
+    let cbi = Generate_build_info.cbi_modules sctx ~dir in
     Check_rules.add_files sctx ~dir o_files;
-    Exe.build_and_link_many cctx ~programs ~linkages ~link_args ~o_files
+    Exe.build_and_link_many cctx ~programs ~linkages ~link_args ~o_files ~cbi
       ~promote:exes.promote ~embed_in_plugin_libraries
   in
   ( cctx

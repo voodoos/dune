@@ -41,6 +41,7 @@ val build_and_link :
      program:Program.t
   -> linkages:Linkage.t list
   -> promote:Rule.Promote.t option
+  -> cbi:Dune_file.Generate_custom_build_info.t list
   -> ?link_args:Command.Args.static Command.Args.t Build.t
   -> ?o_files:Path.t list
   -> ?embed_in_plugin_libraries:(Loc.t * Lib_name.t) list
@@ -51,6 +52,7 @@ val build_and_link_many :
      programs:Program.t list
   -> linkages:Linkage.t list
   -> promote:Rule.Promote.t option
+  -> cbi:Dune_file.Generate_custom_build_info.t list
   -> ?link_args:Command.Args.static Command.Args.t Build.t
   -> ?o_files:Path.t list
   -> ?embed_in_plugin_libraries:(Loc.t * Lib_name.t) list

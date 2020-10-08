@@ -311,7 +311,7 @@ include Sub_system.Register_end_point (struct
     in
     Exe.build_and_link cctx
       ~program:{ name; main_module_name = Module.name main_module; loc }
-      ~linkages
+      ~cbi:[] ~linkages
       ~link_args:(Build.return (Command.Args.A "-linkall"))
       ~promote:None;
     let flags =

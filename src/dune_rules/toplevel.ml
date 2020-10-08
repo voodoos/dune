@@ -118,7 +118,7 @@ let setup_rules t =
   let linkage = Exe.Linkage.custom (Compilation_context.context t.cctx) in
   let program = Source.program t.source in
   let sctx = Compilation_context.super_context t.cctx in
-  Exe.build_and_link t.cctx ~program ~linkages:[ linkage ]
+  Exe.build_and_link t.cctx ~program ~linkages:[ linkage ] ~cbi:[]
     ~link_args:
       (Build.return (Command.Args.As [ "-linkall"; "-warn-error"; "-31" ]))
     ~promote:None;
