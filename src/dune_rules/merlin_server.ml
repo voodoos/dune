@@ -70,24 +70,27 @@ let load_merlin_file local_path file =
   (* We search for an appropriate merlin configuration in the current directory
      and its parents *)
   let rec find_closest path =
-    if Path.Local.is_root path then
-      None
-    else
-      let filename = String.lowercase_ascii file in
-      let file_paths = get_merlin_file_path local_path in
+    let filename = String.lowercase_ascii file in
+    let file_paths = get_merlin_file_path path in
 
-      let result =
-        List.find_map file_paths ~f:(fun file_path ->
-            if Path.exists file_path then
-              match Merlin.Processed.load_file file_path with
-              | Some config -> Merlin.Processed.get config ~filename
-              | None -> None
-            else
-              None)
-      in
-      match result with
-      | Some p -> Some p
-      | None -> Option.bind (Path.Local.parent path) ~f:find_closest
+    let result =
+      List.find_map file_paths ~f:(fun file_path ->
+          if Path.exists file_path then
+            match Merlin.Processed.load_file file_path with
+            | Some config -> Merlin.Processed.get config ~filename
+            | None -> None
+          else
+            None)
+    in
+    match result with
+    | Some p -> Some p
+    | None ->
+      Option.bind
+        ( if Path.Local.is_root path then
+          None
+        else
+          Path.Local.parent path )
+        ~f:find_closest
   in
 
   Option.value (find_closest local_path) ~default:(no_config_error ())
