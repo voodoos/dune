@@ -1,10 +1,9 @@
-
-open !Stdune
+open! Stdune
 open Dune_engine
 
 let pr buf fmt = Printf.bprintf buf (fmt ^^ "\n")
 
-let setup_rules ~sctx ~dir (def:Dune_file.Generate_custom_build_info.t) =
+let setup_rules ~sctx ~dir (def : Dune_file.Generate_custom_build_info.t) =
   let buf = Buffer.create 1024 in
   pr buf "val custom : string";
   let mli = Buffer.contents buf in
