@@ -22,6 +22,7 @@ type kind =
 
 val eval :
      modules:Module.Source.t Module_name.Map.t
+  -> cbi:Module_name.t list
   -> buildable:Dune_file.Buildable.t
   -> private_modules:Ordered_set_lang.t
   -> kind:kind

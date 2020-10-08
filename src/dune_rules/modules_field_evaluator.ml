@@ -63,7 +63,7 @@ type errors =
   ; unimplemented_virt_modules : Module_name.Set.t
   }
 
-let find_errors ~modules ~intf_only ~virtual_modules ~private_modules
+let find_errors ~modules ~cbi ~intf_only ~virtual_modules ~private_modules
     ~existing_virtual_modules ~allow_new_public_modules =
   let all =
     (* We expect that [modules] is big and all the other ones are small, that's
@@ -84,6 +84,10 @@ let find_errors ~modules ~intf_only ~virtual_modules ~private_modules
         let private_ = Module_name.Map.find private_modules module_name in
         let virtual_ = Module_name.Map.find virtual_modules module_name in
         let intf_only = Module_name.Map.find intf_only module_name in
+        let cbi_module =
+          List.find cbi ~f:(fun m ->
+              Ordering.is_eq (Module_name.compare module_name m))
+        in
         let with_property prop f acc =
           match prop with
           | None -> acc
@@ -112,7 +116,8 @@ let find_errors ~modules ~intf_only ~virtual_modules ~private_modules
                  && not impl_vmodule )
                  Forbidden_new_public_module
              ++ add_if
-                  ((not has_impl) && (not !?intf_only) && not !?virtual_)
+                  ( (not has_impl) && (not !?intf_only) && (not !?virtual_)
+                  && not !?cbi_module )
                   Missing_intf_only
              ++ add_if (impl_vmodule && not has_impl) Vmodule_impl_missing_impl
              ++ add_if (impl_vmodule && has_intf) Vmodule_impls_with_own_intf )
@@ -126,11 +131,11 @@ let find_errors ~modules ~intf_only ~virtual_modules ~private_modules
   in
   { errors; unimplemented_virt_modules }
 
-let check_invalid_module_listing ~(buildable : Buildable.t) ~intf_only ~modules
-    ~virtual_modules ~private_modules ~existing_virtual_modules
+let check_invalid_module_listing ~(buildable : Buildable.t) ~cbi ~intf_only
+    ~modules ~virtual_modules ~private_modules ~existing_virtual_modules
     ~allow_new_public_modules =
   let { errors; unimplemented_virt_modules } =
-    find_errors ~modules ~intf_only ~virtual_modules ~private_modules
+    find_errors ~modules ~cbi ~intf_only ~virtual_modules ~private_modules
       ~existing_virtual_modules ~allow_new_public_modules
   in
   if
@@ -252,7 +257,7 @@ let check_invalid_module_listing ~(buildable : Buildable.t) ~intf_only ~modules
       spurious_modules_virtual []
   )
 
-let eval ~modules:(all_modules : Module.Source.t Module_name.Map.t)
+let eval ~modules:(all_modules : Module.Source.t Module_name.Map.t) ~cbi
     ~buildable:(conf : Buildable.t) ~private_modules ~kind =
   (* Fake modules are modules that do not exist but it doesn't matter because
      they are only removed from a set (for jbuild file compatibility) *)
@@ -290,7 +295,7 @@ let eval ~modules:(all_modules : Module.Source.t Module_name.Map.t)
         [ Pp.textf "Module %s is excluded but it doesn't exist."
             (Module_name.to_string m)
         ]);
-  check_invalid_module_listing ~buildable:conf ~intf_only ~modules
+  check_invalid_module_listing ~buildable:conf ~cbi ~intf_only ~modules
     ~virtual_modules ~private_modules ~existing_virtual_modules
     ~allow_new_public_modules;
   let all_modules =

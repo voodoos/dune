@@ -207,9 +207,17 @@ let virtual_modules lookup_vlib vlib =
   ; allow_new_public_modules
   }
 
+let cbi_modules stanzas =
+  List.filter_map
+    ~f:(function
+      | Dune_file.Generate_custom_build_info cbi -> Some cbi.module_
+      | _ -> None)
+    stanzas
+
 let make_lib_modules (d : _ Dir_with_dune.t) ~lookup_vlib ~(lib : Library.t)
     ~modules =
   let src_dir = d.ctx_dir in
+  let cbi = cbi_modules d.data in
   let kind, main_module_name, wrapped =
     match lib.implements with
     | None ->
@@ -265,7 +273,7 @@ let make_lib_modules (d : _ Dir_with_dune.t) ~lookup_vlib ~(lib : Library.t)
       (kind, main_module_name, wrapped)
   in
   let modules =
-    Modules_field_evaluator.eval ~modules ~buildable:lib.buildable ~kind
+    Modules_field_evaluator.eval ~modules ~cbi ~buildable:lib.buildable ~kind
       ~private_modules:
         (Option.value ~default:Ordered_set_lang.standard lib.private_modules)
   in
@@ -276,6 +284,7 @@ let make_lib_modules (d : _ Dir_with_dune.t) ~lookup_vlib ~(lib : Library.t)
     ~main_module_name ~wrapped
 
 let libs_and_exes (d : _ Dir_with_dune.t) ~lookup_vlib ~modules =
+  let cbi = cbi_modules d.data in
   List.filter_partition_map d.data ~f:(fun stanza ->
       match (stanza : Stanza.t) with
       | Library lib ->
@@ -284,7 +293,7 @@ let libs_and_exes (d : _ Dir_with_dune.t) ~lookup_vlib ~modules =
       | Executables exes
       | Tests { exes; _ } ->
         let modules =
-          Modules_field_evaluator.eval ~modules ~buildable:exes.buildable
+          Modules_field_evaluator.eval ~modules ~cbi ~buildable:exes.buildable
             ~kind:Modules_field_evaluator.Exe_or_normal_lib
             ~private_modules:Ordered_set_lang.standard
         in
