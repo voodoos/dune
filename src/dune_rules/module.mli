@@ -128,7 +128,7 @@ val set_src_dir : t -> src_dir:Path.t -> t
 
     XXX should this return the path of the source as well? it will almost always
     be used to create the rule to generate this file *)
-val generated : src_dir:Path.t -> Module_name.t -> t
+val generated : src_dir:Path.t -> ?intf:Path.t -> Module_name.t -> t
 
 (** Represent the generated alias module. *)
 val generated_alias : src_dir:Path.Build.t -> Module_name.t -> t
