@@ -42,179 +42,187 @@ let generate_and_compile_module cctx ~precompiled_cmi ~name ~lib ~code ~requires
     ~precompiled_cmi cctx module_;
   module_
 
-let pr buf fmt = Printf.bprintf buf (fmt ^^ "\n")
+module Code_gen = struct
+  let pr buf fmt = Printf.bprintf buf (fmt ^^ "\n")
 
-let prlist buf name l ~f =
-  match l with
-  | [] -> pr buf "let %s = []" name
-  | x :: l ->
-    pr buf "let %s =" name;
-    Printf.bprintf buf "  [ ";
-    f x;
-    List.iter l ~f:(fun x ->
-        Printf.bprintf buf "  ; ";
-        f x);
-    pr buf "  ]"
+  let prlist buf name l ~f =
+    match l with
+    | [] -> pr buf "let %s = []" name
+    | x :: l ->
+      pr buf "let %s =" name;
+      Printf.bprintf buf "  [ ";
+      f x;
+      List.iter l ~f:(fun x ->
+          Printf.bprintf buf "  ; ";
+          f x);
+      pr buf "  ]"
 
-let prvariants buf name preds =
-  prlist buf name (Variant.Set.to_list preds) ~f:(fun v ->
-      pr buf "%S" (Variant.to_string v))
+  let prvariants buf name preds =
+    prlist buf name (Variant.Set.to_list preds) ~f:(fun v ->
+        pr buf "%S" (Variant.to_string v))
 
-let public_libs libs =
-  List.filter
-    ~f:(fun lib ->
-      let info = Lib.info lib in
-      let status = Lib_info.status info in
-      not (Lib_info.Status.is_private status))
-    libs
-
-let findlib_init_code ~preds ~libs =
-  let buf = Buffer.create 1024 in
-  List.iter (public_libs libs) ~f:(fun lib ->
-      pr buf "Findlib.record_package Findlib.Record_core %S;;"
-        (Lib_name.to_string (Lib.name lib)));
-  prvariants buf "preds" preds;
-  pr buf "in";
-  pr buf "let preds =";
-  pr buf "  (if Dynlink.is_native then \"native\" else \"byte\") :: preds";
-  pr buf "in";
-  pr buf "Findlib.record_package_predicates preds;;";
-  Buffer.contents buf
-
-let build_info_code cctx ~libs ~api_version =
-  ( match api_version with
-  | Lib_info.Special_builtin_support.Build_info.V1 -> () );
-  (* [placeholders] is a mapping from source path to variable names. For each
-     binding [(p, v)], we will generate the following code:
-
-     {[ let v = Placeholder "%%DUNE_PLACEHOLDER:...:vcs-describe:...:p%%" ]} *)
-  let placeholders = ref Path.Source.Map.empty in
   let gen_placeholder_var =
     let n = ref 0 in
     fun () ->
       let s = sprintf "p%d" !n in
       incr n;
       s
-  in
-  let placeholder p =
-    match File_tree.nearest_vcs p with
-    | None -> "None"
-    | Some vcs -> (
-      let p =
-        Option.value
-          (Path.as_in_source_tree vcs.root)
-          (* The only VCS root that is potentially not in the source tree is the
-             VCS at the root of the repo. For this VCS, it is enough to use the
-             source tree root in the placeholder given that we take the nearest
-             VCS when performing the actual substitution. *)
-          ~default:Path.Source.root
-      in
-      match Path.Source.Map.find !placeholders p with
-      | Some var -> var
-      | None ->
-        let var = gen_placeholder_var () in
-        placeholders := Path.Source.Map.set !placeholders p var;
-        var )
-  in
-  let version_of_package (p : Package.t) =
-    match p.version with
-    | Some v -> sprintf "Some %S" v
-    | None -> placeholder p.path
-  in
-  let version =
-    match Compilation_context.package cctx with
-    | Some p -> version_of_package p
-    | None ->
-      let p = Path.Build.drop_build_context_exn (CC.dir cctx) in
-      placeholder p
-  in
-  let libs =
-    List.map libs ~f:(fun lib ->
-        ( Lib.name lib
-        , match Lib_info.version (Lib.info lib) with
-          | Some v -> sprintf "Some %S" v
-          | None -> (
-            match Lib_info.status (Lib.info lib) with
-            | Installed -> "None"
-            | Public (_, p) -> version_of_package p
-            | Private _ ->
-              let p =
-                Path.drop_build_context_exn (Obj_dir.dir (Lib.obj_dir lib))
-              in
-              placeholder p ) ))
-  in
-  let context = CC.context cctx in
-  let ocaml_version = Ocaml_version.of_ocaml_config context.ocaml_config in
-  let buf = Buffer.create 1024 in
-  (* Parse the replacement format described in [artifact_substitution.ml]. *)
-  pr buf "let eval s =";
-  pr buf "  let len = String.length s in";
-  pr buf "  if s.[0] = '=' then";
-  pr buf "    let colon_pos = String.index_from s 1 ':' in";
-  pr buf "    let vlen = int_of_string (String.sub s 1 (colon_pos - 1)) in";
-  pr buf "    (* This [min] is because the value might have been truncated";
-  pr buf "       if it was too large *)";
-  pr buf "    let vlen = min vlen (len - colon_pos - 1) in";
-  pr buf "    Some (String.sub s (colon_pos + 1) vlen)";
-  pr buf "  else";
-  pr buf "    None";
-  pr buf "[@@inline never]";
-  pr buf "";
-  let fmt_eval : _ format6 =
+
+  let fmt_eval ~cctx code =
+    let context = CC.context cctx in
+    let ocaml_version = Ocaml_version.of_ocaml_config context.ocaml_config in
     if Ocaml_version.has_sys_opaque_identity ocaml_version then
-      "let %s = eval (Sys.opaque_identity %S)"
+      Printf.sprintf "eval (Sys.opaque_identity %S)" code
     else
-      "let %s = eval %S"
-  in
-  Path.Source.Map.iteri !placeholders ~f:(fun path var ->
-      pr buf fmt_eval var
-        (Artifact_substitution.encode ~min_len:64 (Vcs_describe path)));
-  if not (Path.Source.Map.is_empty !placeholders) then pr buf "";
-  pr buf "let version = %s" version;
-  pr buf "";
-  prlist buf "statically_linked_libraries" libs ~f:(fun (name, v) ->
-      pr buf "%S, %s" (Lib_name.to_string name) v);
-  Buffer.contents buf
+      Printf.sprintf "eval %S" code
 
-let dune_site_code () =
-  let buf = Buffer.create 5000 in
-  pr buf "let hardcoded_ocamlpath = (Sys.opaque_identity %S)"
-    (Artifact_substitution.encode ~min_len:4096 Hardcoded_ocaml_path);
-  pr buf "let stdlib_dir = (Sys.opaque_identity %S)"
-    (Artifact_substitution.encode ~min_len:4096 (Configpath Stdlib));
-  Buffer.contents buf
+  let eval_code buf =
+    (* Parse the replacement format described in [artifact_substitution.ml]. *)
+    pr buf "let eval s =";
+    pr buf "  let len = String.length s in";
+    pr buf "  if s.[0] = '=' then";
+    pr buf "    let colon_pos = String.index_from s 1 ':' in";
+    pr buf "    let vlen = int_of_string (String.sub s 1 (colon_pos - 1)) in";
+    pr buf "    (* This [min] is because the value might have been truncated";
+    pr buf "       if it was too large *)";
+    pr buf "    let vlen = min vlen (len - colon_pos - 1) in";
+    pr buf "    Some (String.sub s (colon_pos + 1) vlen)";
+    pr buf "  else";
+    pr buf "    None";
+    pr buf "[@@inline never]";
+    pr buf ""
 
-let dune_site_plugins_code ~libs ~builtins =
-  let buf = Buffer.create 5000 in
-  pr buf "let findlib_predicates_set_by_dune pred =";
-  pr buf "   match Sys.backend_type, pred with";
-  pr buf "   | Sys.Native, \"native\" -> true";
-  pr buf "   | Sys.Bytecode, \"byte\" -> true";
-  Variant.Set.iter Findlib.findlib_predicates_set_by_dune ~f:(fun variant ->
-      pr buf "   | _, %S -> true" (Variant.to_string variant));
-  pr buf "   | _, _ -> false";
-  prlist buf "already_linked_libraries" (public_libs libs) ~f:(fun lib ->
-      pr buf "%S" (Lib_name.to_string (Lib.name lib)));
-  pr buf "open Dune_site_plugins.Private_.Meta_parser";
-  prlist buf "builtin_library" (Package.Name.Map.to_list builtins)
-    ~f:(fun (name, meta) ->
-      let meta = Meta.complexify meta in
-      let meta =
-        Meta.filter_variable
-          ~f:(function
-            | "plugin"
-            | "directory"
-            | "requires" ->
-              true
-            | _ -> false)
-          meta
-      in
-      pr buf "(%S,%s)"
-        (Package.Name.to_string name)
-        (Dyn.to_string (Meta.to_dyn meta)));
-  Buffer.contents buf
+  let public_libs libs =
+    List.filter
+      ~f:(fun lib ->
+        let info = Lib.info lib in
+        let status = Lib_info.status info in
+        not (Lib_info.Status.is_private status))
+      libs
 
-let handle_special_libs cctx ~cbi:_ =
+  let findlib_init_code ~preds ~libs =
+    let buf = Buffer.create 1024 in
+    List.iter (public_libs libs) ~f:(fun lib ->
+        pr buf "Findlib.record_package Findlib.Record_core %S;;"
+          (Lib_name.to_string (Lib.name lib)));
+    prvariants buf "preds" preds;
+    pr buf "in";
+    pr buf "let preds =";
+    pr buf "  (if Dynlink.is_native then \"native\" else \"byte\") :: preds";
+    pr buf "in";
+    pr buf "Findlib.record_package_predicates preds;;";
+    Buffer.contents buf
+
+  let build_info_code cctx ~libs ~api_version =
+    ( match api_version with
+    | Lib_info.Special_builtin_support.Build_info.V1 -> () );
+    (* [placeholders] is a mapping from source path to variable names. For each
+       binding [(p, v)], we will generate the following code:
+
+       {[ let v = Placeholder "%%DUNE_PLACEHOLDER:...:vcs-describe:...:p%%" ]} *)
+    let placeholders = ref Path.Source.Map.empty in
+    let placeholder p =
+      match File_tree.nearest_vcs p with
+      | None -> "None"
+      | Some vcs -> (
+        let p =
+          Option.value
+            (Path.as_in_source_tree vcs.root)
+            (* The only VCS root that is potentially not in the source tree is
+               the VCS at the root of the repo. For this VCS, it is enough to
+               use the source tree root in the placeholder given that we take
+               the nearest VCS when performing the actual substitution. *)
+            ~default:Path.Source.root
+        in
+        match Path.Source.Map.find !placeholders p with
+        | Some var -> var
+        | None ->
+          let var = gen_placeholder_var () in
+          placeholders := Path.Source.Map.set !placeholders p var;
+          var )
+    in
+    let version_of_package (p : Package.t) =
+      match p.version with
+      | Some v -> sprintf "Some %S" v
+      | None -> placeholder p.path
+    in
+    let version =
+      match Compilation_context.package cctx with
+      | Some p -> version_of_package p
+      | None ->
+        let p = Path.Build.drop_build_context_exn (CC.dir cctx) in
+        placeholder p
+    in
+    let libs =
+      List.map libs ~f:(fun lib ->
+          ( Lib.name lib
+          , match Lib_info.version (Lib.info lib) with
+            | Some v -> sprintf "Some %S" v
+            | None -> (
+              match Lib_info.status (Lib.info lib) with
+              | Installed -> "None"
+              | Public (_, p) -> version_of_package p
+              | Private _ ->
+                let p =
+                  Path.drop_build_context_exn (Obj_dir.dir (Lib.obj_dir lib))
+                in
+                placeholder p ) ))
+    in
+    let buf = Buffer.create 1024 in
+    eval_code buf;
+    Path.Source.Map.iteri !placeholders ~f:(fun path var ->
+        pr buf "let %s = %s" var
+          (fmt_eval ~cctx
+             (Artifact_substitution.encode ~min_len:64 (Vcs_describe path))));
+    if not (Path.Source.Map.is_empty !placeholders) then pr buf "";
+    pr buf "let version = %s" version;
+    pr buf "";
+    prlist buf "statically_linked_libraries" libs ~f:(fun (name, v) ->
+        pr buf "%S, %s" (Lib_name.to_string name) v);
+    Buffer.contents buf
+
+  let dune_site_code () =
+    let buf = Buffer.create 5000 in
+    pr buf "let hardcoded_ocamlpath = (Sys.opaque_identity %S)"
+      (Artifact_substitution.encode ~min_len:4096 Hardcoded_ocaml_path);
+    pr buf "let stdlib_dir = (Sys.opaque_identity %S)"
+      (Artifact_substitution.encode ~min_len:4096 (Configpath Stdlib));
+    Buffer.contents buf
+
+  let dune_site_plugins_code ~libs ~builtins =
+    let buf = Buffer.create 5000 in
+    pr buf "let findlib_predicates_set_by_dune pred =";
+    pr buf "   match Sys.backend_type, pred with";
+    pr buf "   | Sys.Native, \"native\" -> true";
+    pr buf "   | Sys.Bytecode, \"byte\" -> true";
+    Variant.Set.iter Findlib.findlib_predicates_set_by_dune ~f:(fun variant ->
+        pr buf "   | _, %S -> true" (Variant.to_string variant));
+    pr buf "   | _, _ -> false";
+    prlist buf "already_linked_libraries" (public_libs libs) ~f:(fun lib ->
+        pr buf "%S" (Lib_name.to_string (Lib.name lib)));
+    pr buf "open Dune_site_plugins.Private_.Meta_parser";
+    prlist buf "builtin_library" (Package.Name.Map.to_list builtins)
+      ~f:(fun (name, meta) ->
+        let meta = Meta.complexify meta in
+        let meta =
+          Meta.filter_variable
+            ~f:(function
+              | "plugin"
+              | "directory"
+              | "requires" ->
+                true
+              | _ -> false)
+            meta
+        in
+        pr buf "(%S,%s)"
+          (Package.Name.to_string name)
+          (Dyn.to_string (Meta.to_dyn meta)));
+    Buffer.contents buf
+end
+
+let handle_custom_build_info _cctx _cbi = ()
+
+let handle_special_libs cctx ~cbi =
   let open Result.O in
   let+ all_libs = CC.requires_link cctx in
   let obj_dir = Compilation_context.obj_dir cctx |> Obj_dir.of_local in
@@ -237,7 +245,7 @@ let handle_special_libs cctx ~cbi:_ =
             generate_and_compile_module cctx ~name:data_module ~lib
               ~code:
                 (Build.return
-                   (build_info_code cctx ~libs:all_libs ~api_version))
+                   (Code_gen.build_info_code cctx ~libs:all_libs ~api_version))
               ~requires:(Ok [ lib ])
               ~precompiled_cmi:true
           in
@@ -265,7 +273,7 @@ let handle_special_libs cctx ~cbi:_ =
               ~name:(Module_name.of_string "findlib_initl")
               ~code:
                 (Build.return
-                   (findlib_init_code
+                   (Code_gen.findlib_init_code
                       ~preds:Findlib.findlib_predicates_set_by_dune
                       ~libs:all_libs))
               ~requires ~precompiled_cmi:false
@@ -282,10 +290,10 @@ let handle_special_libs cctx ~cbi:_ =
             let code =
               if plugins then
                 Build.return
-                  (dune_site_plugins_code ~libs:all_libs
+                  (Code_gen.dune_site_plugins_code ~libs:all_libs
                      ~builtins:(Findlib.builtins ctx.Context.findlib))
               else
-                Build.return (dune_site_code ())
+                Build.return (Code_gen.dune_site_code ())
             in
             generate_and_compile_module cctx ~name:data_module ~lib ~code
               ~requires:(Ok [ lib ])
@@ -295,4 +303,5 @@ let handle_special_libs cctx ~cbi:_ =
             ~to_link_rev:(LM.Lib lib :: Module (obj_dir, module_) :: to_link_rev)
             ~force_linkall ) )
   in
+  let _cbi = handle_custom_build_info cctx cbi in
   process_libs all_libs ~to_link_rev:[] ~force_linkall:false
