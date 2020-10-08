@@ -1,6 +1,8 @@
 open! Stdune
 open Dune_engine
 
+let output_file name = Printf.sprintf ".%s_custom_build_info.txt-gen" name
+
 let pr buf fmt = Printf.bprintf buf (fmt ^^ "\n")
 
 let setup_rules ~sctx ~dir (def : Dune_file.Generate_custom_build_info.t) =

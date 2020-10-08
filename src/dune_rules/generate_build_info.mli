@@ -1,5 +1,7 @@
 open! Stdune
 
+val output_file : string -> string
+
 val setup_rules :
      sctx:Super_context.t
   -> dir:Path.Build.t

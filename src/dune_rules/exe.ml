@@ -123,9 +123,24 @@ end
 let exe_path_from_name cctx ~name ~(linkage : Linkage.t) =
   Path.Build.relative (CC.dir cctx) (name ^ linkage.ext)
 
+let expand_custom_build_info ~cctx name (loc, action) =
+  let dir = CC.dir cctx in
+  let raw_filename = Generate_build_info.output_file name in
+  let filename = String_with_vars.make_text Loc.none raw_filename in
+  let action = Action_unexpanded.with_stdout_to filename action in
+  let path = Path.Build.relative dir raw_filename in
+  let targets =
+    Targets.Static
+      { targets = [ path ]; multiplicity = Targets.Multiplicity.One }
+  in
+  Action_unexpanded.expand action ~loc ~dep_kind:Required ~targets_dir:dir
+    ~targets:Targets.(Or_forbidden.Targets targets)
+    ~expander:(CC.expander cctx)
+    (Build.return Bindings.empty)
+
 let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
-    ~promote ?(link_args = Build.return Command.Args.empty) ?(o_files = []) cctx
-    =
+    ~custom_build_info ~promote ?(link_args = Build.return Command.Args.empty)
+    ?(o_files = []) cctx =
   let sctx = CC.super_context cctx in
   let ctx = SC.context sctx in
   let dir = CC.dir cctx in
@@ -165,28 +180,38 @@ let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
         In each case, we could then pass the argument in dependency order, which
         would provide a better fix for this issue. *)
      Build.with_no_targets prefix
-     >>> Command.run ~dir:(Path.build ctx.build_dir)
-           (Context.compiler ctx mode)
-           [ Command.Args.dyn ocaml_flags
-           ; A "-o"
-           ; Target exe
-           ; As linkage.flags
-           ; Command.of_result_map link_time_code_gen
-               ~f:(fun { Link_time_code_gen.to_link; force_linkall } ->
-                 S
-                   [ As
-                       ( if force_linkall then
-                         [ "-linkall" ]
-                       else
-                         [] )
-                   ; Lib.Lib_and_module.L.link_flags to_link
-                       ~lib_config:ctx.lib_config ~mode:linkage.mode
-                   ])
-           ; Deps o_files
-           ; Dyn (Build.map top_sorted_cms ~f:(fun x -> Command.Args.Deps x))
-           ; Fdo.Linker_script.flags fdo_linker_script
-           ; Dyn link_args
-           ])
+     >>> let+ cmd_run =
+           Command.run ~dir:(Path.build ctx.build_dir)
+             (Context.compiler ctx mode)
+             [ Command.Args.dyn ocaml_flags
+             ; A "-o"
+             ; Target exe
+             ; As linkage.flags
+             ; Command.of_result_map link_time_code_gen
+                 ~f:(fun { Link_time_code_gen.to_link; force_linkall } ->
+                   S
+                     [ As
+                         ( if force_linkall then
+                           [ "-linkall" ]
+                         else
+                           [] )
+                     ; Lib.Lib_and_module.L.link_flags to_link
+                         ~lib_config:ctx.lib_config ~mode:linkage.mode
+                     ])
+             ; Deps o_files
+             ; Dyn (Build.map top_sorted_cms ~f:(fun x -> Command.Args.Deps x))
+             ; Fdo.Linker_script.flags fdo_linker_script
+             ; Dyn link_args
+             ]
+         and+ cbi_exe =
+           List.map custom_build_info
+             ~f:(fun
+                  { Dune_file.Generate_custom_build_info.link_time_action; _ }
+                -> expand_custom_build_info ~cctx "exe" link_time_action)
+           |> Build.With_targets.all
+         in
+
+         Action.progn (List.concat [ cbi_exe; [ cmd_run ] ]))
 
 let link_js ~name ~cm_files ~promote cctx =
   let sctx = CC.super_context cctx in
@@ -233,7 +258,7 @@ let build_and_link_many ~programs ~linkages ~promote ~cbi ?link_args ?o_files
                 link_time_code_gen
             in
             link_exe cctx ~loc ~name ~linkage ~cm_files ~link_time_code_gen
-              ~promote ?link_args ?o_files))
+              ~custom_build_info:cbi ~promote ?link_args ?o_files))
 
 let build_and_link ~program = build_and_link_many ~programs:[ program ]
 
