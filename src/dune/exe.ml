@@ -191,7 +191,7 @@ let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
              ; Dyn (Build.map top_sorted_cms ~f:(fun x -> Command.Args.Deps x))
              ; Fdo.Linker_script.flags fdo_linker_script
              ]
-         and+ cbi_libs =
+         (* and+ cbi_libs =
            let all_libs = Result.value ~default:[] (CC.requires_link cctx) in
            let lib_infos = List.map ~f:Lib.info all_libs in
            let from_libs = Lib_info.gather_custom_build_info lib_infos in
@@ -199,7 +199,7 @@ let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
              ~f:(fun (name, { Custom_build_info_old.action; _ }) ->
                expand_custom_build_info ~cctx (Lib_name.to_string name) action)
              from_libs
-           |> Build.With_targets.all
+           |> Build.With_targets.all *)
          and+ cbi_exe =
            List.map custom_build_info
              ~f:(fun { Custom_build_info.link_time_action; _ } ->
@@ -207,7 +207,7 @@ let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
            |> Build.With_targets.all
          in
 
-         Action.progn (List.concat [ cbi_exe; cbi_libs; [ cmd_run ] ]))
+         Action.progn (List.concat [ cbi_exe; [ cmd_run ] ]))
 
 let link_js ~name ~cm_files ~promote cctx =
   let sctx = CC.super_context cctx in

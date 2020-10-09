@@ -56,7 +56,7 @@ module Code_gen : sig
 
   val findlib_init : preds:Variant.Set.t -> libs:Lib.t list -> string
 
-  val custom_build_info :
+  val _custom_build_info :
     cctx:CC.t -> custom_build_info:Custom_build_info_old.t option * 'a -> string
 end = struct
   let pr buf fmt = Printf.bprintf buf (fmt ^^ "\n")
@@ -189,7 +189,7 @@ end = struct
         pr buf "%S, %s" (Lib_name.to_string name) v);
     pr buf ""
 
-  let custom_build_info ~cctx ~custom_build_info:(exe_cbi, _lib_cbis) =
+  let _custom_build_info ~cctx ~custom_build_info:(exe_cbi, _lib_cbis) =
     let buf = Buffer.create 1024 in
     let dir = CC.dir cctx in
     let encode min_len name =
@@ -210,11 +210,11 @@ end = struct
        buf "let custom_lib name = List.assoc name lib_customs" *)
     Buffer.contents buf
 
-  let dune_build_info cctx ~libs ~api_version =
+  let dune_build_info cctx ~libs ~api_version:_ =
     let open Lib_info.Special_builtin_support in
     let buf = Buffer.create 1024 in
     let version_specific () =
-      match api_version with
+      match Build_info.V1 with
       | Build_info.V1 -> build_info_code_v1 ~cctx ~libs buf
       | Build_info.V2 -> ()
       (* build_info_code_v1 ~cctx ~libs buf; *)
