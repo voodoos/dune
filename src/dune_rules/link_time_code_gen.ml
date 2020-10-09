@@ -48,8 +48,9 @@ let generate_and_compile_module_no_lib cctx ~name ~code =
   let dir = CC.dir cctx in
   let module_ =
     let src_dir = Path.build (Obj_dir.obj_dir obj_dir) in
-    (* Module.with_wrapper ( *)
+
     Module.generated ~src_dir name
+    |> Module.with_wrapper ~main_module_name:(Module_name.of_string "dune__exe")
     (* ~main_module_name:(Module_name.of_string_opt "dune__exe" |>
        Option.value_exn) *)
   in

@@ -233,7 +233,7 @@ let build_module ~dep_graphs ?(precompiled_cmi = Precompiled_cmi.No) cctx m =
     Fdo.opt_rule cctx m;
     build_cm cctx m ~dep_graphs ~precompiled_cmi ~cm_kind:Cmx
       ~phase:(Some Fdo.Emit) );
-  if precompiled_cmi = Precompiled_cmi.No then
+  if precompiled_cmi <> Precompiled_cmi.External then
     build_cm cctx m ~dep_graphs ~precompiled_cmi ~cm_kind:Cmi ~phase:None;
   let obj_dir = CC.obj_dir cctx in
   match Obj_dir.Module.cm_file obj_dir m ~kind:Cm_kind.Cmo with
