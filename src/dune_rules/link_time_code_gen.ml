@@ -42,6 +42,34 @@ let generate_and_compile_module cctx ~precompiled_cmi ~name ~lib ~code ~requires
     ~precompiled_cmi cctx module_;
   module_
 
+let generate_and_compile_module_no_lib cctx ~name ~code =
+  let sctx = CC.super_context cctx in
+  let obj_dir = CC.obj_dir cctx in
+  let dir = CC.dir cctx in
+  let module_ =
+    let src_dir = Path.build (Obj_dir.obj_dir obj_dir) in
+    (* Module.with_wrapper ( *)
+    Module.generated ~src_dir name
+    (* ~main_module_name:(Module_name.of_string_opt "dune__exe" |>
+       Option.value_exn) *)
+  in
+  SC.add_rule ~dir sctx
+    (* TODO CBI : changer ce dir là opour générer dans sous dossier *)
+    (let ml =
+       Module.file module_ ~ml_kind:Impl
+       |> Option.value_exn |> Path.as_in_build_dir_exn
+     in
+     Build.write_file_dyn ml code);
+  let cctx =
+    Compilation_context.for_module_generated_at_link_time cctx ~requires:(Ok [])
+      ~module_
+  in
+  Module_compilation.(
+    build_module
+      ~dep_graphs:(Dep_graph.Ml_kind.dummy module_)
+      ~precompiled_cmi:Precompiled_cmi.Generated cctx module_);
+  module_
+
 module Code_gen = struct
   let pr buf fmt = Printf.bprintf buf (fmt ^^ "\n")
 
@@ -218,9 +246,35 @@ module Code_gen = struct
           (Package.Name.to_string name)
           (Dyn.to_string (Meta.to_dyn meta)));
     Buffer.contents buf
+
+  let custom_build_info_code ~cctx ~exe_cbi =
+    let buf = Buffer.create 1024 in
+    let dir = CC.dir cctx in
+    let encode min_len name =
+      Artifact_substitution.(encode ~min_len (Custom_build_info (name, dir)))
+    in
+    (* let lib_cbi (name, { Custom_build_info.max_size; _ }) = let name =
+       Lib_name.to_string name in pr buf "%S, %s" name (fmt_eval ~cctx (encode
+       max_size name)) in *)
+    let exe_cbi =
+      fmt_eval ~cctx
+        (encode exe_cbi.Dune_file.Generate_custom_build_info.max_size "exe")
+    in
+    eval_code buf;
+    pr buf "let custom = %s" exe_cbi;
+    (* pr buf ""; prlist buf "lib_customs" lib_cbis ~f:lib_cbi; pr buf ""; pr
+       buf "let custom_lib name = List.assoc name lib_customs" *)
+    Buffer.contents buf
 end
 
-let handle_custom_build_info _cctx _cbi = ()
+let handle_custom_build_info cctx obj_dir cbi =
+  let open Dune_file.Generate_custom_build_info in
+  List.fold_left cbi ~init:[] ~f:(fun acc exe_cbi ->
+      let m =
+        generate_and_compile_module_no_lib cctx ~name:exe_cbi.module_
+          ~code:(Build.return (Code_gen.custom_build_info_code ~cctx ~exe_cbi))
+      in
+      Lib.Lib_and_module.Module (obj_dir, m) :: acc)
 
 let handle_special_libs cctx ~cbi =
   let open Result.O in
@@ -247,7 +301,7 @@ let handle_special_libs cctx ~cbi =
                 (Build.return
                    (Code_gen.build_info_code cctx ~libs:all_libs ~api_version))
               ~requires:(Ok [ lib ])
-              ~precompiled_cmi:true
+              ~precompiled_cmi:External
           in
           process_libs libs
             ~to_link_rev:(LM.Lib lib :: Module (obj_dir, module_) :: to_link_rev)
@@ -276,7 +330,7 @@ let handle_special_libs cctx ~cbi =
                    (Code_gen.findlib_init_code
                       ~preds:Findlib.findlib_predicates_set_by_dune
                       ~libs:all_libs))
-              ~requires ~precompiled_cmi:false
+              ~requires ~precompiled_cmi:No
           in
           process_libs libs
             ~to_link_rev:(LM.Module (obj_dir, module_) :: Lib lib :: to_link_rev)
@@ -297,11 +351,11 @@ let handle_special_libs cctx ~cbi =
             in
             generate_and_compile_module cctx ~name:data_module ~lib ~code
               ~requires:(Ok [ lib ])
-              ~precompiled_cmi:true
+              ~precompiled_cmi:External
           in
           process_libs libs
             ~to_link_rev:(LM.Lib lib :: Module (obj_dir, module_) :: to_link_rev)
             ~force_linkall ) )
   in
-  let _cbi = handle_custom_build_info cctx cbi in
-  process_libs all_libs ~to_link_rev:[] ~force_linkall:false
+  let cbi = handle_custom_build_info cctx obj_dir cbi in
+  process_libs all_libs ~to_link_rev:cbi ~force_linkall:false
