@@ -18,8 +18,7 @@ let encode =
 
 let decode =
   let open Dune_lang.Decoder in
-  plain_string (fun ~loc ->
-    function
+  plain_string (fun ~loc -> function
     | "public" -> Public
     | "private" -> Private
     | _ ->

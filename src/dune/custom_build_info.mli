@@ -8,3 +8,5 @@ type t =
   }
 
 val decode : (t, Dune_lang.Decoder.values) Dune_lang.Decoder.parser
+
+val output_file : string -> string

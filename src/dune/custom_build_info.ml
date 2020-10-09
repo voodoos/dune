@@ -17,3 +17,5 @@ let decode =
        field "link_time_action" (located Action_dune_lang.decode)
      in
      { loc; module_; max_size; link_time_action })
+
+let output_file name = Printf.sprintf ".%s_custom_build_info.txt-gen" name

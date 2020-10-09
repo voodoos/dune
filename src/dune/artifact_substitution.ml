@@ -44,7 +44,7 @@ let eval t ~get_vcs =
   | Repeat (n, s) ->
     Fiber.return (Array.make n s |> Array.to_list |> String.concat ~sep:"")
   | Custom (name, dir) ->
-    let f = Path.Build.relative dir (Custom_build_info_old.output_file name) in
+    let f = Path.Build.relative dir (Custom_build_info.output_file name) in
     let s, _ = Build.(contents (Path.build f) |> exec) in
     Fiber.return s
   | Vcs_describe p -> (

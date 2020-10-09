@@ -124,7 +124,7 @@ let exe_path_from_name cctx ~name ~(linkage : Linkage.t) =
 
 let expand_custom_build_info ~cctx name (loc, action) =
   let dir = CC.dir cctx in
-  let raw_filename = Custom_build_info_old.output_file name in
+  let raw_filename = Custom_build_info.output_file name in
   let filename = String_with_vars.make_text Loc.none raw_filename in
   let action = Action_unexpanded.with_stdout_to filename action in
   let path = Path.Build.relative dir raw_filename in
@@ -225,12 +225,12 @@ let link_js ~name ~cm_files ~promote cctx =
     ~flags:(Command.Args.dyn flags) ~promote
 
 let build_and_link_many ~programs ~linkages ~promote ?link_args ?o_files
-    ~custom_build_info ~cbi ?(embed_in_plugin_libraries = []) cctx =
+     ~cbi ?(embed_in_plugin_libraries = []) cctx =
   let modules = Compilation_context.modules cctx in
   let dep_graphs = Dep_rules.rules cctx ~modules in
   Module_compilation.build_all cctx ~dep_graphs;
   let link_time_code_gen =
-    Link_time_code_gen.handle_special_libs ~custom_build_info cctx
+    Link_time_code_gen.handle_special_libs ~custom_build_info:() cctx
   in
   List.iter programs ~f:(fun { Program.name; main_module_name; loc } ->
       let cm_files =
@@ -254,7 +254,7 @@ let build_and_link_many ~programs ~linkages ~promote ?link_args ?o_files
           else
             let link_time_code_gen =
               if Linkage.is_plugin linkage then
-                Link_time_code_gen.handle_special_libs ~custom_build_info
+                Link_time_code_gen.handle_special_libs ~custom_build_info:()
                   (CC.for_plugin_executable cctx ~embed_in_plugin_libraries)
               else
                 link_time_code_gen

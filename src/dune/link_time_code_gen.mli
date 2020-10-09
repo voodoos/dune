@@ -9,9 +9,7 @@ type t =
 
 (** Generate link time code for special libraries such as [findlib.dynload] *)
 val handle_special_libs :
-     custom_build_info:Custom_build_info_old.t option
-  -> Compilation_context.t
-  -> t Or_exn.t
+  custom_build_info:unit -> Compilation_context.t -> t Or_exn.t
 
 val handle_custom_build_infos :
      Compilation_context.t

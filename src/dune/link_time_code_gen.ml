@@ -55,9 +55,6 @@ module Code_gen : sig
     -> string
 
   val findlib_init : preds:Variant.Set.t -> libs:Lib.t list -> string
-
-  val _custom_build_info :
-    cctx:CC.t -> custom_build_info:Custom_build_info_old.t option * 'a -> string
 end = struct
   let pr buf fmt = Printf.bprintf buf (fmt ^^ "\n")
 
@@ -189,27 +186,6 @@ end = struct
         pr buf "%S, %s" (Lib_name.to_string name) v);
     pr buf ""
 
-  let _custom_build_info ~cctx ~custom_build_info:(exe_cbi, _lib_cbis) =
-    let buf = Buffer.create 1024 in
-    let dir = CC.dir cctx in
-    let encode min_len name =
-      Artifact_substitution.(encode ~min_len (Custom (name, dir)))
-    in
-    (* let lib_cbi (name, { Custom_build_info.max_size; _ }) = let name =
-       Lib_name.to_string name in pr buf "%S, %s" name (fmt_eval ~cctx (encode
-       max_size name)) in *)
-    let exe_cbi =
-      match exe_cbi with
-      | Some { Custom_build_info_old.max_size; _ } ->
-        fmt_eval ~cctx (encode max_size "exe")
-      | None -> "None"
-    in
-    eval_code buf;
-    pr buf "let custom = %s" exe_cbi;
-    (* pr buf ""; prlist buf "lib_customs" lib_cbis ~f:lib_cbi; pr buf ""; pr
-       buf "let custom_lib name = List.assoc name lib_customs" *)
-    Buffer.contents buf
-
   let dune_build_info cctx ~libs ~api_version:_ =
     let open Lib_info.Special_builtin_support in
     let buf = Buffer.create 1024 in
@@ -227,7 +203,7 @@ end = struct
     Buffer.contents buf
 end
 
-let handle_special_libs ~custom_build_info cctx =
+let handle_special_libs ~custom_build_info:_ cctx =
   let open Result.O in
   let+ all_libs = CC.requires_link cctx in
   let obj_dir = Compilation_context.obj_dir cctx |> Obj_dir.of_local in
@@ -236,10 +212,6 @@ let handle_special_libs ~custom_build_info cctx =
      Lib_name.to_string)) )) ; *)
   let sctx = CC.super_context cctx in
   let module LM = Lib.Lib_and_module in
-  let cbis =
-    Lib_info.gather_custom_build_info (List.map ~f:Lib.info all_libs)
-  in
-  let _custom_build_info = (custom_build_info, cbis) in
   let rec process_libs ~to_link_rev ~force_linkall libs =
     match libs with
     | [] -> { to_link = List.rev to_link_rev; force_linkall }

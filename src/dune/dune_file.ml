@@ -530,7 +530,6 @@ module Library = struct
     ; special_builtin_support : Lib_info.Special_builtin_support.t option
     ; enabled_if : Blang.t
     ; instrumentation_backend : (Loc.t * Lib_name.t) option
-    ; custom_build_info : Custom_build_info_old.t option
     }
 
   let decode =
@@ -604,7 +603,7 @@ module Library = struct
          field_o "instrumentation.backend"
            ( Dune_lang.Syntax.since Stanza.syntax (2, 7)
            >>> fields (field "ppx" (located Lib_name.decode)) )
-       and+ custom_build_info = Custom_build_info_old.decode () in
+       in
        let wrapped =
          Wrapped.make ~wrapped ~implements ~special_builtin_support
        in
@@ -679,7 +678,6 @@ module Library = struct
        ; special_builtin_support
        ; enabled_if
        ; instrumentation_backend
-       ; custom_build_info
        })
 
   let has_foreign t = Buildable.has_foreign t.buildable
@@ -812,14 +810,13 @@ module Library = struct
     let wrapped = Some conf.wrapped in
     let special_builtin_support = conf.special_builtin_support in
     let instrumentation_backend = conf.instrumentation_backend in
-    let custom_build_info = conf.custom_build_info in
     Lib_info.create ~loc ~name ~kind ~status ~src_dir ~orig_src_dir ~obj_dir
       ~version ~synopsis ~main_module_name ~sub_systems ~requires
       ~foreign_objects ~plugins ~archives ~ppx_runtime_deps ~foreign_archives
       ~native_archives ~foreign_dll_files ~jsoo_runtime ~jsoo_archive
       ~preprocess ~enabled ~virtual_deps ~dune_version ~virtual_ ~implements
       ~default_implementation ~modes ~wrapped ~special_builtin_support
-      ~exit_module ~instrumentation_backend ~custom_build_info
+      ~exit_module ~instrumentation_backend
 end
 
 module Install_conf = struct
@@ -1204,7 +1201,6 @@ module Executables = struct
     ; forbidden_libraries : (Loc.t * Lib_name.t) list
     ; bootstrap_info : string option
     ; enabled_if : Blang.t
-    ; custom_build_info : Custom_build_info_old.t option
     }
 
   let bootstrap_info_extension =
@@ -1272,7 +1268,7 @@ module Executables = struct
         Dune_lang.Syntax.Version.Infix.(syntax_version >= (2, 6))
       in
       Enabled_if.decode ~allowed_vars ~is_error ~since:(Some (2, 3)) ()
-    and+ custom_build_info = Custom_build_info_old.decode () in
+    in
     fun names ~multi ->
       let has_public_name = Names.has_public_name names in
       let private_names = Names.names names in
@@ -1327,7 +1323,6 @@ module Executables = struct
       ; forbidden_libraries
       ; bootstrap_info
       ; enabled_if
-      ; custom_build_info
       }
 
   let single, multi =
@@ -1676,7 +1671,6 @@ module Tests = struct
            ; forbidden_libraries
            ; bootstrap_info = None
            ; enabled_if
-           ; custom_build_info = None
            }
        ; locks
        ; package

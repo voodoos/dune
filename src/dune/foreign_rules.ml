@@ -88,8 +88,8 @@ let build_c_file ~sctx ~dir ~expander ~include_flags (loc, src, dst) =
     (let src = Path.build (Foreign.Source.path src) in
      Command.run
      (* We have to execute the rule in the library directory as the .o is
-        produced in the current directory *) ~dir:(Path.build dir)
-       (Ok ctx.ocamlc)
+        produced in the current directory *)
+       ~dir:(Path.build dir) (Ok ctx.ocamlc)
        [ A "-g"
        ; include_flags
        ; Dyn (Build.map c_flags ~f:(fun x -> Command.quote_args "-ccopt" x))
@@ -121,7 +121,8 @@ let build_cxx_file ~sctx ~dir ~expander ~include_flags (loc, src, dst) =
      let c_compiler = Ocaml_config.c_compiler ctx.ocaml_config in
      Command.run
      (* We have to execute the rule in the library directory as the .o is
-        produced in the current directory *) ~dir:(Path.build dir)
+        produced in the current directory *)
+       ~dir:(Path.build dir)
        (Super_context.resolve_program ~loc:None ~dir sctx c_compiler)
        ( [ Command.Args.S [ A "-I"; Path ctx.stdlib_dir ]
          ; include_flags
