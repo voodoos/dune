@@ -42,15 +42,20 @@ let generate_and_compile_module cctx ~precompiled_cmi ~name ~lib ~code ~requires
     ~precompiled_cmi cctx module_;
   module_
 
-let generate_and_compile_module_no_lib cctx ~name ~code =
+let generate_and_compile_module_no_lib kind cctx ~name ~code =
   let sctx = CC.super_context cctx in
   let obj_dir = CC.obj_dir cctx in
   let dir = CC.dir cctx in
+  let main_module_name =
+    match kind with
+    | Generate_build_info.Exe -> Module_name.of_string "dune__exe"
+    | Generate_build_info.Lib (Some main_module_name) -> main_module_name
+    | Generate_build_info.Lib None -> Module_name.of_string "dune__lib"
+  in
   let module_ =
     let src_dir = Path.build (Obj_dir.obj_dir obj_dir) in
 
-    Module.generated ~src_dir name
-    |> Module.with_wrapper ~main_module_name:(Module_name.of_string "dune__exe")
+    Module.generated ~src_dir name |> Module.with_wrapper ~main_module_name
     (* ~main_module_name:(Module_name.of_string_opt "dune__exe" |>
        Option.value_exn) *)
   in
@@ -61,10 +66,8 @@ let generate_and_compile_module_no_lib cctx ~name ~code =
        |> Option.value_exn |> Path.as_in_build_dir_exn
      in
      Build.write_file_dyn ml code);
-  let cctx =
-    Compilation_context.for_module_generated_at_link_time cctx ~requires:(Ok [])
-      ~module_
-  in
+  (* let cctx = Compilation_context.for_module_generated_at_link_time cctx
+     ~requires:(Ok []) ~module_ in *)
   Module_compilation.(
     build_module
       ~dep_graphs:(Dep_graph.Ml_kind.dummy module_)
@@ -248,7 +251,7 @@ module Code_gen = struct
           (Dyn.to_string (Meta.to_dyn meta)));
     Buffer.contents buf
 
-  let custom_build_info_code ~cctx ~exe_cbi =
+  let custom_build_info_code ~cctx ~cbi filename =
     let buf = Buffer.create 1024 in
     let dir = CC.dir cctx in
     let encode min_len name =
@@ -257,25 +260,30 @@ module Code_gen = struct
     (* let lib_cbi (name, { Custom_build_info.max_size; _ }) = let name =
        Lib_name.to_string name in pr buf "%S, %s" name (fmt_eval ~cctx (encode
        max_size name)) in *)
-    let exe_cbi =
+    let cbi =
       fmt_eval ~cctx
-        (encode exe_cbi.Dune_file.Generate_custom_build_info.max_size
-           "exe_main_My_cbi_native")
+        (encode cbi.Dune_file.Generate_custom_build_info.max_size filename)
     in
     eval_code buf;
-    pr buf "let custom = %s" exe_cbi;
+    pr buf "let custom = %s" cbi;
     (* pr buf ""; prlist buf "lib_customs" lib_cbis ~f:lib_cbi; pr buf ""; pr
        buf "let custom_lib name = List.assoc name lib_customs" *)
     Buffer.contents buf
 end
 
-let handle_custom_build_info cctx cbi =
+let handle_custom_build_info cctx ?(kind = Generate_build_info.Exe)
+    ?(mode = Mode.Native) cbi =
   let open Dune_file.Generate_custom_build_info in
   let obj_dir = Compilation_context.obj_dir cctx |> Obj_dir.of_local in
-  List.fold_left cbi ~init:[] ~f:(fun acc exe_cbi ->
+  List.fold_left cbi ~init:[] ~f:(fun acc cbi ->
+      let filename =
+        Generate_build_info.output_file kind mode
+          (Module_name.to_string cbi.module_)
+      in
       let m =
-        generate_and_compile_module_no_lib cctx ~name:exe_cbi.module_
-          ~code:(Build.return (Code_gen.custom_build_info_code ~cctx ~exe_cbi))
+        generate_and_compile_module_no_lib kind cctx ~name:cbi.module_
+          ~code:
+            (Build.return (Code_gen.custom_build_info_code ~cctx ~cbi filename))
       in
       Lib.Lib_and_module.Module (obj_dir, m) :: acc)
 

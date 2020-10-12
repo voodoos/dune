@@ -1,7 +1,11 @@
 open! Stdune
 open Dune_engine
 
-val output_file : string -> string
+type kind =
+  | Exe
+  | Lib of Module_name.t option
+
+val output_file : kind -> Mode.t -> string -> string
 
 val setup_rules :
      sctx:Super_context.t
@@ -18,6 +22,6 @@ val cbi_modules :
 
 val build_action :
      Compilation_context.t
-  -> base_name:string
+  -> ?kind:kind
   -> Mode.t
   -> Action.t Build.With_targets.t list

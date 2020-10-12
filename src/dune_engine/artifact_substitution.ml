@@ -138,10 +138,7 @@ let eval t ~conf =
     | None -> Fiber.return ""
     | Some vcs -> Vcs.describe vcs )
   | Custom_build_info (name, dir) ->
-    let f =
-      Path.Build.relative dir
-        (Printf.sprintf ".%s_custom_build_info.txt-gen" name)
-    in
+    let f = Path.Build.relative dir name in
     let s, _ = Build.(contents (Path.build f) |> exec) in
     Fiber.return s
   | Location (name, lib_name) ->

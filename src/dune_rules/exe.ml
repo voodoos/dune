@@ -190,9 +190,7 @@ let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
          ; Dyn link_args
          ]
      in
-     let cbi_exe =
-       Generate_build_info.build_action cctx ~base_name:("exe_" ^ name) mode
-     in
+     let cbi_exe = Generate_build_info.build_action cctx mode in
 
      Build.progn (cmd_run :: cbi_exe))
 

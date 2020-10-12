@@ -2,7 +2,17 @@ open! Stdune
 open Dune_engine
 open Dune_file.Generate_custom_build_info
 
-let output_file name = Printf.sprintf ".%s_custom_build_info.txt-gen" name
+type kind =
+  | Exe
+  | Lib of Module_name.t option
+
+let kind_to_string = function
+  | Exe -> "exe"
+  | Lib _ -> "lib"
+
+let output_file kind mode name =
+  Printf.sprintf ".%s_%s_%s_cbi.txt-gen" (kind_to_string kind)
+    (Mode.to_string mode) name
 
 let pr buf fmt = Printf.bprintf buf (fmt ^^ "\n")
 
@@ -30,14 +40,9 @@ let cbi_modules cctx =
       stanzas
   | None -> []
 
-let expand ~cctx name mode { link_time_action = loc, action; module_; _ } =
+let expand ~cctx kind mode { link_time_action = loc, action; module_; _ } =
   let dir = Compilation_context.dir cctx in
-  let name =
-    Printf.sprintf "%s_%s_%s" name
-      (Module_name.to_string module_)
-      (Mode.to_string mode)
-  in
-  let raw_filename = output_file name in
+  let raw_filename = output_file kind mode (Module_name.to_string module_) in
   let filename = String_with_vars.make_text Loc.none raw_filename in
   let action = Action_unexpanded.with_stdout_to filename action in
   let path = Path.Build.relative dir raw_filename in
@@ -50,6 +55,6 @@ let expand ~cctx name mode { link_time_action = loc, action; module_; _ } =
     ~expander:(Compilation_context.expander cctx)
     (Build.return Bindings.empty)
 
-let build_action cctx ~base_name mode =
+let build_action cctx ?(kind = Exe) mode =
   let cbi = cbi_modules cctx in
-  List.map cbi ~f:(expand ~cctx base_name mode)
+  List.map cbi ~f:(expand ~cctx kind mode)
