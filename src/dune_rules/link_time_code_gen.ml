@@ -14,18 +14,23 @@ let generate_and_compile_module cctx ~precompiled_cmi ~name ~lib ~code ~requires
   let obj_dir = CC.obj_dir cctx in
   let dir = CC.dir cctx in
   let module_ =
-    let wrapped = Result.ok_exn (Lib.wrapped lib) in
+    let wrapped =
+      Option.bind lib ~f:(fun lib -> Result.ok_exn (Lib.wrapped lib))
+    in
     let src_dir = Path.build (Obj_dir.obj_dir obj_dir) in
     let gen_module = Module.generated ~src_dir name in
-    match wrapped with
+    let main_module_name =
+      match (wrapped, lib) with
+      | _, None -> Some (Module_name.of_string "dune__exe")
+      | None, Some _ -> None
+      | Some (Yes_with_transition _), _ -> assert false
+      | Some (Simple false), _ -> None
+      | Some (Simple true), Some lib ->
+        Some (Lib.main_module_name lib |> Result.ok_exn |> Option.value_exn)
+    in
+    match main_module_name with
     | None -> gen_module
-    | Some (Yes_with_transition _) -> assert false
-    | Some (Simple false) -> gen_module
-    | Some (Simple true) ->
-      let main_module_name =
-        Lib.main_module_name lib |> Result.ok_exn |> Option.value_exn
-      in
-      Module.with_wrapper gen_module ~main_module_name
+    | Some main_module_name -> Module.with_wrapper gen_module ~main_module_name
   in
   SC.add_rule ~dir sctx
     (let ml =
@@ -313,7 +318,7 @@ let handle_special_libs cctx ~cbi =
         match special with
         | Build_info { data_module; api_version } ->
           let module_ =
-            generate_and_compile_module cctx ~name:data_module ~lib
+            generate_and_compile_module cctx ~name:data_module ~lib:(Some lib)
               ~code:
                 (Build.return
                    (Code_gen.build_info_code cctx ~libs:all_libs ~api_version))
@@ -340,7 +345,7 @@ let handle_special_libs cctx ~cbi =
             [ dynlink; findlib ]
           in
           let module_ =
-            generate_and_compile_module cctx ~lib
+            generate_and_compile_module cctx ~lib:(Some lib)
               ~name:(Module_name.of_string "findlib_initl")
               ~code:
                 (Build.return
@@ -366,7 +371,8 @@ let handle_special_libs cctx ~cbi =
               else
                 Build.return (Code_gen.dune_site_code ())
             in
-            generate_and_compile_module cctx ~name:data_module ~lib ~code
+            generate_and_compile_module cctx ~name:data_module ~lib:(Some lib)
+              ~code
               ~requires:(Ok [ lib ])
               ~precompiled_cmi:External
           in
