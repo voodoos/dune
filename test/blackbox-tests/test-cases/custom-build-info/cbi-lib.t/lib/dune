@@ -1,0 +1,8 @@
+(library
+ (name my_lib)
+ (modules lib my_cbi))
+
+(generate_custom_build_info
+ (module my_cbi)
+ (max_size 66)
+ (link_time_action (run ocaml %{dep:gen_version.ml})))
