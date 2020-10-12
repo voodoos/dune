@@ -1,10 +1,12 @@
-  $ dune build @install
+  $ dune build @install --debug-dep
+
 
   $ dune install --prefix _install
   Installing _install/lib/pak/META
   Installing _install/lib/pak/dune-package
   Installing _install/lib/pak/opam
   Installing _install/bin/main
+  Installing _install/bin/main_bytes
 
   $ _build/install/default/bin/main
   None
@@ -13,8 +15,5 @@
   Some custom information accessible with `My_cbi.custom`
 
 
---debug-dep
-
-#  $ dune rules --rec .main.eobjs/native/my_cbi.cmx
-#  $ dune rules _build/default/.main.eobjs/byte/my_cbi.cmo
-#  $ dune rules _build/default/.main.eobjs/byte/dune__exe__My_cbi.cmo
+  $ ocamlrun _install/bin/main_bytes
+  Some custom information accessible with `My_cbi_libytes.custom`

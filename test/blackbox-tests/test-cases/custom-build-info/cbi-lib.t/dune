@@ -2,3 +2,9 @@
  (public_name main)
  (modules main)
  (libraries my_lib))
+
+(executable
+ (public_name main_bytes)
+ (modules main_bytes)
+ (modes byte)
+ (libraries my_lib_bytes))
