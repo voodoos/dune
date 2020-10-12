@@ -16,8 +16,9 @@ let msvc_hack_cclibs =
       Option.value ~default:lib (String.drop_prefix ~prefix:"-l" lib))
 
 (* Build an OCaml library. *)
-let build_lib (lib : Library.t) ~sctx ~modules ~expander ~flags ~dir ~mode
-    ~cm_files =
+let build_lib (lib : Library.t) ~cctx ~modules ~expander ~flags ~dir ~mode
+    ~cm_files ~link_time_code_gen =
+  let sctx = Compilation_context.super_context cctx in
   let ctx = Super_context.context sctx in
   let { Lib_config.ext_lib; _ } = ctx.lib_config in
   Result.iter (Context.compiler ctx mode) ~f:(fun compiler ->
@@ -54,34 +55,43 @@ let build_lib (lib : Library.t) ~sctx ~modules ~expander ~flags ~dir ~mode
       Super_context.add_rule ~dir sctx ~loc:lib.buildable.loc
         (let open Build.With_targets.O in
         Build.with_no_targets obj_deps
-        >>> Command.run (Ok compiler) ~dir:(Path.build ctx.build_dir)
-              [ Command.Args.dyn ocaml_flags
-              ; A "-a"
-              ; A "-o"
-              ; Target target
-              ; As stubs_flags
-              ; Dyn
-                  (Build.map cclibs ~f:(fun x ->
-                       Command.quote_args "-cclib" (map_cclibs x)))
-              ; Command.Args.dyn library_flags
-              ; As
-                  ( match lib.kind with
-                  | Normal -> []
-                  | Ppx_deriver _
-                  | Ppx_rewriter _ ->
-                    [ "-linkall" ] )
-              ; Dyn
-                  ( Cm_files.top_sorted_cms cm_files ~mode
-                  |> Build.map ~f:(fun x -> Command.Args.Deps x) )
-              ; Hidden_targets
-                  ( match mode with
-                  | Byte -> []
-                  | Native ->
-                    if Lib_info.has_native_archive ctx.lib_config modules then
-                      [ Library.archive lib ~dir ~ext:ext_lib ]
-                    else
-                      [] )
-              ]))
+        >>>
+        let cmd =
+          Command.run (Ok compiler) ~dir:(Path.build ctx.build_dir)
+            [ Command.Args.dyn ocaml_flags
+            ; A "-a"
+            ; A "-o"
+            ; Target target
+            ; As stubs_flags
+            ; Lib.Lib_and_module.L.link_flags link_time_code_gen
+                ~lib_config:ctx.lib_config ~mode:(Link_mode.of_mode mode)
+            ; Dyn
+                (Build.map cclibs ~f:(fun x ->
+                     Command.quote_args "-cclib" (map_cclibs x)))
+            ; Command.Args.dyn library_flags
+            ; As
+                ( match lib.kind with
+                | Normal -> []
+                | Ppx_deriver _
+                | Ppx_rewriter _ ->
+                  [ "-linkall" ] )
+            ; Dyn
+                ( Cm_files.top_sorted_cms cm_files ~mode
+                |> Build.map ~f:(fun x -> Command.Args.Deps x) )
+            ; Hidden_targets
+                ( match mode with
+                | Byte -> []
+                | Native ->
+                  if Lib_info.has_native_archive ctx.lib_config modules then
+                    [ Library.archive lib ~dir ~ext:ext_lib ]
+                  else
+                    [] )
+            ]
+        in
+        Build.progn
+          ( cmd
+          :: Generate_build_info.build_action cctx mode
+               ~kind:(Generate_build_info.Lib None) )))
 
 let gen_wrapped_compat_modules (lib : Library.t) cctx =
   let modules = Compilation_context.modules cctx in
@@ -318,8 +328,16 @@ let setup_build_archives (lib : Dune_file.Library.t) ~cctx
   (let cm_files =
      Cm_files.make ~obj_dir ~ext_obj ~modules ~top_sorted_modules
    in
+   let cbi = Generate_build_info.cbi_modules cctx in
+   let link_time_code_gen =
+     Link_time_code_gen.handle_custom_build_info
+       ~kind:(Generate_build_info.Lib (Modules.main_module_name modules))
+       cctx cbi
+   in
+
    Mode.Dict.Set.iter modes ~f:(fun mode ->
-       build_lib lib ~dir ~modules ~sctx ~expander ~flags ~mode ~cm_files));
+       build_lib lib ~dir ~modules ~cctx ~expander ~flags ~mode ~cm_files
+         ~link_time_code_gen));
   (* Build *.cma.js *)
   if modes.byte then
     Super_context.add_rules sctx ~dir
@@ -438,6 +456,7 @@ let rules (lib : Library.t) ~sctx ~dir_contents ~dir ~expander ~scope :
     let cctx =
       cctx lib ~sctx ~source_modules ~dir ~scope ~expander ~compile_info
     in
+    let _cbi = Generate_build_info.cbi_modules cctx in
     library_rules lib ~cctx ~source_modules ~dir_contents ~compile_info
   in
   Buildable_rules.gen_select_rules sctx compile_info ~dir;
