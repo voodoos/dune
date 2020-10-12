@@ -1,0 +1,11 @@
+(executable
+ (public_name main)
+ (modules main my_cbi_exe)
+ (modes byte native)
+ (libraries my_lib ))
+
+
+(generate_custom_build_info
+ (module my_cbi_exe)
+ (max_size 66)
+ (link_time_action (run ocaml %{dep:gen_version.ml})))
