@@ -17,6 +17,5 @@ val handle_special_libs :
 val handle_custom_build_info :
      Compilation_context.t
   -> ?kind:Generate_build_info.kind
-  -> ?mode:Mode.t
   -> Dune_file.Generate_custom_build_info.t list
   -> Lib.Lib_and_module.t list

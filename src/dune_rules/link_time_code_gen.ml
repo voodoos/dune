@@ -271,10 +271,16 @@ module Code_gen = struct
     Buffer.contents buf
 end
 
-let handle_custom_build_info cctx ?(kind = Generate_build_info.Exe)
-    ?(mode = Mode.Native) cbi =
+let handle_custom_build_info cctx ?(kind = Generate_build_info.Exe) cbi =
   let open Dune_file.Generate_custom_build_info in
   let obj_dir = Compilation_context.obj_dir cctx |> Obj_dir.of_local in
+  let modes = Compilation_context.modes cctx in
+  let mode =
+    if Mode.Dict.get modes Mode.Native then
+      Mode.Native
+    else
+      Mode.Byte
+  in
   List.fold_left cbi ~init:[] ~f:(fun acc cbi ->
       let filename =
         Generate_build_info.output_file kind mode
