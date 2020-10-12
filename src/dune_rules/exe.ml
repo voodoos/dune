@@ -123,21 +123,6 @@ end
 let exe_path_from_name cctx ~name ~(linkage : Linkage.t) =
   Path.Build.relative (CC.dir cctx) (name ^ linkage.ext)
 
-let expand_custom_build_info ~cctx name (loc, action) =
-  let dir = CC.dir cctx in
-  let raw_filename = Generate_build_info.output_file name in
-  let filename = String_with_vars.make_text Loc.none raw_filename in
-  let action = Action_unexpanded.with_stdout_to filename action in
-  let path = Path.Build.relative dir raw_filename in
-  let targets =
-    Targets.Static
-      { targets = [ path ]; multiplicity = Targets.Multiplicity.One }
-  in
-  Action_unexpanded.expand action ~loc ~dep_kind:Required ~targets_dir:dir
-    ~targets:Targets.(Or_forbidden.Targets targets)
-    ~expander:(CC.expander cctx)
-    (Build.return Bindings.empty)
-
 let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
     ~custom_build_info ~promote ?(link_args = Build.return Command.Args.empty)
     ?(o_files = []) cctx =
@@ -205,10 +190,7 @@ let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
              ]
          and+ cbi_exe =
            let name = Printf.sprintf "exe_%s_%s" name (Mode.to_string mode) in
-           List.map custom_build_info
-             ~f:(fun
-                  { Dune_file.Generate_custom_build_info.link_time_action; _ }
-                -> expand_custom_build_info ~cctx name link_time_action)
+           List.map custom_build_info ~f:(Generate_build_info.expand ~cctx name)
            |> Build.With_targets.all
          in
 
@@ -234,7 +216,7 @@ let build_and_link_many ~programs ~linkages ~promote ?link_args ?o_files
   let modules = Compilation_context.modules cctx in
   let dep_graphs = Dep_rules.rules cctx ~modules in
   Module_compilation.build_all cctx ~dep_graphs;
-  let cbi = Generate_build_info.cbi_modules cctx ~modules in
+  let cbi = Generate_build_info.cbi_modules cctx in
   let link_time_code_gen = Link_time_code_gen.handle_special_libs ~cbi cctx in
   List.iter programs ~f:(fun { Program.name; main_module_name; loc } ->
       let cm_files =

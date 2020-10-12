@@ -9,6 +9,10 @@ val setup_rules :
   -> string
 
 val cbi_modules :
-     Compilation_context.t
-  -> modules:Modules.t
-  -> Dune_file.Generate_custom_build_info.t list
+  Compilation_context.t -> Dune_file.Generate_custom_build_info.t list
+
+val expand :
+     cctx:Compilation_context.t
+  -> string
+  -> Dune_file.Generate_custom_build_info.t
+  -> Dune_engine.Action.t Dune_engine.Build.With_targets.t
