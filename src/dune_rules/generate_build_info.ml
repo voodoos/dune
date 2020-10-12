@@ -14,12 +14,16 @@ let setup_rules ~sctx ~dir (def : Dune_file.Generate_custom_build_info.t) =
   Super_context.add_rule sctx ~dir (Build.write_file file mli);
   module_
 
-let cbi_modules sctx ~dir =
-  match Super_context.stanzas_in sctx ~dir with
+let cbi_modules cctx ~modules =
+  let sctx = Compilation_context.super_context cctx in
+  match Super_context.stanzas_in sctx ~dir:(Compilation_context.dir cctx) with
   | Some { data = stanzas; _ } ->
     List.filter_map
       ~f:(function
-        | Dune_file.Generate_custom_build_info cbi -> Some cbi
+        | Dune_file.Generate_custom_build_info cbi -> (
+          match Modules.find modules cbi.module_ with
+          | Some _ -> Some cbi
+          | None -> None )
         | _ -> None)
       stanzas
   | None -> []

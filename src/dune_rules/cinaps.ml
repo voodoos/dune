@@ -107,7 +107,6 @@ let gen_rules sctx t ~dir ~scope =
   in
   Exe.build_and_link cctx
     ~program:{ name; main_module_name; loc }
-    ~cbi:[]
     ~linkages:[ Exe.Linkage.native_or_custom (Super_context.context sctx) ]
     ~promote:None;
   let action =

@@ -9,6 +9,6 @@ val setup_rules :
   -> string
 
 val cbi_modules :
-     Super_context.t
-  -> dir:Path.Build.w Path.Local_gen.t
+     Compilation_context.t
+  -> modules:Modules.t
   -> Dune_file.Generate_custom_build_info.t list

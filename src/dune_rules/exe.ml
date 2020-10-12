@@ -229,11 +229,12 @@ let link_js ~name ~cm_files ~promote cctx =
   Jsoo_rules.build_exe cctx ~js_of_ocaml ~src ~cm:top_sorted_cms
     ~flags:(Command.Args.dyn flags) ~promote
 
-let build_and_link_many ~programs ~linkages ~promote ~cbi ?link_args ?o_files
+let build_and_link_many ~programs ~linkages ~promote ?link_args ?o_files
     ?(embed_in_plugin_libraries = []) cctx =
   let modules = Compilation_context.modules cctx in
   let dep_graphs = Dep_rules.rules cctx ~modules in
   Module_compilation.build_all cctx ~dep_graphs;
+  let cbi = Generate_build_info.cbi_modules cctx ~modules in
   let link_time_code_gen = Link_time_code_gen.handle_special_libs ~cbi cctx in
   List.iter programs ~f:(fun { Program.name; main_module_name; loc } ->
       let cm_files =
