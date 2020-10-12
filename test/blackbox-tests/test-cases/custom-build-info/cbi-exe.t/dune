@@ -1,5 +1,6 @@
 (executable
  (public_name main)
+ (modes byte native)
  (modules main my_cbi))
 
 (generate_custom_build_info

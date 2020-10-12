@@ -13,3 +13,8 @@ val handle_special_libs :
      Compilation_context.t
   -> cbi:Dune_file.Generate_custom_build_info.t list
   -> t Or_exn.t
+
+val handle_custom_build_info :
+     Compilation_context.t
+  -> Dune_file.Generate_custom_build_info.t list
+  -> Lib.Lib_and_module.t list

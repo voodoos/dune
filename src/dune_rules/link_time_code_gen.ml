@@ -260,7 +260,7 @@ module Code_gen = struct
     let exe_cbi =
       fmt_eval ~cctx
         (encode exe_cbi.Dune_file.Generate_custom_build_info.max_size
-           "exe_main_native")
+           "exe_main_My_cbi_native")
     in
     eval_code buf;
     pr buf "let custom = %s" exe_cbi;
@@ -269,8 +269,9 @@ module Code_gen = struct
     Buffer.contents buf
 end
 
-let handle_custom_build_info cctx obj_dir cbi =
+let handle_custom_build_info cctx cbi =
   let open Dune_file.Generate_custom_build_info in
+  let obj_dir = Compilation_context.obj_dir cctx |> Obj_dir.of_local in
   List.fold_left cbi ~init:[] ~f:(fun acc exe_cbi ->
       let m =
         generate_and_compile_module_no_lib cctx ~name:exe_cbi.module_
@@ -359,5 +360,5 @@ let handle_special_libs cctx ~cbi =
             ~to_link_rev:(LM.Lib lib :: Module (obj_dir, module_) :: to_link_rev)
             ~force_linkall ) )
   in
-  let cbi = handle_custom_build_info cctx obj_dir cbi in
+  let cbi = handle_custom_build_info cctx cbi in
   process_libs all_libs ~to_link_rev:cbi ~force_linkall:false
