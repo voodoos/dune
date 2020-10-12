@@ -124,8 +124,8 @@ let exe_path_from_name cctx ~name ~(linkage : Linkage.t) =
   Path.Build.relative (CC.dir cctx) (name ^ linkage.ext)
 
 let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
-    ~custom_build_info ~promote ?(link_args = Build.return Command.Args.empty)
-    ?(o_files = []) cctx =
+    ~promote ?(link_args = Build.return Command.Args.empty) ?(o_files = []) cctx
+    =
   let sctx = CC.super_context cctx in
   let ctx = SC.context sctx in
   let dir = CC.dir cctx in
@@ -165,36 +165,36 @@ let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
         In each case, we could then pass the argument in dependency order, which
         would provide a better fix for this issue. *)
      Build.with_no_targets prefix
-     >>> let+ cmd_run =
-           Command.run ~dir:(Path.build ctx.build_dir)
-             (Context.compiler ctx mode)
-             [ Command.Args.dyn ocaml_flags
-             ; A "-o"
-             ; Target exe
-             ; As linkage.flags
-             ; Command.of_result_map link_time_code_gen
-                 ~f:(fun { Link_time_code_gen.to_link; force_linkall } ->
-                   S
-                     [ As
-                         ( if force_linkall then
-                           [ "-linkall" ]
-                         else
-                           [] )
-                     ; Lib.Lib_and_module.L.link_flags to_link
-                         ~lib_config:ctx.lib_config ~mode:linkage.mode
-                     ])
-             ; Deps o_files
-             ; Dyn (Build.map top_sorted_cms ~f:(fun x -> Command.Args.Deps x))
-             ; Fdo.Linker_script.flags fdo_linker_script
-             ; Dyn link_args
-             ]
-         and+ cbi_exe =
-           let name = Printf.sprintf "exe_%s_%s" name (Mode.to_string mode) in
-           List.map custom_build_info ~f:(Generate_build_info.expand ~cctx name)
-           |> Build.With_targets.all
-         in
+     >>>
+     let cmd_run =
+       Command.run ~dir:(Path.build ctx.build_dir)
+         (Context.compiler ctx mode)
+         [ Command.Args.dyn ocaml_flags
+         ; A "-o"
+         ; Target exe
+         ; As linkage.flags
+         ; Command.of_result_map link_time_code_gen
+             ~f:(fun { Link_time_code_gen.to_link; force_linkall } ->
+               S
+                 [ As
+                     ( if force_linkall then
+                       [ "-linkall" ]
+                     else
+                       [] )
+                 ; Lib.Lib_and_module.L.link_flags to_link
+                     ~lib_config:ctx.lib_config ~mode:linkage.mode
+                 ])
+         ; Deps o_files
+         ; Dyn (Build.map top_sorted_cms ~f:(fun x -> Command.Args.Deps x))
+         ; Fdo.Linker_script.flags fdo_linker_script
+         ; Dyn link_args
+         ]
+     in
+     let cbi_exe =
+       Generate_build_info.build_action cctx ~base_name:"exe" mode
+     in
 
-         Action.progn (List.concat [ cbi_exe; [ cmd_run ] ]))
+     Build.progn (cmd_run :: cbi_exe))
 
 let link_js ~name ~cm_files ~promote cctx =
   let sctx = CC.super_context cctx in
@@ -242,7 +242,7 @@ let build_and_link_many ~programs ~linkages ~promote ?link_args ?o_files
                 link_time_code_gen
             in
             link_exe cctx ~loc ~name ~linkage ~cm_files ~link_time_code_gen
-              ~custom_build_info:cbi ~promote ?link_args ?o_files))
+              ~promote ?link_args ?o_files))
 
 let build_and_link ~program = build_and_link_many ~programs:[ program ]
 

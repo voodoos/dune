@@ -30,8 +30,13 @@ let cbi_modules cctx =
       stanzas
   | None -> []
 
-let expand ~cctx name { link_time_action = loc, action; _ } =
+let expand ~cctx name mode { link_time_action = loc, action; module_; _ } =
   let dir = Compilation_context.dir cctx in
+  let name =
+    Printf.sprintf "%s_%s_%s" name
+      (Module_name.to_string module_)
+      (Mode.to_string mode)
+  in
   let raw_filename = output_file name in
   let filename = String_with_vars.make_text Loc.none raw_filename in
   let action = Action_unexpanded.with_stdout_to filename action in
@@ -44,3 +49,7 @@ let expand ~cctx name { link_time_action = loc, action; _ } =
     ~targets:Targets.(Or_forbidden.Targets targets)
     ~expander:(Compilation_context.expander cctx)
     (Build.return Bindings.empty)
+
+let build_action cctx ~base_name mode =
+  let cbi = cbi_modules cctx in
+  List.map cbi ~f:(expand ~cctx base_name mode)
