@@ -256,6 +256,13 @@ let decode s =
       let name = Package.Name.of_string (read_string_payload rest) in
       let kind = Option.value_exn (Section.of_string kind) in
       Location (kind, name)
+    | "custom" :: name :: rest -> (
+      let s = read_string_payload rest in
+      match String.drop_prefix ~prefix:"_build/" s with
+      | None -> fail ()
+      | Some s ->
+        let path = Path.Build.of_string s in
+        Custom_build_info (name, path) )
     | "configpath" :: "sourceroot" :: _ -> Configpath Sourceroot
     | "configpath" :: "stdlib" :: _ -> Configpath Stdlib
     | "hardcoded_ocaml_path" :: _ -> Hardcoded_ocaml_path

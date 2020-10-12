@@ -259,7 +259,8 @@ module Code_gen = struct
        max_size name)) in *)
     let exe_cbi =
       fmt_eval ~cctx
-        (encode exe_cbi.Dune_file.Generate_custom_build_info.max_size "exe")
+        (encode exe_cbi.Dune_file.Generate_custom_build_info.max_size
+           "exe_main_native")
     in
     eval_code buf;
     pr buf "let custom = %s" exe_cbi;

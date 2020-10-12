@@ -10,7 +10,8 @@
   None
 
   $ _install/bin/main
-  None
+  Some custom information accessible with `My_cbi.custom`
+
 
 --debug-dep
 
