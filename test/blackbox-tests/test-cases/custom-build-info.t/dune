@@ -1,5 +1,5 @@
 (executable
- (name main)
+ (public_name main)
  (modules main my_cbi))
 
 (generate_custom_build_info
