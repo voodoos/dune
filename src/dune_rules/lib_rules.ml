@@ -328,13 +328,16 @@ let setup_build_archives (lib : Dune_file.Library.t) ~cctx
   (let cm_files =
      Cm_files.make ~obj_dir ~ext_obj ~modules ~top_sorted_modules
    in
+   let lib_info =
+     Dune_file.Library.to_lib_info lib
+       ~dir:(Compilation_context.dir cctx)
+       ~lib_config:ctx.lib_config
+   in
    let cbi = Generate_build_info.cbi_modules cctx in
    let link_time_code_gen =
      Link_time_code_gen.handle_custom_build_info
-       ~kind:(Generate_build_info.Lib (Modules.main_module_name modules))
-       cctx cbi
+       ~kind:(Generate_build_info.Lib (Some lib_info)) cctx cbi
    in
-
    Mode.Dict.Set.iter modes ~f:(fun mode ->
        build_lib lib ~dir ~modules ~cctx ~expander ~flags ~mode ~cm_files
          ~link_time_code_gen));

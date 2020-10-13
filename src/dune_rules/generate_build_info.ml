@@ -4,7 +4,7 @@ open Dune_file.Generate_custom_build_info
 
 type kind =
   | Exe
-  | Lib of Module_name.t option
+  | Lib of Path.Build.t Lib_info.t option
 
 let kind_to_string = function
   | Exe -> "exe"

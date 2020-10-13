@@ -46,16 +46,27 @@ let generate_and_compile_module_no_lib kind cctx ~name ~code =
   let sctx = CC.super_context cctx in
   let obj_dir = CC.obj_dir cctx in
   let dir = CC.dir cctx in
+
   let main_module_name =
     match kind with
-    | Generate_build_info.Exe -> Module_name.of_string "dune__exe"
-    | Generate_build_info.Lib (Some main_module_name) -> main_module_name
-    | Generate_build_info.Lib None -> Module_name.of_string "dune__lib"
+    | Generate_build_info.Exe -> Some (Module_name.of_string "dune__exe")
+    | Generate_build_info.Lib (Some lib_info) -> (
+      match Lib_info.wrapped lib_info with
+      | Some (This (Yes_with_transition _)) -> assert false
+      | Some (This (Simple false)) -> None
+      | Some (This (Simple true)) -> (
+        match Lib_info.main_module_name lib_info with
+        | This (Some main_module_name) -> Some main_module_name
+        | _ -> None )
+      | _ -> None )
+    | Generate_build_info.Lib None -> Some (Module_name.of_string "dune__lib")
   in
   let module_ =
     let src_dir = Path.build (Obj_dir.obj_dir obj_dir) in
-
-    Module.generated ~src_dir name |> Module.with_wrapper ~main_module_name
+    let module_ = Module.generated ~src_dir name in
+    match main_module_name with
+    | Some main_module_name -> module_ |> Module.with_wrapper ~main_module_name
+    | None -> module_
     (* ~main_module_name:(Module_name.of_string_opt "dune__exe" |>
        Option.value_exn) *)
   in

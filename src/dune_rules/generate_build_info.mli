@@ -3,7 +3,7 @@ open Dune_engine
 
 type kind =
   | Exe
-  | Lib of Module_name.t option
+  | Lib of Path.Build.t Lib_info.t option
 
 val output_file : kind -> Mode.t -> string -> string
 
