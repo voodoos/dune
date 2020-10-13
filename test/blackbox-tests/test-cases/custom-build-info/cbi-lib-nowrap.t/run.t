@@ -9,8 +9,6 @@
 
   $ _build/install/default/bin/main
   None
-  None
 
   $ _install/bin/main
   Some custom information accessible with `My_cbi.custom`
-  Some custom information accessible with `My_cbi_exe.custom`
