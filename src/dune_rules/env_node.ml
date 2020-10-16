@@ -59,14 +59,16 @@ let make ~dir ~inherit_from ~scope ~config_stanza ~profile ~expander
   in
   let local_binaries =
     inherited ~field:local_binaries ~root:[] (fun binaries ->
-        binaries
-        @ List.map config.binaries
+        let config_bin =
+          List.map config.binaries
             ~f:
               (File_binding.Unexpanded.expand ~dir ~f:(fun template ->
                    Expander.expand
                      (Memo.Lazy.force expander_for_artifacts)
                      ~mode:Single ~template
-                   |> Value.to_string ~dir:(Path.build dir))))
+                   |> Value.to_string ~dir:(Path.build dir)))
+        in
+        binaries @ List.flatten config_bin)
   in
   let external_env =
     inherited ~field:external_env ~root:default_env (fun env ->

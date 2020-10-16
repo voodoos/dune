@@ -46,18 +46,37 @@ module Unexpanded = struct
 
   let expand t ~dir ~f =
     let f sw = (String_with_vars.loc sw, f sw) in
-    let src =
+    let loc, path =
       let loc, expanded = f t.src in
       (loc, Path.Build.relative dir expanded)
     in
-    { src
-    ; dst =
-        (let f sw =
-           let loc, p = f sw in
-           (loc, p)
-         in
-         Option.map ~f t.dst)
-    }
+    let pred =
+      Path.Build.basename path |> Glob.of_string_exn loc |> Glob.to_pred
+    in
+    let glob_dir = Path.Build.parent_exn path in
+    let files =
+      Build_system.eval_pred
+        (File_selector.create ~dir:(Path.build glob_dir) pred)
+    in
+    Path.Set.to_list files
+    |> List.map ~f:(fun p ->
+           let src_path = Path.as_in_build_dir_exn p in
+           { src = (loc, src_path)
+           ; dst =
+               (let f sw =
+                  let loc, p = f sw in
+                  (* If the src was a glob, we consider the dst "as" parameter
+                     to be a folder *)
+                  let p =
+                    if Path.Set.cardinal files > 1 then
+                      Filename.concat p (Path.Build.basename src_path)
+                    else
+                      p
+                  in
+                  (loc, p)
+                in
+                Option.map ~f t.dst)
+           })
 
   module L = struct
     let decode_file =

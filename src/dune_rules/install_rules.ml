@@ -330,8 +330,10 @@ end = struct
                   ~f:(Expander.expand_str expander)
               in
               let section = i.section in
-              List.map i.files ~f:(fun unexpanded ->
-                  let fb = path_expander unexpanded in
+              let files_expanded =
+                List.map i.files ~f:path_expander |> List.flatten
+              in
+              List.map files_expanded ~f:(fun fb ->
                   let loc = File_binding.Expanded.src_loc fb in
                   let src = File_binding.Expanded.src fb in
                   let dst = File_binding.Expanded.dst fb in

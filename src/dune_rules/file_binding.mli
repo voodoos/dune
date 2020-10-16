@@ -21,7 +21,7 @@ module Unexpanded : sig
   val make : src:Loc.t * string -> dst:Loc.t * string -> t
 
   val expand :
-    t -> dir:Path.Build.t -> f:(String_with_vars.t -> string) -> Expanded.t
+    t -> dir:Path.Build.t -> f:(String_with_vars.t -> string) -> Expanded.t list
 
   val expand_src :
     t -> dir:Path.Build.t -> f:(String_with_vars.t -> string) -> Path.Build.t
