@@ -1,0 +1,10 @@
+; (rule
+;   (target foo)
+;   (package p)
+;   (action (progn
+;     (run mkdir foo)
+;     (run touch foo/bar))))
+
+(install (package p) (section lib) (files foo/bar.h))
+
+; (install (package p) (section lib) (files foo/*))
