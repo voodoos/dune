@@ -50,13 +50,18 @@ module Unexpanded = struct
       let loc, expanded = f t.src in
       (loc, Path.Build.relative dir expanded)
     in
+    (* Only eval globs in subdirectories *)
     let pred =
       Path.Build.basename path |> Glob.of_string_exn loc |> Glob.to_pred
     in
     let glob_dir = Path.Build.parent_exn path in
+
     let files =
-      Build_system.eval_pred
-        (File_selector.create ~dir:(Path.build glob_dir) pred)
+      if not (Path.Build.equal glob_dir dir) then
+        Build_system.eval_pred
+          (File_selector.create ~dir:(Path.build glob_dir) pred)
+      else
+        Path.Set.singleton (Path.build path)
     in
     Path.Set.to_list files
     |> List.map ~f:(fun p ->
