@@ -9,14 +9,14 @@ let merlin_file_name = ".merlin-conf/"
 let merlin_exist_name = ".merlin-exist"
 
 let make_lib_ident lib =
-  Printf.sprintf "-lib-%s"
-    (Dune_file.Library.best_name lib |> Lib_name.to_string)
+  Printf.sprintf "lib-%s" (Dune_file.Library.best_name lib |> Lib_name.to_string)
 
 let make_exe_ident exes =
-  Printf.sprintf "-exe-%s"
+  Printf.sprintf "exe-%s"
     (String.concat ~sep:"-" (List.map ~f:snd exes.Dune_file.Executables.names))
 
-let make_merlin_exists ~ident = merlin_exist_name ^ ident
+let make_merlin_exists ~ident =
+  String.concat ~sep:"-" [ merlin_exist_name; ident ]
 
 module Processed = struct
   (* The actual content of the merlin file as built by the [Unprocessed.process]
