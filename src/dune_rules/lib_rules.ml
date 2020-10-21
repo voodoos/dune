@@ -441,10 +441,7 @@ let rules (lib : Library.t) ~sctx ~dir_contents ~dir ~expander ~scope :
     library_rules lib ~cctx ~source_modules ~dir_contents ~compile_info
   in
   Buildable_rules.gen_select_rules sctx compile_info ~dir;
-  let merlin_ident =
-    Printf.sprintf "lib-%s"
-      (Dune_file.Library.best_name lib |> Lib_name.to_string)
-  in
+  let merlin_ident = Merlin.make_lib_ident lib in
   Buildable_rules.with_lib_deps ~merlin_ident
     (Super_context.context sctx)
     compile_info ~dir ~f

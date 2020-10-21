@@ -21,7 +21,7 @@ let with_lib_deps ~merlin_ident (t : Context.t) compile_info ~dir ~f =
   in
   let prefix =
     if t.merlin then
-      Path.Build.relative dir (Merlin.merlin_exist_name ^ merlin_ident)
+      Path.Build.relative dir (Merlin.make_merlin_exists ~ident:merlin_ident)
       |> Path.build |> Build.path >>> prefix
     else
       prefix

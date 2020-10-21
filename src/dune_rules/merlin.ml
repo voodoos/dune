@@ -8,6 +8,16 @@ let merlin_file_name = ".merlin-conf/"
 
 let merlin_exist_name = ".merlin-exist"
 
+let make_lib_ident lib =
+  Printf.sprintf "-lib-%s"
+    (Dune_file.Library.best_name lib |> Lib_name.to_string)
+
+let make_exe_ident exes =
+  Printf.sprintf "-exe-%s"
+    (String.concat ~sep:"-" (List.map ~f:snd exes.Dune_file.Executables.names))
+
+let make_merlin_exists ~ident = merlin_exist_name ^ ident
+
 module Processed = struct
   (* The actual content of the merlin file as built by the [Unprocessed.process]
      function from the unprocessed info gathered through [gen_rules]. *)
@@ -264,10 +274,10 @@ end
 
 include Unprocessed
 
-let dot_merlin sctx ~stanza ~dir ~more_src_dirs ~expander (t : Unprocessed.t) =
+let dot_merlin sctx ~ident ~dir ~more_src_dirs ~expander (t : Unprocessed.t) =
   let open Build.With_targets.O in
-  let merlin_file_name = merlin_file_name ^ stanza in
-  let merlin_exist_name = merlin_exist_name ^ stanza in
+  let merlin_file_name = merlin_file_name ^ ident in
+  let merlin_exist_name = make_merlin_exists ~ident in
   let merlin_file = Path.Build.relative dir merlin_file_name in
 
   (* We make the compilation of .ml/.mli files depend on the existence of
@@ -290,6 +300,6 @@ let dot_merlin sctx ~stanza ~dir ~more_src_dirs ~expander (t : Unprocessed.t) =
   in
   SC.add_rule sctx ~dir action
 
-let add_rules sctx ~stanza ~dir ~more_src_dirs ~expander merlin =
+let add_rules sctx ~ident ~dir ~more_src_dirs ~expander merlin =
   if (SC.context sctx).merlin then
-    dot_merlin sctx ~stanza ~more_src_dirs ~expander ~dir merlin
+    dot_merlin sctx ~ident ~more_src_dirs ~expander ~dir merlin
