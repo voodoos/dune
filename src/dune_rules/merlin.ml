@@ -110,6 +110,8 @@ module Unprocessed = struct
           source_dirs = Path.Source.Set.add cu_config.source_dirs dir
         })
 
+  (* Since one merlin configuration per stanza is generated, merging should
+     always be trivial *)
   let merge_config _a b = b
 
   let make ?(requires = Ok []) ~flags
@@ -142,14 +144,11 @@ module Unprocessed = struct
       ; objs_dirs
       }
     in
-
     let modules =
       List.map
         ~f:(fun m -> (Module.name m, cu_config))
         (Modules.impl_only modules)
     in
-
-    (* We use [of_list_reduce] to merge configs *)
     Module_name.Map.of_list_reduce modules ~f:merge_config
 
   let quote_if_needed s =
@@ -290,6 +289,7 @@ let dot_merlin sctx ~ident ~dir ~more_src_dirs ~expander (t : Unprocessed.t) =
   SC.add_rule sctx ~dir
     ( Build.with_no_targets (Build.path (Path.build merlin_file))
     >>> Build.create_file (Path.Build.relative dir merlin_exist_name) );
+
   Path.Set.singleton (Path.build merlin_file)
   |> Rules.Produce.Alias.add_deps (Alias.check ~dir);
 
