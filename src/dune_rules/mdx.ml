@@ -191,14 +191,11 @@ let gen_rules_for_single_file stanza ~sctx ~dir ~expander ~mdx_prog
              Dep_conf.Package
                (Package.Name.to_string pkg |> String_with_vars.make_text loc))
     in
-    let prelude_args =
-      List.concat_map stanza.preludes ~f:(Prelude.to_args ~dir)
-    in
     Build.(with_no_targets (Dep_conf_eval.unnamed ~expander pkg_deps))
     >>> Build.with_no_targets (Build.dyn_deps dyn_deps)
     >>> Command.run ~dir:(Path.build dir) ~stdout_to:files.corrected
           (Ok (Path.build mdx_prog_gen))
-          (prelude_args @ [ Dep (Path.build files.src) ])
+          ([ Dep (Path.build files.src) ])
   in
 
   Super_context.add_rule sctx ~loc ~dir mdx_action;
@@ -214,12 +211,12 @@ let gen_mdx_exe t ~sctx ~dir ~scope ~expander ~mdx_prog =
   let loc = t.loc in
   let dune_version = Scope.project scope |> Dune_project.dune_version in
   let file = Path.Build.relative dir "mdx_gen.ml-gen" in
+  let prelude_args =
+    List.concat_map t.preludes ~f:(Prelude.to_args ~dir)
+  in
   let action =
-    Command.run ~dir:(Path.build dir) ~stdout_to:file mdx_prog
-      [ Command.Args.A "dune-gen"
-        (*@ prelude_args*)
-        (*@ [ A "-o"; Target file ]*)
-      ]
+    Command.run ~dir:(Path.build dir) mdx_prog ~stdout_to:file
+      ( Command.Args.A "dune-gen" :: prelude_args)
   in
   let action = Build.With_targets.add action ~targets:[ file ] in
   Super_context.add_rule sctx ~loc ~dir action;
