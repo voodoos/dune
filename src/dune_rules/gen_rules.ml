@@ -133,7 +133,7 @@ end = struct
       Cinaps.gen_rules sctx cinaps ~dir ~scope;
       empty_none
     | Mdx.T mdx ->
-      Mdx.gen_rules ~sctx ~dir ~expander mdx;
+      Mdx.gen_rules ~sctx ~dir ~scope ~expander mdx;
       empty_none
     | _ -> empty_none
 

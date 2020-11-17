@@ -206,12 +206,58 @@ let gen_rules_for_single_file stanza ~sctx ~dir ~expander ~mdx_prog src =
     ~stamp:("mdx", files.src)
     (Build.with_no_targets diff_action)
 
+let name = "mdx_gen"
+
+let gen_mdx_exe t ~sctx ~dir ~scope ~expander ~mdx_prog =
+  let loc = t.loc in
+  let dune_version = Scope.project scope |> Dune_project.dune_version in
+  let obj_dir = Obj_dir.make_exe ~dir ~name in
+  let file = Path.Build.relative dir "mdx_gen.ml-gen" in
+
+  let action =
+    let open Build.With_targets.O in
+    let+ run =
+      Command.run ~dir:(Path.build dir) mdx_prog
+        [ Command.Args.A "dune-gen"
+          (*@ prelude_args*)
+          (*@ [ A "-o"; Target file ]*)
+        ]
+    in
+    Action.with_outputs_to file run
+  in
+  let action = Build.With_targets.add action ~targets:[ file ] in
+  Super_context.add_rule sctx ~loc ~dir action;
+
+  let main_module_name = Module_name.of_string name in
+  let module_ = Module.generated ~src_dir:(Path.build dir) main_module_name in
+  let modules = Modules.singleton_exe module_ in
+  let flags = Ocaml_flags.default ~dune_version ~profile:Release in
+  let compile_info =
+    Lib.DB.resolve_user_written_deps_for_exes (Scope.libs scope)
+      [ (t.loc, name) ]
+      [ Lib_dep.Direct (loc, Lib_name.of_string "mdx.test") (*:: t.libraries*) ]
+      ~pps:[ (*Preprocess.Per_module.pps t.preprocess*) ] ~dune_version
+      ~optional:false
+  in
+  let cctx =
+    Compilation_context.create ~super_context:sctx ~scope ~expander ~obj_dir
+      ~modules ~flags
+      ~requires_compile:(Lib.Compile.direct_requires compile_info)
+      ~requires_link:(Lib.Compile.requires_link compile_info)
+      ~opaque:(Explicit false) ~js_of_ocaml:None ~dynlink:false ~package:None ()
+  in
+
+  Exe.build_and_link cctx
+    ~program:{ name; main_module_name; loc }
+    ~linkages:[ Exe.Linkage.byte ] ~promote:None
+
 (** Generates the rules for a given mdx stanza *)
-let gen_rules t ~sctx ~dir ~expander =
+let gen_rules t ~sctx ~dir ~scope ~expander =
   let files_to_mdx = files_to_mdx t ~sctx ~dir in
   let mdx_prog =
     Super_context.resolve_program sctx ~dir ~loc:(Some t.loc)
       ~hint:"opam install mdx" "ocaml-mdx"
   in
+  gen_mdx_exe t ~sctx ~dir ~scope ~expander ~mdx_prog;
   List.iter files_to_mdx
     ~f:(gen_rules_for_single_file t ~sctx ~dir ~expander ~mdx_prog)
