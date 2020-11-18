@@ -1,21 +1,11 @@
 open! Dune_engine
 open! Stdune
 open Import
-open! No_io
 module SC = Super_context
-
-type ident = string
 
 let merlin_folder_name = ".merlin-conf"
 
 let merlin_exist_name = ".merlin-exist"
-
-let make_lib_ident lib =
-  sprintf "lib-%s" (Dune_file.Library.best_name lib |> Lib_name.to_string)
-
-let make_exe_ident exes =
-  sprintf "exe-%s"
-    (String.concat ~sep:"-" (List.map ~f:snd exes.Dune_file.Executables.names))
 
 let make_merlin_exists ident =
   String.concat ~sep:"-" [ merlin_exist_name; ident ]
@@ -108,13 +98,19 @@ module Unprocessed = struct
     ; objs_dirs : Path.Set.t
     }
 
-  type t = config Module_name.Map.t
+  type t =
+    { ident : string
+    ; configs : config Module_name.Map.t
+    }
 
   let add_source_dir t dir =
-    Module_name.Map.map t ~f:(fun cu_config ->
-        { cu_config with
-          source_dirs = Path.Source.Set.add cu_config.source_dirs dir
-        })
+    { t with
+      configs =
+        Module_name.Map.map t.configs ~f:(fun cu_config ->
+            { cu_config with
+              source_dirs = Path.Source.Set.add cu_config.source_dirs dir
+            })
+    }
 
   (* Since one merlin configuration per stanza is generated, merging should
      always be trivial *)
@@ -122,7 +118,7 @@ module Unprocessed = struct
 
   let make ?(requires = Ok []) ~flags
       ?(preprocess = Preprocess.No_preprocessing) ?libname
-      ?(source_dirs = Path.Source.Set.empty) ~modules ~obj_dir () =
+      ?(source_dirs = Path.Source.Set.empty) ~modules ~obj_dir ~ident () =
     (* Merlin shouldn't cause the build to fail, so we just ignore errors *)
     let requires =
       match requires with
@@ -155,7 +151,7 @@ module Unprocessed = struct
         ~f:(fun m -> (Module.name m, cu_config))
         (Modules.impl_only modules)
     in
-    Module_name.Map.of_list_reduce modules ~f:merge_config
+    { ident; configs = Module_name.Map.of_list_reduce modules ~f:merge_config }
 
   let quote_if_needed s =
     if String.need_quoting s then
@@ -279,10 +275,10 @@ end
 
 include Unprocessed
 
-let dot_merlin sctx ident ~dir ~more_src_dirs ~expander (t : Unprocessed.t) =
+let dot_merlin sctx ~dir ~more_src_dirs ~expander (t : Unprocessed.t) =
   let open Build.With_targets.O in
-  let merlin_file_name = Filename.concat merlin_folder_name ident in
-  let merlin_exist_name = make_merlin_exists ident in
+  let merlin_file_name = Filename.concat merlin_folder_name t.ident in
+  let merlin_exist_name = make_merlin_exists t.ident in
   let merlin_file = Path.Build.relative dir merlin_file_name in
 
   (* We make the compilation of .ml/.mli files depend on the existence of
@@ -299,13 +295,13 @@ let dot_merlin sctx ident ~dir ~more_src_dirs ~expander (t : Unprocessed.t) =
   Path.Set.singleton (Path.build merlin_file)
   |> Rules.Produce.Alias.add_deps (Alias.check ~dir);
 
-  let merlin = Unprocessed.process sctx ~more_src_dirs ~expander t in
+  let merlin = Unprocessed.process sctx ~more_src_dirs ~expander t.configs in
   let action =
     Build.With_targets.write_file_dyn merlin_file
       (Build.With_targets.map ~f:Processed.Persist.to_string merlin)
   in
   SC.add_rule sctx ~dir action
 
-let add_rules sctx ident ~dir ~more_src_dirs ~expander merlin =
+let add_rules sctx ~dir ~more_src_dirs ~expander merlin =
   if (SC.context sctx).merlin then
-    dot_merlin sctx ident ~more_src_dirs ~expander ~dir merlin
+    dot_merlin sctx ~more_src_dirs ~expander ~dir merlin

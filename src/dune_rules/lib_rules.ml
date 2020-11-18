@@ -420,9 +420,11 @@ let library_rules (lib : Library.t) ~cctx ~source_modules ~dir_contents
     ; compile_info
     };
   ( cctx
-  , Merlin.make () ~requires:requires_compile ~flags ~modules
+  , Merlin.make ~requires:requires_compile ~flags ~modules
       ~preprocess:(Preprocess.Per_module.single_preprocess preprocess)
-      ~libname:(snd lib.name) ~obj_dir )
+      ~libname:(snd lib.name) ~obj_dir
+      ~ident:(Lib.Compile.merlin_ident compile_info)
+      () )
 
 let rules (lib : Library.t) ~sctx ~dir_contents ~dir ~expander ~scope :
     Compilation_context.t * Merlin.t =
@@ -443,5 +445,4 @@ let rules (lib : Library.t) ~sctx ~dir_contents ~dir ~expander ~scope :
   Buildable_rules.gen_select_rules sctx compile_info ~dir;
   Buildable_rules.with_lib_deps
     (Super_context.context sctx)
-    (Merlin.make_lib_ident lib)
     compile_info ~dir ~f
