@@ -161,7 +161,7 @@ type t =
   ; wrapped_executables : bool
   ; dune_version : Dune_lang.Syntax.Version.t
   ; allow_approx_merlin : bool
-  ; add_cxx_flags : bool
+  ; use_standard_c_and_cxx_flags : bool
   ; generate_opam_files : bool
   ; file_key : File_key.t
   ; dialects : Dialect.DB.t
@@ -193,7 +193,7 @@ let implicit_transitive_deps t = t.implicit_transitive_deps
 
 let allow_approx_merlin t = t.allow_approx_merlin
 
-let add_cxx_flags t = t.add_cxx_flags
+let use_standard_c_and_cxx_flags t = t.use_standard_c_and_cxx_flags
 
 let generate_opam_files t = t.generate_opam_files
 
@@ -215,7 +215,7 @@ let to_dyn
     ; wrapped_executables
     ; dune_version
     ; allow_approx_merlin
-    ; add_cxx_flags
+    ; use_standard_c_and_cxx_flags
     ; generate_opam_files
     ; file_key
     ; dialects
@@ -238,7 +238,7 @@ let to_dyn
     ; ("wrapped_executables", bool wrapped_executables)
     ; ("dune_version", Dune_lang.Syntax.Version.to_dyn dune_version)
     ; ("allow_approx_merlin", bool allow_approx_merlin)
-    ; ("add_cxx_flags", bool add_cxx_flags)
+    ; ("use_standard_c_and_cxx_flags", bool use_standard_c_and_cxx_flags)
     ; ("generate_opam_files", bool generate_opam_files)
     ; ("file_key", string file_key)
     ; ("dialects", Dialect.DB.to_dyn dialects)
@@ -614,7 +614,7 @@ let infer ~dir packages =
   ; parsing_context
   ; dune_version = lang.version
   ; allow_approx_merlin = true
-  ; add_cxx_flags = false
+  ; use_standard_c_and_cxx_flags = false
   ; generate_opam_files = false
   ; file_key
   ; dialects = Dialect.DB.builtin
@@ -677,8 +677,8 @@ let parse ~dir ~lang ~opam_packages ~file =
      and+ allow_approx_merlin =
        field_o_b "allow_approximate_merlin"
          ~check:(Dune_lang.Syntax.since Stanza.syntax (1, 9))
-     and+ add_cxx_flags =
-       field_o_b "add_cxx_flags"
+     and+ use_standard_c_and_cxx_flags =
+       field_o_b "use_standard_c_and_cxx_flags"
          ~check:(Dune_lang.Syntax.since Stanza.syntax (2, 8))
      and+ () = Dune_lang.Versioned_file.no_more_lang
      and+ generate_opam_files =
@@ -795,7 +795,9 @@ let parse ~dir ~lang ~opam_packages ~file =
      let allow_approx_merlin =
        Option.value ~default:(dune_version < (1, 9)) allow_approx_merlin
      in
-     let add_cxx_flags = Option.value ~default:false add_cxx_flags in
+     let use_standard_c_and_cxx_flags =
+       Option.value ~default:false use_standard_c_and_cxx_flags
+     in
      let explicit_js_mode =
        Option.value explicit_js_mode ~default:(explicit_js_mode_default ~lang)
      in
@@ -829,7 +831,7 @@ let parse ~dir ~lang ~opam_packages ~file =
      ; wrapped_executables
      ; dune_version
      ; allow_approx_merlin
-     ; add_cxx_flags
+     ; use_standard_c_and_cxx_flags
      ; generate_opam_files
      ; dialects
      ; explicit_js_mode
