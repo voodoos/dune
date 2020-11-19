@@ -10,11 +10,16 @@ open! Dune_engine
 open! Stdune
 open Import
 
+type for_ =
+  [ `Lib of Lib_name.t
+  | `Exes of string list
+  ]
+
 (** Merlin config folder name *)
 val merlin_folder_name : string
 
 (** Return the name of the merlin file for a given stanza *)
-val make_merlin_exists : string -> string
+val make_merlin_exists : for_ -> string
 
 (** Type of "unprocessed" merlin information *)
 type t
@@ -40,7 +45,7 @@ val make :
   -> ?source_dirs:Path.Source.Set.t
   -> modules:Modules.t
   -> obj_dir:Path.Build.t Obj_dir.t
-  -> ident:string
+  -> for_:for_
   -> unit
   -> t
 

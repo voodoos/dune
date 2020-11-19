@@ -183,7 +183,7 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
   , Merlin.make ~requires:requires_compile ~flags ~modules
       ~preprocess:(Preprocess.Per_module.single_preprocess preprocess)
       ~obj_dir
-      ~ident:(Lib.Compile.merlin_ident compile_info)
+      ~for_:(Lib.Compile.merlin_ident compile_info)
       () )
 
 let compile_info ~scope (exes : Dune_file.Executables.t) =
