@@ -91,3 +91,8 @@ The mdx stanza supports (enabled_if):
   Error: 'enabled_if' is only available since version 2.9 of the dune language.
   Please update your dune-project file to have (lang dune 2.9).
   [1]
+
+You can use the `libraries` field to have them linked into the test executable
+
+  $ dune runtest --root linked-libraries
+  Entering directory 'linked-libraries'
