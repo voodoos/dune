@@ -66,3 +66,8 @@ You can set MDX preludes using the preludes field of the stanza
 
   $ dune runtest --root preludes
   Entering directory 'preludes'
+
+You can use the `libraries` field to have them linked into the test executable
+
+  $ dune runtest --root linked-libraries
+  Entering directory 'linked-libraries'
