@@ -57,9 +57,9 @@ Dune does not fail if the `packages` are not available at evaluation time
 Dune fails if the `packages` are not available at execution time
 
   $ cd local-package-unrelated && dune runtest -p unrelated-package; cd ../
-  File "dune", line 3, characters 16-19:
-  3 |  (deps (package pkg)))
-                      ^^^
+  File "dune", line 3, characters 11-14:
+  3 |  (packages pkg))
+                 ^^^
   Error: Package pkg does not exist
 
 You can set MDX preludes using the preludes field of the stanza
@@ -67,7 +67,62 @@ You can set MDX preludes using the preludes field of the stanza
   $ dune runtest --root preludes
   Entering directory 'preludes'
 
-You can use the `libraries` field to have them linked into the test executable
+Since 0.2 you can use the `libraries` field to have them linked into the test executable
+
+  $ cat >linked-libraries/dune-project <<EOF
+  > (lang dune 2.8)
+  > (using mdx 0.2)
+  > EOF
 
   $ dune runtest --root linked-libraries
   Entering directory 'linked-libraries'
+
+MDX stanza 0.1 does not support linking libraries
+
+  $ cat >linked-libraries/dune-project <<EOF
+  > (lang dune 2.8)
+  > (using mdx 0.1)
+  > EOF
+
+  $ dune runtest --root linked-libraries
+  Entering directory 'linked-libraries'
+  File "dune", line 3, characters 1-24:
+  3 |  (libraries private_lib))
+       ^^^^^^^^^^^^^^^^^^^^^^^
+  Error: 'libraries' is only available since version 0.2 of mdx extension to
+  verify code blocks in .md files. Please update your dune-project file to have
+  (using mdx 0.2).
+  [1]
+
+Since version 0.2 the mdx stanza supports a more genereic `deps` field.
+A deprecation warning is raised if using the olf `packages` field.
+
+  $ cat >new-deps-field/dune-project <<EOF
+  > (lang dune 2.8)
+  > (using mdx 0.2)
+  > EOF
+
+  $ dune runtest --root new-deps-field
+  Entering directory 'new-deps-field'
+  File "dune", line 4, characters 1-15:
+  4 |  (packages pkg))
+       ^^^^^^^^^^^^^^
+  Warning: 'packages' was deprecated in version 0.2 of mdx extension to verify
+  code blocks in .md files.
+
+But using the new field with the old stanza would fail
+
+  $ cat >new-deps-field/dune-project <<EOF
+  > (lang dune 2.8)
+  > (using mdx 0.1)
+  > EOF
+
+  $ dune runtest --root new-deps-field
+  Entering directory 'new-deps-field'
+  File "dune", line 3, characters 1-22:
+  3 |  (deps (package pkg2))
+       ^^^^^^^^^^^^^^^^^^^^^
+  Error: 'deps' is only available since version 0.2 of mdx extension to verify
+  code blocks in .md files. Please update your dune-project file to have (using
+  mdx 0.2).
+  [1]
