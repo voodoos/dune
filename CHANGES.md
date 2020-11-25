@@ -86,6 +86,10 @@ Unreleased
 - Allow (formatting ...) field in (env ...) stanza to set per-directory
   formatting specification. (#3942, @nojb)
 
+- Stop promoting `.merlin` files. Write per-stanza Merlin configurations in
+  binary form. Add a new subcommand `dune ocaml-merlin` that Merlin can use to
+  query the configuration files. (#3554, @voodoos)
+
 2.7.1 (2/09/2020)
 -----------------
 
