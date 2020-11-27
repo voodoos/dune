@@ -278,6 +278,10 @@ let eval ~modules:(all_modules : Module.Source.t Module_name.Map.t)
     ~virtual_modules ~private_modules ~existing_virtual_modules
     ~allow_new_public_modules;
   let all_modules =
+    let modules =
+      Module_name.Map.union modules intf_only
+        ~f:(fun _ source _ -> Some source)
+    in
     Module_name.Map.map modules ~f:(fun (_, m) ->
         let name = Module.Source.name m in
         let visibility =
