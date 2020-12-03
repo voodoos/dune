@@ -94,7 +94,7 @@ let build_c ~kind ~sctx ~dir ~expander ~include_flags (loc, src, dst) =
   let output_param =
     match ctx.lib_config.ccomp_type with
     | Msvc -> [ Command.Args.Concat ("", [ A "/Fo"; Target dst ]) ]
-    | _ -> [ A "-o"; Target dst ]
+    | Other _ -> [ A "-o"; Target dst ]
   in
   Super_context.add_rule sctx ~loc
     ~dir
