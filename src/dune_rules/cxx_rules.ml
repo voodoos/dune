@@ -33,7 +33,7 @@ let rules ~sctx ~dir =
     let+ run_preprocessor =
       Command.run ~dir:(Path.build dir) ~stdout_to:file prog
         Command.Args.
-          [ A "-E"; A "-P"; A Path.(to_absolute_filename (build header_file)) ]
+          [ A "-EP"; A Path.(to_absolute_filename (build header_file)) ]
     in
     Action.progn [ write_test_file; run_preprocessor ]
   in
