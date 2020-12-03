@@ -1,6 +1,11 @@
 open! Stdune
 open Dune_engine
-open Ocaml_config.Ccomp_type
+
+type ccomp_type =
+  | Gcc
+  | Msvc
+  | Clang
+  | Other of string
 
 let base_cxx_flags =
   [ (Gcc, [ "-x"; "c++"; "-lstdc++"; "-shared-libgcc" ])
@@ -17,7 +22,7 @@ let ccomp_type dir =
   in
   let+ ccomp = Build.contents (Path.build filepath) in
   match String.trim ccomp with
-  | "clang" -> Ocaml_config.Ccomp_type.Clang
+  | "clang" -> Clang
   | "gcc"
   | "mingw" ->
     Gcc
