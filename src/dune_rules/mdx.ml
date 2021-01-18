@@ -295,7 +295,7 @@ let mdx_prog_gen t ~sctx ~dir ~scope ~expander ~mdx_prog =
       ~modules ~flags
       ~requires_compile:(Lib.Compile.direct_requires compile_info)
       ~requires_link:(Lib.Compile.requires_link compile_info)
-      ~opaque:(Explicit false) ~js_of_ocaml:None ~dynlink:true ~package:None ()
+      ~opaque:(Explicit false) ~js_of_ocaml:None ~package:None ()
   in
   Exe.build_and_link cctx
     ~program:{ name; main_module_name; loc }
