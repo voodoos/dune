@@ -165,34 +165,45 @@ let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
         In each case, we could then pass the argument in dependency order, which
         would provide a better fix for this issue. *)
      Build.with_no_targets prefix
-     >>>
-     let cmd_run =
-       Command.run ~dir:(Path.build ctx.build_dir)
-         (Context.compiler ctx mode)
-         [ Command.Args.dyn ocaml_flags
-         ; A "-o"
-         ; Target exe
-         ; As linkage.flags
-         ; Command.of_result_map link_time_code_gen
-             ~f:(fun { Link_time_code_gen.to_link; force_linkall } ->
-               S
-                 [ As
-                     ( if force_linkall then
-                       [ "-linkall" ]
-                     else
-                       [] )
-                 ; Lib.Lib_and_module.L.link_flags to_link
-                     ~lib_config:ctx.lib_config ~mode:linkage.mode
-                 ])
-         ; Deps o_files
-         ; Dyn (Build.map top_sorted_cms ~f:(fun x -> Command.Args.Deps x))
-         ; Fdo.Linker_script.flags fdo_linker_script
-         ; Dyn link_args
-         ]
-     in
-     let cbi_exe = Generate_build_info.build_action cctx mode in
-
-     Build.progn (cmd_run :: cbi_exe))
+     >>> let+ cmd_run =
+           Command.run ~dir:(Path.build ctx.build_dir)
+             (Context.compiler ctx mode)
+             [ Command.Args.dyn ocaml_flags
+             ; A "-o"
+             ; Target exe
+             ; As linkage.flags
+             ; Command.of_result_map link_time_code_gen
+                 ~f:(fun { Link_time_code_gen.to_link; force_linkall } ->
+                   S
+                     [ As
+                         ( if force_linkall then
+                           [ "-linkall" ]
+                         else
+                           [] )
+                     ; Lib.Lib_and_module.L.link_flags to_link
+                         ~lib_config:ctx.lib_config ~mode:linkage.mode
+                     ])
+             ; Deps o_files
+             ; Dyn (Build.map top_sorted_cms ~f:(fun x -> Command.Args.Deps x))
+             ; Fdo.Linker_script.flags fdo_linker_script
+             ; Dyn link_args
+             ]
+         and+ cbi_exe =
+           Generate_build_info.build_action cctx mode |> Build.With_targets.all
+         and+ backup =
+           Action.copy (Path.build exe)
+             Path.Build.(relative (parent_exn exe) "backup.exe")
+           |> Build.return |> Build.with_no_targets
+         and+ _str_replace =
+           Printf.eprintf "replace\n%!";
+           let+ () = Build.with_no_targets (Build.return ()) in
+           let path = Path.reach (Path.build exe) ~from:(Path.build dir) in
+           Printf.eprintf "Path: %s\n%!" path;
+           Action.arti (Path.build exe)
+           (* Artifact_substitution.in_place_replace ~src:(Path.build exe) |>
+              Fiber.run ~iter:(fun () -> assert false); *)
+         in
+         Action.progn (cmd_run :: backup :: _str_replace :: cbi_exe))
 
 let link_js ~name ~cm_files ~promote cctx =
   let sctx = CC.super_context cctx in

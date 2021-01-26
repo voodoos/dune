@@ -6,10 +6,14 @@ type configpath =
   | Sourceroot
   | Stdlib
 
+type cbi_mode =
+  | NA
+  | S of int
+
 (** A symbolic representation of the value to substitute to *)
 type t =
   | Vcs_describe of Path.Source.t
-  | Custom_build_info of string * Path.Build.t
+  | Custom_build_info of cbi_mode * string * Path.Build.t
   | Location of Section.t * Package.Name.t
   | Configpath of configpath
   | Hardcoded_ocaml_path
@@ -75,7 +79,11 @@ val copy :
   -> input_file:Path.t
   -> input:(Bytes.t -> int -> int -> int)
   -> output:(Bytes.t -> int -> int -> unit)
+  -> ?seek:((int -> unit) * (unit -> int)) option
+  -> unit
   -> unit Fiber.t
+
+val in_place_replace : src:Path.t -> unit Fiber.t
 
 (** Produce the string that would replace the placeholder with the given value .*)
 val encode_replacement : len:int -> repl:string -> string

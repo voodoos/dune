@@ -32,9 +32,13 @@ type configpath =
   | Sourceroot
   | Stdlib
 
+type cbi_mode =
+  | NA
+  | S of int
+
 type t =
   | Vcs_describe of Path.Source.t
-  | Custom_build_info of string * Path.Build.t
+  | Custom_build_info of cbi_mode * string * Path.Build.t
   | Location of Section.t * Package.Name.t
   | Configpath of configpath
   | Hardcoded_ocaml_path
@@ -107,8 +111,13 @@ let conf_dummy =
 
 let to_dyn = function
   | Vcs_describe p -> Dyn.Variant ("Vcs_describe", [ Path.Source.to_dyn p ])
-  | Custom_build_info (name, dir) ->
-    Dyn.Variant ("Custom", [ String name; Path.Build.to_dyn dir ])
+  | Custom_build_info (mode, name, dir) ->
+    let mode =
+      match mode with
+      | NA -> Dyn.String "N/A"
+      | S i -> Dyn.Int i
+    in
+    Dyn.Variant ("Custom", [ mode; String name; Path.Build.to_dyn dir ])
   | Location (kind, lib_name) ->
     Dyn.Variant
       ("Location", [ Section.to_dyn kind; Package.Name.to_dyn lib_name ])
@@ -121,41 +130,6 @@ let to_dyn = function
     Dyn.Variant ("Configpath", [ Dyn.Variant (v, []) ])
   | Hardcoded_ocaml_path -> Dyn.Variant ("Hardcoded_ocaml_path", [])
   | Repeat (n, s) -> Dyn.Variant ("Repeat", [ Int n; String s ])
-
-let eval t ~conf =
-  let relocatable path =
-    (* return a relative path to the install directory in case of relocatable
-       instead of absolute path *)
-    match conf.hardcoded_ocaml_path with
-    | Hardcoded _ -> Path.to_absolute_filename path
-    | Relocatable install -> Path.reach path ~from:install
-  in
-  match t with
-  | Repeat (n, s) ->
-    Fiber.return (Array.make n s |> Array.to_list |> String.concat ~sep:"")
-  | Vcs_describe p -> (
-    match conf.get_vcs p with
-    | None -> Fiber.return ""
-    | Some vcs -> Vcs.describe vcs )
-  | Custom_build_info (name, dir) ->
-    let f = Path.Build.relative dir name in
-    let s, _ = Build.(contents (Path.build f) |> exec) in
-    Fiber.return s
-  | Location (name, lib_name) ->
-    Fiber.return (relocatable (conf.get_location name lib_name))
-  | Configpath d ->
-    Fiber.return
-      (Option.value ~default:""
-         (let open Option.O in
-         let+ dir = conf.get_config_path d in
-         relocatable dir))
-  | Hardcoded_ocaml_path ->
-    Fiber.return
-      ( match conf.hardcoded_ocaml_path with
-      | Relocatable _ -> "relocatable"
-      | Hardcoded l ->
-        let l = List.map l ~f:Path.to_absolute_filename in
-        "hardcoded\000" ^ String.concat ~sep:"\000" l )
 
 let encode_replacement ~len ~repl:s =
   let repl = sprintf "=%u:%s" (String.length s) s in
@@ -177,9 +151,14 @@ let encode ?(min_len = 0) t =
       | Vcs_describe p ->
         let s = Path.Source.to_string p in
         sprintf "vcs-describe:%d:%s" (String.length s) s
-      | Custom_build_info (name, dir) ->
+      | Custom_build_info (mode, name, dir) ->
+        let mode =
+          match mode with
+          | NA -> "N/A"
+          | S i -> Printf.sprintf "%.3i" i
+        in
         let s = Path.Build.to_string dir in
-        sprintf "custom:%s:%d:%s" name (String.length s) s
+        sprintf "custom:%s:%s:%d:%s" mode name (String.length s) s
       | Location (kind, name) ->
         let name = Package.Name.to_string name in
         sprintf "location:%s:%d:%s" (Section.to_string kind)
@@ -208,6 +187,46 @@ let encode ?(min_len = 0) t =
       [ ("t", to_dyn t); ("min_len", Int min_len); ("len", Int len) ];
   let s = sprintf "%s%u%s" prefix len suffix in
   s ^ String.make (len - String.length s) '%'
+
+let eval t ~conf =
+  let relocatable path =
+    (* return a relative path to the install directory in case of relocatable
+       instead of absolute path *)
+    match conf.hardcoded_ocaml_path with
+    | Hardcoded _ -> Path.to_absolute_filename path
+    | Relocatable install -> Path.reach path ~from:install
+  in
+  match t with
+  | Repeat (n, s) ->
+    Fiber.return (Array.make n s |> Array.to_list |> String.concat ~sep:"")
+  | Vcs_describe p -> (
+    match conf.get_vcs p with
+    | None -> Fiber.return ""
+    | Some vcs -> Vcs.describe vcs )
+  | Custom_build_info (NA, name, dir) ->
+    (* TODO CBI correct number *)
+    Fiber.return (encode (Custom_build_info (S 1, name, dir)))
+  | Custom_build_info (S i, name, dir) ->
+    ignore i;
+    (* TODO CBI *)
+    let f = Path.Build.relative dir name in
+    let s, _ = Build.(contents (Path.build f) |> exec) in
+    Fiber.return s
+  | Location (name, lib_name) ->
+    Fiber.return (relocatable (conf.get_location name lib_name))
+  | Configpath d ->
+    Fiber.return
+      (Option.value ~default:""
+         (let open Option.O in
+         let+ dir = conf.get_config_path d in
+         relocatable dir))
+  | Hardcoded_ocaml_path ->
+    Fiber.return
+      ( match conf.hardcoded_ocaml_path with
+      | Relocatable _ -> "relocatable"
+      | Hardcoded l ->
+        let l = List.map l ~f:Path.to_absolute_filename in
+        "hardcoded\000" ^ String.concat ~sep:"\000" l )
 
 (* This function is not called very often, so the focus is on readibility rather
    than speed. *)
@@ -253,13 +272,18 @@ let decode s =
       let name = Package.Name.of_string (read_string_payload rest) in
       let kind = Option.value_exn (Section.of_string kind) in
       Location (kind, name)
-    | "custom" :: name :: rest -> (
+    | "custom" :: mode :: name :: rest -> (
       let s = read_string_payload rest in
+      let mode =
+        match int_of_string_opt mode with
+        | Some i -> S i
+        | None -> NA
+      in
       match String.drop_prefix ~prefix:"_build/" s with
       | None -> fail ()
       | Some s ->
         let path = Path.Build.of_string s in
-        Custom_build_info (name, path) )
+        Custom_build_info (mode, name, path) )
     | "configpath" :: "sourceroot" :: _ -> Configpath Sourceroot
     | "configpath" :: "stdlib" :: _ -> Configpath Stdlib
     | "hardcoded_ocaml_path" :: _ -> Hardcoded_ocaml_path
@@ -465,9 +489,13 @@ output the replacement        |                                             |
  |                                                                          |
  \--------------------------------------------------------------------------/
     v} *)
-let copy ~conf ~input_file ~input ~output =
+let copy ~conf ~input_file ~input ~output ?(seek = None) () =
   let open Fiber.O in
-  let rec loop scanner_state ~beginning_of_data ~pos ~end_of_data =
+  let rec loop scanner_state ~absolute_begining_of_data ~beginning_of_data ~pos
+      ~end_of_data =
+    Printf.eprintf
+      "Absolute beg data: %i\nBegining of data: %i\nPos: %i\nEnd data: %i\n%!"
+      absolute_begining_of_data beginning_of_data pos end_of_data;
     let scanner_state = Scanner.run scanner_state ~buf ~pos ~end_of_data in
     let placeholder_start =
       match scanner_state with
@@ -482,7 +510,7 @@ let copy ~conf ~input_file ~input ~output =
     (* All the data before [placeholder_start] can be sent to the output
        immediately since we know for sure that they are not part of a
        placeholder *)
-    if placeholder_start > beginning_of_data then
+    if seek = None && placeholder_start > beginning_of_data then
       output buf beginning_of_data (placeholder_start - beginning_of_data);
     let leftover = end_of_data - placeholder_start in
     match scanner_state with
@@ -501,14 +529,26 @@ let copy ~conf ~input_file ~input ~output =
                 ; Pp.text "evaluates to: " ++ Dyn.pp (String s)
                 ]
             ] );
-        let s = encode_replacement ~len ~repl:s in
-        output (Bytes.unsafe_of_string s) 0 len;
         let pos = placeholder_start + len in
-        loop Scan0 ~beginning_of_data:pos ~pos ~end_of_data
+        ( match seek with
+        | None ->
+          let s = encode_replacement ~len ~repl:s in
+          output (Bytes.unsafe_of_string s) 0 len
+        | Some (seek_out, pos_in) ->
+          Printf.eprintf "pos: %i %i %i %i \n%!" (pos_in ()) placeholder_start
+            pos (pos - placeholder_start);
+          Printf.eprintf "Realbeg? %i\n%!"
+            (absolute_begining_of_data + placeholder_start);
+          seek_out (absolute_begining_of_data + placeholder_start);
+          output (Bytes.unsafe_of_string s) 0 len;
+          flush_all () (* seek_out pos *) );
+        loop Scan0 ~absolute_begining_of_data ~beginning_of_data:pos ~pos
+          ~end_of_data
       | None ->
         (* Restart just after [prefix] since we know for sure that a placeholder
            cannot start before that. *)
-        loop Scan0 ~beginning_of_data:placeholder_start
+        loop Scan0 ~absolute_begining_of_data
+          ~beginning_of_data:placeholder_start
           ~pos:(placeholder_start + prefix_len)
           ~end_of_data )
     | scanner_state -> (
@@ -529,25 +569,31 @@ let copy ~conf ~input_file ~input ~output =
         | Scan_length (_, acc) -> Scan_length (0, acc)
         | Scan_placeholder (_, len) -> Scan_placeholder (0, len)
       in
+      let absolute_begining_of_data =
+        absolute_begining_of_data + end_of_data - leftover
+      in
       match input buf leftover (buf_len - leftover) with
       | 0 -> (
         match scanner_state with
         | Scan_placeholder _ ->
           (* There might still be another placeholder after this invalid one
              with a length that is too long *)
-          loop Scan0 ~beginning_of_data:0 ~pos:prefix_len ~end_of_data:leftover
+          loop Scan0 ~absolute_begining_of_data ~beginning_of_data:0
+            ~pos:prefix_len ~end_of_data:leftover
         | _ ->
           (* Nothing more to read; [leftover] is definitely not the beginning of
              a placeholder, send it and end the copy *)
-          output buf 0 leftover;
+          if seek = None then output buf 0 leftover;
           Fiber.return () )
       | n ->
-        loop scanner_state ~beginning_of_data:0 ~pos:leftover
-          ~end_of_data:(leftover + n) )
+        loop scanner_state ~absolute_begining_of_data ~beginning_of_data:0
+          ~pos:leftover ~end_of_data:(leftover + n) )
   in
   match input buf 0 buf_len with
   | 0 -> Fiber.return ()
-  | n -> loop Scan0 ~beginning_of_data:0 ~pos:0 ~end_of_data:n
+  | n ->
+    loop Scan0 ~absolute_begining_of_data:0 ~beginning_of_data:0 ~pos:0
+      ~end_of_data:n
 
 let copy_file ~conf ?chmod ~src ~dst () =
   let ic, oc = Io.setup_copy ?chmod ~src ~dst () in
@@ -555,4 +601,20 @@ let copy_file ~conf ?chmod ~src ~dst () =
     ~finally:(fun () ->
       Io.close_both (ic, oc);
       Fiber.return ())
-    (fun () -> copy ~conf ~input_file:src ~input:(input ic) ~output:(output oc))
+    (fun () ->
+      copy ~conf ~input_file:src ~input:(input ic) ~output:(output oc) ())
+
+let in_place_replace ~src =
+  let ic, oc = Io.open_read_write src in
+  Printf.eprintf "P2\n%!";
+  let conf = conf_dummy in
+  Fiber.finalize
+    ~finally:(fun () ->
+      Io.close_out oc;
+      Printf.eprintf "P3\n%!";
+      Fiber.return ())
+    (fun () ->
+      copy ~conf ~input_file:src ~input:(input ic) ~output:(output oc)
+        ~seek:(Some (seek_out oc, fun () -> pos_in ic))
+        ()
+      (* Fiber.return () *))

@@ -266,7 +266,8 @@ module Code_gen = struct
     let buf = Buffer.create 1024 in
     let dir = CC.dir cctx in
     let encode min_len name =
-      Artifact_substitution.(encode ~min_len (Custom_build_info (name, dir)))
+      Artifact_substitution.(
+        encode ~min_len (Custom_build_info (NA, name, dir)))
     in
     (* let lib_cbi (name, { Custom_build_info.max_size; _ }) = let name =
        Lib_name.to_string name in pr buf "%S, %s" name (fmt_eval ~cctx (encode

@@ -254,7 +254,7 @@ module File_ops_real (W : Workspace) : File_operations = struct
             ~f:(process_dune_package ~get_location:conf.get_location)
         | None ->
           Dune_engine.Artifact_substitution.copy ~conf ~input_file:src
-            ~input:(input ic) ~output:(output oc))
+            ~input:(input ic) ~output:(output oc) ())
 
   let remove_if_exists dst =
     if Path.exists dst then (
