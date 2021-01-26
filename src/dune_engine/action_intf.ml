@@ -50,6 +50,7 @@ module type Ast = sig
     | Pipe of Outputs.t * t list
     | Format_dune_file of path * target
     | Cram of path
+    | Artifact_substitution_inplace of path
 end
 
 module type Helpers = sig
@@ -98,6 +99,8 @@ module type Helpers = sig
   val system : string -> t
 
   val bash : string -> t
+
+  val arti : path -> t
 
   val write_file : target -> string -> t
 

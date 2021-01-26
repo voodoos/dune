@@ -53,6 +53,8 @@ let simplify act =
     | Progn l -> List.fold_left l ~init:acc ~f:(fun acc act -> loop act acc)
     | Echo xs -> echo (String.concat xs ~sep:"")
     | Cram script -> echo (sprintf "cram %s" script)
+    | Artifact_substitution_inplace path ->
+      echo (sprintf "artifact_substitution_inplace %s" path)
     | Cat x -> cat x :: acc
     | Copy (x, y) -> Run ("cp", [ x; y ]) :: acc
     | Symlink (x, y) ->

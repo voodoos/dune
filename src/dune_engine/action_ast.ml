@@ -279,6 +279,8 @@ struct
     | Format_dune_file (src, dst) ->
       List [ atom "format-dune-file"; path src; target dst ]
     | Cram script -> List [ atom "cram"; path script ]
+    | Artifact_substitution_inplace p ->
+      List [ atom "artifact_substitution_inplace"; path p ]
 
   let run prog args = Run (prog, args)
 
@@ -315,6 +317,8 @@ struct
   let system s = System s
 
   let bash s = Bash s
+
+  let arti p = Artifact_substitution_inplace p
 
   let write_file p s = Write_file (p, s)
 

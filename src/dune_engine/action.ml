@@ -180,7 +180,8 @@ let fold_one_step t ~init:acc ~f =
   | Diff _
   | Merge_files_into _
   | Cram _
-  | Format_dune_file _ ->
+  | Format_dune_file _
+  | Artifact_substitution_inplace _ ->
     acc
 
 include Action_mapper.Make (Ast) (Ast)
@@ -227,7 +228,8 @@ let rec is_dynamic = function
   | Digest_files _
   | Merge_files_into _
   | Cram _
-  | Format_dune_file _ ->
+  | Format_dune_file _
+  | Artifact_substitution_inplace _ ->
     false
 
 let prepare_managed_paths ~link ~sandboxed deps ~eval_pred =
@@ -308,6 +310,7 @@ let is_useful_to distribute memoize =
     | Digest_files _ -> distribute
     | Merge_files_into _ -> distribute
     | Cram _
+    | Artifact_substitution_inplace _
     | Run _ ->
       true
     | Dynamic_run _ -> true

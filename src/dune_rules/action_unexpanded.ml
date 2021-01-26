@@ -206,6 +206,8 @@ module Partial = struct
     | Format_dune_file (src, dst) ->
       Format_dune_file (E.path ~expander src, E.target ~expander dst)
     | Cram script -> Cram (E.path ~expander script)
+    | Artifact_substitution_inplace path ->
+      Artifact_substitution_inplace (E.path ~expander path)
 end
 
 module E = Expand (struct
@@ -322,6 +324,8 @@ let rec partial_expand t ~expander : Partial.t =
   | Format_dune_file (src, dst) ->
     Format_dune_file (E.path ~expander src, E.target ~expander dst)
   | Cram script -> Cram (E.path ~expander script)
+  | Artifact_substitution_inplace path ->
+    Artifact_substitution_inplace (E.path ~expander path)
 
 module Infer : sig
   module Outcome : sig
@@ -455,6 +459,7 @@ end = struct
       | No_infer _ ->
         acc
       | Format_dune_file (src, dst) -> acc +< src +@+ dst
+      | Artifact_substitution_inplace path -> acc +< path
 
     let infer t =
       let { deps; deps_if_exist; targets } =

@@ -363,6 +363,9 @@ let rec exec t ~ectx ~eenv =
     Format_dune_lang.format_file ~input:(Some src)
       ~output:(Some (Path.build dst));
     Fiber.return Done
+  | Artifact_substitution_inplace src ->
+    let+ () = Artifact_substitution.in_place_replace ~src in
+    Done
   | Cram script ->
     let+ () =
       Fdecl.get

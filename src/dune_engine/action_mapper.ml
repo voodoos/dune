@@ -54,6 +54,8 @@ module Make (Src : Action_intf.Ast) (Dst : Action_intf.Ast) = struct
     | Format_dune_file (src, dst) ->
       Format_dune_file (f_path ~dir src, f_target ~dir dst)
     | Cram script -> Cram (f_path ~dir script)
+    | Artifact_substitution_inplace path ->
+      Artifact_substitution_inplace (f_path ~dir path)
 
   let rec map t ~dir ~f_program ~f_string ~f_path ~f_target =
     map_one_step map t ~dir ~f_program ~f_string ~f_path ~f_target
