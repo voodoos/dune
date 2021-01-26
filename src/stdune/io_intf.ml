@@ -5,6 +5,8 @@ module type S = sig
 
   val open_out : ?binary:bool (* default true *) -> path -> out_channel
 
+  val open_read_write : path -> in_channel * out_channel
+
   val with_file_in :
     ?binary:bool (* default true *) -> path -> f:(in_channel -> 'a) -> 'a
 

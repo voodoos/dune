@@ -51,6 +51,11 @@ struct
     else
       Stdlib.open_out fn
 
+  let open_read_write p =
+    let fn = Path.to_string p in
+    let fd = Unix.openfile fn [ O_RDWR ] 0o640 in
+    (Unix.in_channel_of_descr fd, Unix.out_channel_of_descr fd)
+
   let with_file_in ?binary fn ~f =
     Exn.protectx (open_in ?binary fn) ~finally:close_in ~f
 
