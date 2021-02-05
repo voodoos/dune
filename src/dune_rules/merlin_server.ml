@@ -45,7 +45,10 @@ let to_local abs_file_path =
     try Ok (Filename.concat "." path |> Path.Local.of_string)
     with User_error.E mess -> User_message.to_string mess |> error )
   | None ->
-    Printf.sprintf "Path is not in dune workspace %s" abs_file_path |> error
+    Printf.sprintf "Path is not in dune workspace: %s (workspace is %s)"
+      abs_file_path
+      Path.(to_absolute_filename (of_local Local.root))
+    |> error
 
 let get_merlin_files_paths local_path =
   let workspace = Workspace.workspace () in
