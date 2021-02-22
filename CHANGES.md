@@ -44,6 +44,22 @@ Unreleased
 - Have `dune` communicate the location of the standard library directory to
   `merlin` (#4211, fixes #4188, @nojb)
 
+- Add support for instrumentation dependencies (#4210, fixes #3983, @nojb)
+
+- Workaround incorrect exception raised by `Unix.utimes` (OCaml PR#8857) in
+  `Path.touch` on Windows. This fixes dune cache in direct mode on Windows.
+  (#4223, @dra27)
+
+- Cleanup temporary files after running `$ dune exec`. (#4260, fixes #4243,
+  @rgrinberg)
+
+- Add a new subcommand `dune ocaml dump-dot-merlin` that prints a mix of all the
+  merlin configuration of a directory (defaulting to the current directory) in
+  the Merlin configuration syntax. (#4250, @voodoos)
+
+- `dune ocaml-merlin` is now able to provide configuration for source files in
+  the `_build` directory. (#4274, @voodoos)
+
 2.8.2 (21/01/2021)
 ------------------
 
