@@ -319,8 +319,6 @@ Alternative dependencies
 ------------------------
 
 In addition to direct dependencies you can specify alternative dependencies.
-This is described in the :ref:`Alternative dependencies <alternative-deps>`
-section
 
 It is sometimes the case that one wants to not depend on a specific library, but
 instead on whatever is already installed. For instance to use a different
