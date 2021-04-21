@@ -124,7 +124,7 @@ end
 type t =
   { loc : Loc.t
   ; files : Predicate_lang.Glob.t
-  ; packages : (Loc.t * Package.Name.t) list
+  ; deps : Dep_conf.t Bindings.t
   ; preludes : Prelude.t list
   ; enabled_if : Blang.t
   ; libraries : Lib_dep.t list
@@ -150,10 +150,10 @@ let decode =
     (let+ loc = loc
      and+ files =
        field "files" Predicate_lang.Glob.decode ~default:default_files
-     and+ packages =
-       field ~default:[] "packages" (repeat (located Package.Name.decode))
      and+ enabled_if =
        Enabled_if.decode ~allowed_vars:Any ~since:(Some (2, 9)) ()
+     and+ deps =
+       field "deps" (Bindings.decode Dep_conf.decode) ~default:Bindings.empty
      and+ preludes = field ~default:[] "preludes" (repeat Prelude.decode)
      and+ libraries =
        field "libraries"
@@ -161,7 +161,7 @@ let decode =
          >>> Dune_file.Lib_deps.decode Executable)
          ~default:[]
      in
-     { loc; files; packages; preludes; libraries; enabled_if })
+     { loc; files; deps; preludes; libraries; enabled_if })
 
 let () =
   let open Dune_lang.Decoder in
@@ -210,14 +210,9 @@ let gen_rules_for_single_file stanza ~sctx ~dir ~expander ~mdx_prog
             Action_builder.memo_build (Deps.to_dep_set dep_set ~dir))
       in
       let dyn_deps = Action_builder.map deps ~f:(fun d -> ((), d)) in
-      let pkg_deps =
-        stanza.packages
-        |> List.map ~f:(fun (loc, pkg) ->
-               Dep_conf.Package
-                 (Package.Name.to_string pkg |> String_with_vars.make_text loc))
-      in
+      let other_deps = Bindings.to_list stanza.deps in
       Action_builder.(
-        with_no_targets (Dep_conf_eval.unnamed ~expander pkg_deps))
+        with_no_targets (Dep_conf_eval.unnamed ~expander other_deps))
       >>> Action_builder.with_no_targets (Action_builder.dyn_deps dyn_deps)
       >>> Command.run ~dir:(Path.build dir) ~stdout_to:files.corrected
             (Ok (Path.build mdx_prog_gen))
