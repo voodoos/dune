@@ -185,7 +185,8 @@ let files_to_mdx t ~sctx ~dir =
 
 (** Generates the rules for a single [src] file covered covered by the given
     [stanza]. *)
-let gen_rules_for_single_file stanza ~sctx ~dir ~expander ~mdx_prog src =
+let gen_rules_for_single_file stanza ~sctx ~dir ~expander ~mdx_prog
+    ~mdx_prog_gen src =
   let loc = stanza.loc in
   let mdx_dir = Path.Build.relative dir ".mdx" in
   let files = Files.from_source_file ~mdx_dir src in
@@ -214,9 +215,9 @@ let gen_rules_for_single_file stanza ~sctx ~dir ~expander ~mdx_prog src =
       Action_builder.(
         with_no_targets (Dep_conf_eval.unnamed ~expander pkg_deps))
       >>> Action_builder.with_no_targets (Action_builder.dyn_deps dyn_deps)
-      >>> Command.run ~dir:(Path.build dir) mdx_prog
-            ([ Command.Args.A "test" ] @ prelude_args
-            @ [ A "-o"; Target files.corrected; Dep (Path.build files.src) ])
+      >>> Command.run ~dir:(Path.build dir) ~stdout_to:files.corrected
+            (Ok (Path.build mdx_prog_gen))
+            (prelude_args @ [ Dep (Path.build files.src) ])
     in
     Super_context.add_rule sctx ~loc ~dir mdx_action
   in
@@ -231,23 +232,18 @@ let gen_mdx_exe t ~sctx ~dir ~scope ~expander ~mdx_prog =
   let open Memo.Build.O in
   let loc = t.loc in
   let dune_version = Scope.project scope |> Dune_project.dune_version in
-  let obj_dir = Obj_dir.make_exe ~dir ~name in
   let file = Path.Build.relative dir "mdx_gen.ml-gen" in
-
   let action =
-    let open Action_builder.With_targets.O in
-    let+ run =
-      Command.run ~dir:(Path.build dir) mdx_prog
-        [ Command.Args.A "dune-gen"
-          (*@ prelude_args*)
-          (*@ [ A "-o"; Target file ]*)
-        ]
-    in
-    Action.with_outputs_to file run
+    Command.run ~dir:(Path.build dir) ~stdout_to:file mdx_prog
+      [ Command.Args.A "dune-gen"
+        (*@ prelude_args*)
+        (*@ [ A "-o"; Target file ]*)
+      ]
   in
   let action = Action_builder.With_targets.add action ~targets:[ file ] in
   let* () = Super_context.add_rule sctx ~loc ~dir action in
 
+  let obj_dir = Obj_dir.make_exe ~dir ~name in
   let main_module_name = Module_name.of_string name in
   let module_ = Module.generated ~src_dir:(Path.build dir) main_module_name in
   let modules = Modules.singleton_exe module_ in
@@ -265,10 +261,12 @@ let gen_mdx_exe t ~sctx ~dir ~scope ~expander ~mdx_prog =
       ~requires_link:(Lib.Compile.requires_link compile_info)
       ~opaque:(Explicit false) ~js_of_ocaml:None ~package:None ()
   in
-
-  Exe.build_and_link cctx
-    ~program:{ name; main_module_name; loc }
-    ~linkages:[ Exe.Linkage.byte ] ~promote:None
+  let+ () =
+    Exe.build_and_link cctx
+      ~program:{ name; main_module_name; loc }
+      ~linkages:[ Exe.Linkage.byte ] ~promote:None
+  in
+  Path.Build.relative dir (name ^ ".bc")
 
 (** Generates the rules for a given mdx stanza *)
 let gen_rules t ~sctx ~dir ~scope ~expander =
@@ -278,6 +276,7 @@ let gen_rules t ~sctx ~dir ~scope ~expander =
     Super_context.resolve_program sctx ~dir ~loc:(Some t.loc)
       ~hint:"opam install mdx" "ocaml-mdx"
   in
-  let* () = gen_mdx_exe t ~sctx ~dir ~scope ~expander ~mdx_prog in
+  let* mdx_prog_gen = gen_mdx_exe t ~sctx ~dir ~scope ~expander ~mdx_prog in
   Memo.Build.parallel_iter files_to_mdx
-    ~f:(gen_rules_for_single_file t ~sctx ~dir ~expander ~mdx_prog)
+    ~f:
+      (gen_rules_for_single_file t ~sctx ~dir ~expander ~mdx_prog ~mdx_prog_gen)
