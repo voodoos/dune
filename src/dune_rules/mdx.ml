@@ -239,29 +239,35 @@ let mdx_prog_gen t ~sctx ~dir ~scope ~expander ~mdx_prog =
 
   (* Libs from the libraries field should have their include directories sent to
      mdx *)
-  let libs_to_include =
-    List.filter_map t.libraries ~f:(function
-      | Direct lib
-      | Re_export lib ->
-        Result.to_option (Lib.DB.resolve (Scope.libs scope) lib)
-      | _ -> None)
-  in
-
-  let libs_include_paths = Lib.L.include_paths libs_to_include in
-
+  let open Resolve.O in
   let directory_args =
-    Path.Set.to_list libs_include_paths
-    |> List.map ~f:(fun p ->
-           Command.Args.[ A "--directory"; A (Path.to_absolute_filename p) ])
-    |> List.flatten
+    let+ libs_to_include =
+      Resolve.List.filter_map t.libraries ~f:(function
+        | Direct lib
+        | Re_export lib ->
+          let+ lib = Lib.DB.resolve (Scope.libs scope) lib in
+          Some lib
+        | _ -> Resolve.return None)
+    in
+
+    let libs_include_paths = Lib.L.include_paths libs_to_include Mode.Byte in
+
+    let open Command.Args in
+    let args =
+      Path.Set.to_list libs_include_paths
+      |> List.map ~f:(fun p -> S [ A "--directory"; Path p ])
+    in
+    S args
   in
 
-  let prelude_args = List.concat_map t.preludes ~f:(Prelude.to_args ~dir) in
+  let prelude_args =
+    Command.Args.S (List.concat_map t.preludes ~f:(Prelude.to_args ~dir))
+  in
 
   (* We call mdx to generate the testing executable source *)
   let action =
     Command.run ~dir:(Path.build dir) mdx_prog ~stdout_to:file
-      (Command.Args.A "dune-gen" :: prelude_args @ directory_args)
+      [ A "dune-gen"; prelude_args; Resolve.args directory_args ]
   in
   let open Memo.Build.O in
   let* () = Super_context.add_rule sctx ~loc ~dir action in
