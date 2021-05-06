@@ -165,7 +165,7 @@ let decode =
          >>> Bindings.decode Dep_conf.decode)
      and+ preludes = field ~default:[] "preludes" (repeat Prelude.decode)
      and+ libraries =
-       field "libraries"
+       field "libraries" ~default:[]
          (Dune_lang.Syntax.since syntax (0, 2)
          >>> Dune_file.Lib_deps.decode Executable)
          ~default:[]
