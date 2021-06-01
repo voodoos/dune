@@ -1,0 +1,6 @@
+(executable
+ (name stubs_exe)
+ (modes native byte_complete)
+ (foreign_stubs
+  (language c)
+  (names c_stubs)))

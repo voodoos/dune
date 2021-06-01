@@ -96,7 +96,7 @@ let include_dir_flags ~expander ~dir (stubs : Foreign.Stubs.t) =
              in
              Command.Args.S [ A "-I"; Path include_dir; dep_args ]))))
 
-let build_c ~kind ~sctx ~dir ~expander ~include_flags (loc, src, dst) =
+let build_c ~kind ~sctx ~dir ~expander ~include_flags (src, dst) =
   let ctx = Super_context.context sctx in
   let project = Super_context.find_scope_by_dir sctx dir |> Scope.project in
   let use_standard_flags = Dune_project.use_standard_c_and_cxx_flags project in
@@ -135,7 +135,7 @@ let build_c ~kind ~sctx ~dir ~expander ~include_flags (loc, src, dst) =
       && Option.is_none use_standard_flags
       && (not is_vendored) && not has_standard
     then
-      User_warning.emit ~loc
+      User_warning.emit ~loc:src.loc
         [ Pp.text
             "The flag set for these foreign sources overrides the `:standard` \
              set of flags. However the flags in this standard set are still \
@@ -158,7 +158,7 @@ let build_c ~kind ~sctx ~dir ~expander ~include_flags (loc, src, dst) =
     | Other _ -> [ A "-o"; Target dst ]
   in
   let+ () =
-    Super_context.add_rule sctx ~loc
+    Super_context.add_rule sctx ~loc:src.loc
       ~dir
         (* With sandboxing we get errors like: bar.c:2:19: fatal error: foo.cxx:
            No such file or directory #include "foo.cxx". (These errors happen
@@ -178,8 +178,8 @@ let build_c ~kind ~sctx ~dir ~expander ~include_flags (loc, src, dst) =
 
 (* TODO: [requires] is a confusing name, probably because it's too general: it
    looks like it's a list of libraries we depend on. *)
-let build_o_files ~sctx ~foreign_sources ~(dir : Path.Build.t) ~expander
-    ~requires ~dir_contents =
+let build_o_files ~sctx ~(foreign_sources : Foreign.Sources.t)
+    ~(dir : Path.Build.t) ~expander ~requires ~dir_contents =
   let ctx = Super_context.context sctx in
   let all_dirs = Dir_contents.dirs dir_contents in
   let h_files =
@@ -204,21 +204,69 @@ let build_o_files ~sctx ~foreign_sources ~(dir : Path.Build.t) ~expander
             ])
       ]
   in
-  String.Map.to_list_map foreign_sources ~f:(fun obj (loc, src) ->
-      let dst = Path.Build.relative dir (obj ^ ctx.lib_config.ext_obj) in
-      let stubs = src.Foreign.Source.stubs in
-      let extra_flags = include_dir_flags ~expander ~dir src.stubs in
-      let extra_deps =
-        let open Action_builder.O in
-        let+ () = Dep_conf_eval.unnamed stubs.extra_deps ~expander in
-        Command.Args.empty
-      in
-      let include_flags =
-        Command.Args.S [ includes; extra_flags; Dyn extra_deps ]
-      in
-      let build_file =
-        match Foreign.Source.language src with
-        | C -> build_c ~kind:Foreign_language.C
-        | Cxx -> build_c ~kind:Foreign_language.Cxx
-      in
-      build_file ~sctx ~dir ~expander ~include_flags (loc, src, dst))
+  let build_file obj mode src =
+    (* TODO ulysse *)
+    let mode_str =
+      let open Foreign.Compilation_mode in
+      match mode with
+      | Only Byte -> "_byte"
+      | Only Native -> "_native"
+      | All -> ""
+    in
+    let dst =
+      Path.Build.relative dir (obj ^ mode_str ^ ctx.lib_config.ext_obj)
+    in
+    let stubs = src.Foreign.Source.stubs in
+    let extra_flags = include_dir_flags ~expander ~dir src.stubs in
+    let extra_deps =
+      let open Action_builder.O in
+      let+ () = Dep_conf_eval.unnamed stubs.extra_deps ~expander in
+      Command.Args.empty
+    in
+    let include_flags =
+      Command.Args.S [ includes; extra_flags; Dyn extra_deps ]
+    in
+    let build_file =
+      match Foreign.Source.language src with
+      | C -> build_c ~kind:Foreign_language.C
+      | Cxx -> build_c ~kind:Foreign_language.Cxx
+    in
+    build_file ~sctx ~dir ~expander ~include_flags (src, dst)
+    |> Memo.Build.map ~f:Path.build
+  in
+
+  let res : Path.t Foreign.Source.for_mode list Memo.Build.t =
+    String.Map.foldi foreign_sources ~init:(Memo.Build.return [])
+      ~f:(fun obj for_mode acc ->
+        let open Memo.Build.O in
+        let open Foreign.Compilation_mode in
+        match for_mode with
+        | All source ->
+          let+ build_file = build_file obj All source
+          and+ acc = acc in
+          Foreign.Source.All build_file :: acc
+        | Few modes ->
+          let* acc = acc in
+          let+ modes_paths = Mode.Map.Memo.parallel_map modes ~f:(fun mode source ->
+              let+ build_file = build_file obj (Only mode) source
+               in
+              build_file)
+          in
+          Foreign.Source.Few modes_paths :: acc)
+  in
+
+  res
+
+(* String.Map.to_list_map foreign_sources ~f:(fun obj modes ->
+   Foreign.Source.For_mode.to_list_map modes ~f:(fun _mode (loc, src) -> (*
+   Mode.to_string (Foreign.Source.mode ) *) (* TODO ulysse *) let mode_str =
+   match _mode with | Only_byte -> "_byte" | _ -> "" in let dst =
+   Path.Build.relative dir (obj ^ mode_str ^ ctx.lib_config.ext_obj) in let
+   stubs = src.Foreign.Source.stubs in let extra_flags = include_dir_flags
+   ~expander ~dir src.stubs in let extra_deps = let open Action_builder.O in
+   let+ () = Dep_conf_eval.unnamed stubs.extra_deps ~expander in
+   Command.Args.empty in let include_flags = Command.Args.S [ includes;
+   extra_flags; Dyn extra_deps ] in let build_file = match
+   Foreign.Source.language src with | C -> build_c ~kind:Foreign_language.C |
+   Cxx -> build_c ~kind:Foreign_language.Cxx in build_file ~sctx ~dir ~expander
+   ~include_flags (loc, src, dst))) |> List.flatten *)

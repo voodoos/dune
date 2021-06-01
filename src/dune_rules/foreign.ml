@@ -24,6 +24,52 @@ let possible_sources ~language obj ~dune_version =
         (Foreign_language.equal lang language && dune_version >= version)
         (obj ^ "." ^ ext))
 
+module Compilation_mode = struct
+  module T = struct
+    type t =
+      | All
+      | Only of Mode.t
+
+    let decode =
+      let open Dune_lang.Decoder in
+      let+ mode = field_o "mode" Mode.decode in
+      match mode with
+      | None -> All
+      | Some m -> Only m
+
+    let equal = Poly.equal
+
+    let to_string = function
+      | All -> "all"
+      | Only Byte -> "byte"
+      | Only Native -> "native"
+
+    let to_dyn t =
+      let open Dyn.Encoder in
+      constr (to_string t) []
+
+    let compare = Poly.compare
+  end
+
+  include T
+
+  module Map = struct
+    include Map.Make (T)
+
+    let add_exn t k e =
+      if mem t All then
+        Code_error.raise "Map.add_exn: key All cannot coexist with others" []
+      else
+        add_exn t k e
+
+    let add t k e =
+      if mem t All then
+        Error e
+      else
+        add t k e
+  end
+end
+
 module Archive = struct
   module Name = struct
     include String
@@ -44,8 +90,6 @@ module Archive = struct
               [ Pp.textf "Path separators are not allowed in archive names." ]
           | fn -> fn)
 
-    let stubs archive_name = archive_name ^ "_stubs"
-
     let lib_file_prefix = "lib"
 
     let lib_file archive_name ~dir ~ext_lib =
@@ -54,6 +98,14 @@ module Archive = struct
 
     let dll_file archive_name ~dir ~ext_dll =
       Path.Build.relative dir (sprintf "dll%s%s" archive_name ext_dll)
+
+    let add_mode_suffix t (mode : Compilation_mode.t) =
+      match mode with
+      | All -> t
+      | Only Byte -> t ^ "_byte"
+      | Only Native -> t ^ "_native"
+
+    let stubs archive_name = archive_name ^ "_stubs"
   end
 
   (** Archive directories can appear as part of the [(foreign_archives ...)]
@@ -71,7 +123,7 @@ module Archive = struct
 
   let dir_path ~dir t = Path.Build.relative dir t.dir
 
-  let name t = t.name
+  let name t mode = Name.add_mode_suffix t.name mode
 
   let stubs archive_name = { dir = "."; name = Name.stubs archive_name }
 
@@ -80,13 +132,13 @@ module Archive = struct
     let+ s = string in
     { dir = Filename.dirname s; name = Filename.basename s }
 
-  let lib_file ~archive ~dir ~ext_lib =
+  let lib_file ~archive mode ~dir ~ext_lib =
     let dir = dir_path ~dir archive in
-    Name.lib_file archive.name ~dir ~ext_lib
+    Name.lib_file (name archive mode) ~dir ~ext_lib
 
   let dll_file ~archive ~dir ~ext_dll =
     let dir = dir_path ~dir archive in
-    Name.dll_file archive.name ~dir ~ext_dll
+    Name.dll_file (name archive (All)) ~dir ~ext_dll
 end
 
 module Stubs = struct
@@ -111,6 +163,7 @@ module Stubs = struct
   type t =
     { loc : Loc.t
     ; language : Foreign_language.t
+    ; mode : Compilation_mode.t
     ; names : Ordered_set_lang.t
     ; flags : Ordered_set_lang.Unexpanded.t
     ; include_dirs : Include_dir.t list
@@ -118,7 +171,8 @@ module Stubs = struct
     }
 
   let make ~loc ~language ~names ~flags =
-    { loc; language; names; flags; include_dirs = []; extra_deps = [] }
+    let mode = Compilation_mode.All in
+    { loc; language; mode; names; flags; include_dirs = []; extra_deps = [] }
 
   let decode_stubs =
     let open Dune_lang.Decoder in
@@ -126,6 +180,7 @@ module Stubs = struct
     and+ loc_archive_name, archive_name =
       located (field_o "archive_name" string)
     and+ language = field "language" decode_lang
+    and+ mode = Compilation_mode.decode
     and+ names = Ordered_set_lang.field "names"
     and+ flags = Ordered_set_lang.Unexpanded.field "flags"
     and+ include_dirs =
@@ -143,7 +198,7 @@ module Stubs = struct
                (foreign_library ...) stanza."
           ]
     in
-    { loc; language; names; flags; include_dirs; extra_deps }
+    { loc; language; mode; names; flags; include_dirs; extra_deps }
 
   let decode = Dune_lang.Decoder.fields decode_stubs
 end
@@ -169,10 +224,17 @@ module Source = struct
      individual source file *)
   type t =
     { stubs : Stubs.t
+    ; loc : Loc.t
     ; path : Path.Build.t
     }
 
+  type 'a for_mode =
+    | All of 'a
+    | Few of 'a Mode.Map.t
+
   let language t = t.stubs.language
+
+  let mode t = t.stubs.mode
 
   let flags t = t.stubs.flags
 
@@ -181,11 +243,23 @@ module Source = struct
   let object_name t =
     t.path |> Path.Build.split_extension |> fst |> Path.Build.basename
 
-  let make ~stubs ~path = { stubs; path }
+  let make ~stubs ~loc path = { stubs; loc; path }
+
+  module For_mode = struct
+    type 'a t = 'a for_mode
+
+    let get t ~mode = match t with
+      | All path -> Some path
+      | Few paths -> Mode.Map.find paths mode
+
+    let all t = match t with
+    | All path -> [ path ]
+    | Few paths -> Mode.Map.fold paths ~init:[] ~f:(fun path acc -> path :: acc) 
+  end
 end
 
 module Sources = struct
-  type t = (Loc.t * Source.t) String.Map.t
+  type t = Source.t Source.for_mode String.Map.t
 
   let object_files t ~dir ~ext_obj =
     String.Map.keys t

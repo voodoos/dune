@@ -84,12 +84,8 @@ let o_files sctx ~dir ~expander ~(exes : Executables.t) ~linkages ~dir_contents
       let first_exe = first_exe exes in
       Foreign_sources.for_exes foreign_sources ~first_exe
     in
-    let+ o_files =
       Foreign_rules.build_o_files ~sctx ~dir ~expander
         ~requires:requires_compile ~dir_contents ~foreign_sources
-      |> Memo.Build.all_concurrently
-    in
-    List.map o_files ~f:Path.build
 
 let with_empty_intf ~sctx ~dir module_ =
   let name =
@@ -183,7 +179,7 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
   let+ () =
     (* Building an archive for foreign stubs, we link the corresponding object
        files directly to improve perf. *)
-    let link_args =
+    let create_link_args mode =
       let open Action_builder.O in
       let link_flags =
         let link_deps = Dep_conf_eval.unnamed ~expander exes.link_deps in
@@ -192,23 +188,35 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
               ~standard:(Action_builder.return [])
       in
       let+ flags = link_flags in
+      let ext_lib = ctx.lib_config.ext_lib in
+      let foreign_archives = exes.buildable.foreign_archives in
       Command.Args.S
         [ Command.Args.As flags
         ; Command.Args.S
-            (let ext_lib = ctx.lib_config.ext_lib in
-             let foreign_archives =
-               exes.buildable.foreign_archives |> List.map ~f:snd
-             in
-             List.map foreign_archives ~f:(fun archive ->
-                 let lib = Foreign.Archive.lib_file ~archive ~dir ~ext_lib in
+            (List.map foreign_archives ~f:(fun (_, archive) ->
+                 let lib =
+                  (* TODO ulysse: what if the archive is not mode-dependent ? *)
+                   Foreign.Archive.lib_file ~archive mode ~dir ~ext_lib
+                 in
                  Command.Args.S [ A "-cclib"; Dep (Path.build lib) ]))
         ]
+    in
+    let link_args =
+      let open Action_builder.O in
+      let* byte = create_link_args (Only Byte) in
+      let+ native = create_link_args (Only Native) in
+      Mode.Dict.make ~byte ~native
     in
     let* o_files =
       o_files sctx ~dir ~expander ~exes ~linkages ~dir_contents
         ~requires_compile
     in
-    let* () = Check_rules.add_files sctx ~dir o_files in
+    let* () =
+    List.fold_left o_files ~init:[] ~f:(fun acc fm ->
+      Foreign.Source.For_mode.all fm @ acc)
+      |> Check_rules.add_files sctx ~dir
+
+    in
     Exe.build_and_link_many cctx ~programs ~linkages ~link_args ~o_files
       ~promote:exes.promote ~embed_in_plugin_libraries
   in

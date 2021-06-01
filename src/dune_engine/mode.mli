@@ -30,6 +30,17 @@ val to_string : t -> string
 
 val to_dyn : t -> Dyn.t
 
+module Map : sig
+  type mode := t
+
+  include Map.S with type key = t
+
+  module Memo : sig
+    val parallel_map :
+      'a t -> f:(mode -> 'a -> 'b Memo.Build.t) -> 'b t Memo.Build.t
+  end
+end
+
 module Dict : sig
   type mode = t
 
@@ -39,6 +50,10 @@ module Dict : sig
     }
 
   val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
+
+  val both_equal : ?compare:('a -> 'a -> bool) -> 'a t -> bool
+
+  val exists : 'a t -> f:('a -> bool) -> bool
 
   val for_all : 'a t -> f:('a -> bool) -> bool
 

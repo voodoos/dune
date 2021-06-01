@@ -412,6 +412,8 @@ end = struct
                         | Ok s -> Ok (Some s)
                         | Error e -> Error (User_error.E (e, []))))))
         in
+        (* todo ulysse check *)
+        let foreign_archives = Mode.Dict.make_both foreign_archives in
         Lib_info.create ~path_kind:External ~loc ~name:t.name ~kind ~status
           ~src_dir ~orig_src_dir ~obj_dir ~version ~synopsis ~main_module_name
           ~sub_systems ~requires ~foreign_objects ~plugins ~archives

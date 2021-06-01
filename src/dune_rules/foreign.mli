@@ -12,7 +12,7 @@ val possible_sources :
   -> dune_version:Dune_lang.Syntax.Version.t
   -> string list
 
-(* CR-soon cwong: I'd really prefer to keep the convension that these functions
+(* CR-soon cwong: I'd really prefer to keep the convention that these functions
    are spelled [Foreign_language.encode] and [Foreign_language.decode], but due
    to some organizational reasons (see the rant at the top of
    [foreign_language.mli]), these need to be here instead, as they cannot reside
@@ -22,6 +22,20 @@ val possible_sources :
 val encode_lang : Foreign_language.t -> string
 
 val decode_lang : Foreign_language.t Dune_lang.Decoder.t
+
+(** In some situations, it is useful to make compilation of foreign source files
+    conditional, and include the resulting objects only into native or bytecode
+    libraries, but not both. *)
+module Compilation_mode : sig
+  type t =
+    | All
+    | Only of Mode.t
+
+  val equal : t -> t -> bool
+
+  (* In a Map of Compilation_mode, the [All] key must always be alone *)
+  module Map : Map.S with type key = t
+end
 
 (** Foreign archives appear in the [(foreign_archives ...)] field of libraries
     and executables, for example [(foreign_archives some/dir/lib)]. When parsing
@@ -46,26 +60,34 @@ module Archive : sig
 
     val decode : t Dune_lang.Decoder.t
 
-    val stubs : string -> t
+    val stubs : string  -> t
 
     val lib_file_prefix : string
 
     val lib_file : t -> dir:Path.Build.t -> ext_lib:string -> Path.Build.t
 
     val dll_file : t -> dir:Path.Build.t -> ext_dll:string -> Path.Build.t
+
+    (* TODO ulyse this is ugly *)
+    val add_mode_suffix : t -> Compilation_mode.t -> t
   end
 
   type t
 
   val dir_path : dir:Path.Build.t -> t -> Path.Build.t
 
-  val name : t -> Name.t
+  val name : t -> Compilation_mode.t -> Name.t
 
   val stubs : string -> t
 
   val decode : t Dune_lang.Decoder.t
 
-  val lib_file : archive:t -> dir:Path.Build.t -> ext_lib:string -> Path.Build.t
+  val lib_file :
+       archive:t
+    -> Compilation_mode.t
+    -> dir:Path.Build.t
+    -> ext_lib:string
+    -> Path.Build.t
 
   val dll_file : archive:t -> dir:Path.Build.t -> ext_dll:string -> Path.Build.t
 end
@@ -88,6 +110,7 @@ module Stubs : sig
   type t =
     { loc : Loc.t
     ; language : Foreign_language.t
+    ; mode : Compilation_mode.t
     ; names : Ordered_set_lang.t
     ; flags : Ordered_set_lang.Unexpanded.t
     ; include_dirs : Include_dir.t list
@@ -139,12 +162,23 @@ module Library : sig
 end
 
 (** A foreign source file that has a [path] and all information of the
-    corresponnding [Foreign.Stubs.t] declaration. *)
+    corresponding [Foreign.Stubs.t] declaration.
+
+    The same source file can correspond to multiple Stubs fields if they are
+    specifying a compilation mode *)
 module Source : sig
   type t =
     { stubs : Stubs.t
+    ; loc : Loc.t
     ; path : Path.Build.t
     }
+
+  (* Some sources are built the same for every mod e, some differ *)
+  type 'a for_mode =
+    | All of 'a
+    | Few of 'a Mode.Map.t
+
+  val mode : t -> Compilation_mode.t
 
   val language : t -> Foreign_language.t
 
@@ -154,14 +188,21 @@ module Source : sig
 
   (* The name of the corresponding object file; for example, [name] for a source
      file [some/path/name.cpp]. *)
+  (* TODO should take a mode argument return with the _byte / _native*)
   val object_name : t -> string
 
-  val make : stubs:Stubs.t -> path:Path.Build.t -> t
+  val make : stubs:Stubs.t -> loc:Loc.t -> Path.Build.t -> t
+
+  module For_mode : sig
+    type 'a t = 'a for_mode
+    val get : 'a t -> mode:Mode.t -> 'a option
+    val all : 'a t -> 'a list
+  end
 end
 
 (** A map from object names to the corresponding sources. *)
 module Sources : sig
-  type t = (Loc.t * Source.t) String.Map.t
+  type t = Source.t Source.for_mode String.Map.t
 
   val object_files :
     t -> dir:Path.Build.t -> ext_obj:string -> Path.Build.t list

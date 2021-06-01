@@ -64,7 +64,7 @@ let eval_foreign_stubs (d : _ Dir_with_dune.t) foreign_stubs
              (foreign_library ...) stanza."
         ]
   in
-  let eval (stubs : Foreign.Stubs.t) =
+  let eval acc (stubs : Foreign.Stubs.t) =
     let language = stubs.language in
     let standard : (Loc.t * string) String.Map.t =
       String.Map.filter_mapi sources ~f:(fun name srcs ->
@@ -77,7 +77,7 @@ let eval_foreign_stubs (d : _ Dir_with_dune.t) foreign_stubs
       Ordered_set_lang.Unordered_string.eval_loc stubs.names ~key:Fun.id
         ~standard ~parse:(fun ~loc:_ -> Fun.id)
     in
-    String.Map.map names ~f:(fun (loc, s) ->
+    String.Map.fold ~init:acc names ~f:(fun (loc, s) acc ->
         let name = valid_name language ~loc s in
         let basename = Filename.basename s in
         if name <> basename then
@@ -94,12 +94,12 @@ let eval_foreign_stubs (d : _ Dir_with_dune.t) foreign_stubs
             List.filter_map candidates ~f:(fun (l, path) ->
                 Option.some_if (Foreign_language.equal l language) path)
           with
-          | [ path ] -> Some (loc, Foreign.Source.make ~stubs ~path)
+          | [ path ] -> Some (stubs.mode, loc, stubs, path)
           | [] -> None
           | _ :: _ :: _ as paths -> multiple_sources_error ~name ~loc ~paths
         in
         match source with
-        | Some source -> source
+        | Some source -> String.Map.Multi.cons acc name source
         | None ->
           User_error.raise ~loc
             [ Pp.textf "Object %S has no source; %s must be present." name
@@ -109,11 +109,34 @@ let eval_foreign_stubs (d : _ Dir_with_dune.t) foreign_stubs
                    |> List.map ~f:(fun s -> sprintf "%S" s)))
             ])
   in
-  let stub_maps = List.map foreign_stubs ~f:eval in
-  List.fold_left stub_maps ~init:String.Map.empty ~f:(fun a b ->
-      String.Map.union a b ~f:(fun name (loc, src1) (_, src2) ->
-          multiple_sources_error ~name ~loc
-            ~paths:Foreign.Source.[ path src1; path src2 ]))
+  (* A map from objects name to the various stubs referencing them and
+     associated sources*)
+  let stub_maps = List.fold_left ~init:String.Map.empty foreign_stubs ~f:eval in
+  (* We now check that no object file has more than one source for the same mode
+     and classify them using the Foreign.Source.for_mode variant *)
+  String.Map.mapi stub_maps ~f:(fun name -> function
+    | [] ->
+      Code_error.raise "An object name does not correspond to any stubs" []
+    | [ (Foreign.Compilation_mode.All, loc, stubs, source_path) ] ->
+      Foreign.Source.(All (make ~stubs ~loc source_path))
+    | l ->
+      let modes =
+        List.fold_left l ~init:Mode.Map.empty
+          ~f:(fun acc (mode, loc, stubs, path) ->
+            let source = Foreign.Source.make ~stubs ~loc path in
+            let add mode acc =
+              match Mode.Map.add acc mode source with
+              | Ok acc -> acc
+              | Error s ->
+                multiple_sources_error ~name ~loc
+                  ~paths:[ path; Foreign.Source.path s ]
+            in
+            match mode with
+            | Foreign.Compilation_mode.All ->
+              add Mode.Byte acc |> add Mode.Native
+            | Only mode -> add mode acc)
+      in
+      Foreign.Source.Few modes)
 
 let check_no_qualified (loc, include_subdirs) =
   if include_subdirs = Dune_file.Include_subdirs.Include Qualified then
@@ -179,25 +202,45 @@ let make (d : _ Dir_with_dune.t) ~(sources : Foreign.Sources.Unresolved.t)
         (snd (List.hd exes.names), m))
   in
   let () =
+    (* Check that no obj is used twice for the same build mode *)
     let objects =
       List.concat
         [ List.map libs ~f:snd
         ; List.map foreign_libs ~f:(fun (_, (_, sources)) -> sources)
         ; List.map exes ~f:snd
         ]
-      |> List.concat_map ~f:(fun sources ->
-             String.Map.values sources
-             |> List.map ~f:(fun (loc, source) ->
-                    (Foreign.Source.object_name source ^ lib_config.ext_obj, loc)))
+      |> List.concat_map
+           ~f:
+             (String.Map.to_list_map ~f:(fun _obj for_mode ->
+                  let str_for_mode mode source =
+                    let unique_name =
+                      Printf.sprintf "%s__%s__%s" (Mode.to_string mode)
+                        (Foreign.Source.object_name source)
+                        lib_config.ext_obj
+                    in
+                    let debug_name =
+                      Printf.sprintf "%s%s"
+                        (Foreign.Source.object_name source)
+                        lib_config.ext_obj
+                    in
+                    (unique_name, (debug_name, source.loc))
+                  in
+                  match for_mode with
+                  | Foreign.Source.All s ->
+                    [ str_for_mode Byte s; str_for_mode Native s ]
+                  | Few for_modes ->
+                    Mode.Map.to_list_map for_modes ~f:(fun mode source ->
+                        str_for_mode mode source)))
+      |> List.flatten
     in
     match String.Map.of_list objects with
     | Ok _ -> ()
-    | Error (path, loc, another_loc) ->
+    | Error (_path, (name, loc), (_, another_loc)) ->
       User_error.raise ~loc
         [ Pp.textf
             "Multiple definitions for the same object file %S. See another \
              definition at %s."
-            path
+            name
             (Loc.to_file_colon_line another_loc)
         ]
         ~hints:
