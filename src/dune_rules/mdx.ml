@@ -168,8 +168,6 @@ let decode =
        field "libraries" ~default:[]
          (Dune_lang.Syntax.since syntax (0, 2)
          >>> Dune_file.Lib_deps.decode Executable)
-         ~default:[]
-         >>> Dune_file.Lib_deps.decode Executable)
      in
      { loc; version; files; packages; deps; preludes; libraries; enabled_if })
 
