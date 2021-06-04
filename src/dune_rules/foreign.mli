@@ -12,7 +12,7 @@ val possible_sources :
   -> dune_version:Dune_lang.Syntax.Version.t
   -> string list
 
-(* CR-soon cwong: I'd really prefer to keep the convension that these functions
+(* CR-soon cwong: I'd really prefer to keep the convention that these functions
    are spelled [Foreign_language.encode] and [Foreign_language.decode], but due
    to some organizational reasons (see the rant at the top of
    [foreign_language.mli]), these need to be here instead, as they cannot reside
@@ -70,6 +70,18 @@ module Archive : sig
   val dll_file : archive:t -> dir:Path.Build.t -> ext_dll:string -> Path.Build.t
 end
 
+(** In some situations, it is useful to make compilation of foreign source files
+    conditional, and include the resulting objects only into native or bytecode
+    libraries, but not both. *)
+module Compilation_mode : sig
+  type t =
+    | Both_byte_and_native
+    | Only_byte
+    | Only_native
+
+  val equal : t -> t -> bool
+end
+
 (** A type of foreign library "stubs", which includes all fields of the
     [Library.t] type except for the [archive_name] field. The type is parsed as
     an optional [foreign_stubs] field of the [library] stanza, or as part of the
@@ -88,6 +100,7 @@ module Stubs : sig
   type t =
     { loc : Loc.t
     ; language : Foreign_language.t
+    ; mode : Compilation_mode.t
     ; names : Ordered_set_lang.t
     ; flags : Ordered_set_lang.Unexpanded.t
     ; include_dirs : Include_dir.t list
@@ -146,7 +159,11 @@ module Source : sig
     ; path : Path.Build.t
     }
 
+  type with_loc = Loc.t * t
+
   val language : t -> Foreign_language.t
+
+  val mode : t -> Compilation_mode.t
 
   val flags : t -> Ordered_set_lang.Unexpanded.t
 
@@ -157,11 +174,33 @@ module Source : sig
   val object_name : t -> string
 
   val make : stubs:Stubs.t -> path:Path.Build.t -> t
+
+  module For_mode : sig
+    type 'a t =
+      { byte : 'a option
+      ; native : 'a option
+      }
+
+    val empty : 'a t
+
+    val map : f:('a -> 'b) -> 'a t -> 'b t
+
+    val to_list_map :
+      f:(Compilation_mode.t -> with_loc -> 'b) -> with_loc t -> 'b list
+
+    val from_source : with_loc -> with_loc t
+
+    val add_source :
+      with_loc t -> with_loc -> (with_loc t, Loc.t * Path.Build.t list) result
+
+    val union :
+      with_loc t -> with_loc t -> (with_loc t, Loc.t * Path.Build.t list) result
+  end
 end
 
 (** A map from object names to the corresponding sources. *)
 module Sources : sig
-  type t = (Loc.t * Source.t) String.Map.t
+  type t = Source.with_loc Source.For_mode.t String.Map.t
 
   val object_files :
     t -> dir:Path.Build.t -> ext_obj:string -> Path.Build.t list
