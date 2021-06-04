@@ -99,7 +99,7 @@ let eval_foreign_stubs (d : _ Dir_with_dune.t) foreign_stubs
           | _ :: _ :: _ as paths -> multiple_sources_error ~name ~loc ~paths
         in
         match source with
-        | Some source -> source
+        | Some source -> Foreign.Source.For_mode.from_source source
         | None ->
           User_error.raise ~loc
             [ Pp.textf "Object %S has no source; %s must be present." name
@@ -110,10 +110,14 @@ let eval_foreign_stubs (d : _ Dir_with_dune.t) foreign_stubs
             ])
   in
   let stub_maps = List.map foreign_stubs ~f:eval in
-  List.fold_left stub_maps ~init:String.Map.empty ~f:(fun a b ->
-      String.Map.union a b ~f:(fun name (loc, src1) (_, src2) ->
-          multiple_sources_error ~name ~loc
-            ~paths:Foreign.Source.[ path src1; path src2 ]))
+  (* we need to check that sources are used by only one foreign_stubs field
+     except if they are used in different compilation modes *)
+  List.fold_left stub_maps ~init:String.Map.empty ~f:(fun sources source_map ->
+      String.Map.union sources source_map ~f:(fun name a b ->
+          let res = Foreign.Source.For_mode.union a b in
+          match res with
+          | Error (loc, paths) -> multiple_sources_error ~name ~loc ~paths
+          | Ok r -> Some r))
 
 let check_no_qualified (loc, include_subdirs) =
   if include_subdirs = Dune_file.Include_subdirs.Include Qualified then
@@ -185,26 +189,22 @@ let make (d : _ Dir_with_dune.t) ~(sources : Foreign.Sources.Unresolved.t)
         ; List.map foreign_libs ~f:(fun (_, (_, sources)) -> sources)
         ; List.map exes ~f:snd
         ]
-      |> List.concat_map ~f:(fun sources ->
+      |> List.concat_map ~f:(fun (sources : Foreign.Sources.t) ->
              String.Map.values sources
-             |> List.map ~f:(fun (loc, source) ->
-                    (Foreign.Source.object_name source ^ lib_config.ext_obj, loc)))
+             |> List.map
+                  ~f:
+                    (Foreign.Source.For_mode.map ~f:(fun (loc, source) ->
+                         ( Foreign.Source.object_name source ^ lib_config.ext_obj
+                         , loc ))))
     in
-    match String.Map.of_list objects with
-    | Ok _ -> ()
-    | Error (path, loc, another_loc) ->
-      User_error.raise ~loc
-        [ Pp.textf
-            "Multiple definitions for the same object file %S. See another \
-             definition at %s."
-            path
-            (Loc.to_file_colon_line another_loc)
-        ]
-        ~hints:
-          [ Pp.text
-              "You can avoid the name clash by renaming one of the objects, or \
-               by placing it into a different directory."
-          ]
+    ignore objects
+    (* TODO CHECK DUPLICATES *)
+    (* match String.Map.of_list objects with | Ok _ -> () | Error (path, loc,
+       another_loc) -> User_error.raise ~loc [ Pp.textf "Multiple definitions
+       for the same object file %S. See another \ definition at %s." path
+       (Loc.to_file_colon_line another_loc) ] ~hints: [ Pp.text "You can avoid
+       the name clash by renaming one of the objects, or \ by placing it into a
+       different directory." ] *)
   in
   { libraries; archives; executables }
 

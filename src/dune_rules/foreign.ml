@@ -89,6 +89,23 @@ module Archive = struct
     Name.dll_file archive.name ~dir ~ext_dll
 end
 
+module Compilation_mode = struct
+  type t =
+    | Both_byte_and_native
+    | Only_byte
+    | Only_native
+
+  let decode =
+    let open Dune_lang.Decoder in
+    let+ mode = field_o "mode" Mode.decode in
+    match mode with
+    | None -> Both_byte_and_native
+    | Some Byte -> Only_byte
+    | Some Native -> Only_native
+
+  let equal = ( = )
+end
+
 module Stubs = struct
   module Include_dir = struct
     type t =
@@ -111,6 +128,7 @@ module Stubs = struct
   type t =
     { loc : Loc.t
     ; language : Foreign_language.t
+    ; mode : Compilation_mode.t
     ; names : Ordered_set_lang.t
     ; flags : Ordered_set_lang.Unexpanded.t
     ; include_dirs : Include_dir.t list
@@ -118,7 +136,8 @@ module Stubs = struct
     }
 
   let make ~loc ~language ~names ~flags =
-    { loc; language; names; flags; include_dirs = []; extra_deps = [] }
+    let mode = Compilation_mode.Both_byte_and_native in
+    { loc; language; mode; names; flags; include_dirs = []; extra_deps = [] }
 
   let decode_stubs =
     let open Dune_lang.Decoder in
@@ -126,6 +145,7 @@ module Stubs = struct
     and+ loc_archive_name, archive_name =
       located (field_o "archive_name" string)
     and+ language = field "language" decode_lang
+    and+ mode = Compilation_mode.decode
     and+ names = Ordered_set_lang.field "names"
     and+ flags = Ordered_set_lang.Unexpanded.field "flags"
     and+ include_dirs =
@@ -143,7 +163,7 @@ module Stubs = struct
                (foreign_library ...) stanza."
           ]
     in
-    { loc; language; names; flags; include_dirs; extra_deps }
+    { loc; language; mode; names; flags; include_dirs; extra_deps }
 
   let decode = Dune_lang.Decoder.fields decode_stubs
 end
@@ -172,7 +192,11 @@ module Source = struct
     ; path : Path.Build.t
     }
 
+  type with_loc = Loc.t * t
+
   let language t = t.stubs.language
+
+  let mode t = t.stubs.mode
 
   let flags t = t.stubs.flags
 
@@ -182,10 +206,64 @@ module Source = struct
     t.path |> Path.Build.split_extension |> fst |> Path.Build.basename
 
   let make ~stubs ~path = { stubs; path }
+
+  module For_mode = struct
+    type 'a t =
+      { byte : 'a option
+      ; native : 'a option
+      }
+
+    let empty = { byte = None; native = None }
+
+    let map ~f { byte; native } =
+      { byte = Option.map ~f byte; native = Option.map ~f native }
+
+    let to_list_map ~f { byte; native } =
+      match (byte, native) with
+      | Some byte, Some _
+        when mode (snd byte) = Compilation_mode.Both_byte_and_native ->
+        [ f Compilation_mode.Both_byte_and_native byte ]
+      | Some byte, Some native ->
+        [ f Compilation_mode.Only_byte byte
+        ; f Compilation_mode.Only_native native
+        ]
+      | Some s, None
+      | None, Some s ->
+        [ f (mode (snd s)) s ]
+      | None, None -> []
+
+    let from_source source =
+      let open Compilation_mode in
+      match mode (snd source) with
+      | Only_byte -> { empty with byte = Some source }
+      | Only_native -> { empty with native = Some source }
+      | Both_byte_and_native -> { byte = Some source; native = Some source }
+
+    let add_source t source_with_loc =
+      let open Compilation_mode in
+      let source = snd source_with_loc in
+      match (mode (snd source_with_loc), t) with
+      | Only_byte, { byte = None; native } ->
+        Ok { byte = Some source_with_loc; native }
+      | Only_native, { byte; native = None } ->
+        Ok { byte; native = Some source_with_loc }
+      | Both_byte_and_native, { byte = None; native = None } ->
+        Ok { byte = Some source_with_loc; native = Some source_with_loc }
+      | _, { byte = Some (loc, src2); _ }
+      | _, { native = Some (loc, src2); _ } ->
+        Error (loc, [ source.path; src2.path ])
+
+    let union { byte; native } t2 =
+      let open Result.O in
+      let* t =
+        Option.map byte ~f:(add_source t2) |> Option.value ~default:(Ok t2)
+      in
+      Option.map native ~f:(add_source t2) |> Option.value ~default:(Ok t)
+  end
 end
 
 module Sources = struct
-  type t = (Loc.t * Source.t) String.Map.t
+  type t = Source.with_loc Source.For_mode.t String.Map.t
 
   let object_files t ~dir ~ext_obj =
     String.Map.keys t

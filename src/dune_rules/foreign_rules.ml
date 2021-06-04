@@ -178,8 +178,8 @@ let build_c ~kind ~sctx ~dir ~expander ~include_flags (loc, src, dst) =
 
 (* TODO: [requires] is a confusing name, probably because it's too general: it
    looks like it's a list of libraries we depend on. *)
-let build_o_files ~sctx ~foreign_sources ~(dir : Path.Build.t) ~expander
-    ~requires ~dir_contents =
+let build_o_files ~sctx ~(foreign_sources : Foreign.Sources.t)
+    ~(dir : Path.Build.t) ~expander ~requires ~dir_contents =
   let ctx = Super_context.context sctx in
   let all_dirs = Dir_contents.dirs dir_contents in
   let h_files =
@@ -204,21 +204,32 @@ let build_o_files ~sctx ~foreign_sources ~(dir : Path.Build.t) ~expander
             ])
       ]
   in
-  String.Map.to_list_map foreign_sources ~f:(fun obj (loc, src) ->
-      let dst = Path.Build.relative dir (obj ^ ctx.lib_config.ext_obj) in
-      let stubs = src.Foreign.Source.stubs in
-      let extra_flags = include_dir_flags ~expander ~dir src.stubs in
-      let extra_deps =
-        let open Action_builder.O in
-        let+ () = Dep_conf_eval.unnamed stubs.extra_deps ~expander in
-        Command.Args.empty
-      in
-      let include_flags =
-        Command.Args.S [ includes; extra_flags; Dyn extra_deps ]
-      in
-      let build_file =
-        match Foreign.Source.language src with
-        | C -> build_c ~kind:Foreign_language.C
-        | Cxx -> build_c ~kind:Foreign_language.Cxx
-      in
-      build_file ~sctx ~dir ~expander ~include_flags (loc, src, dst))
+  String.Map.to_list_map foreign_sources ~f:(fun obj modes ->
+      Foreign.Source.For_mode.to_list_map modes ~f:(fun _mode (loc, src) ->
+          (* Mode.to_string (Foreign.Source.mode  ) *)
+          (* TODO ulysse *)
+          let mode_str =
+            match _mode with
+            | Only_byte -> "_byte"
+            | _ -> ""
+          in
+          let dst =
+            Path.Build.relative dir (obj ^ mode_str ^ ctx.lib_config.ext_obj)
+          in
+          let stubs = src.Foreign.Source.stubs in
+          let extra_flags = include_dir_flags ~expander ~dir src.stubs in
+          let extra_deps =
+            let open Action_builder.O in
+            let+ () = Dep_conf_eval.unnamed stubs.extra_deps ~expander in
+            Command.Args.empty
+          in
+          let include_flags =
+            Command.Args.S [ includes; extra_flags; Dyn extra_deps ]
+          in
+          let build_file =
+            match Foreign.Source.language src with
+            | C -> build_c ~kind:Foreign_language.C
+            | Cxx -> build_c ~kind:Foreign_language.Cxx
+          in
+          build_file ~sctx ~dir ~expander ~include_flags (loc, src, dst)))
+  |> List.flatten
