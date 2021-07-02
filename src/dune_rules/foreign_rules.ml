@@ -204,32 +204,79 @@ let build_o_files ~sctx ~(foreign_sources : Foreign.Sources.t)
             ])
       ]
   in
-  String.Map.to_list_map foreign_sources ~f:(fun obj modes ->
-      Foreign.Source.For_mode.to_list_map modes ~f:(fun _mode (loc, src) ->
-          (* Mode.to_string (Foreign.Source.mode  ) *)
-          (* TODO ulysse *)
-          let mode_str =
-            match _mode with
-            | Only_byte -> "_byte"
-            | _ -> ""
+  let build_file obj mode (loc, src) =
+    (* TODO ulysse *)
+    let mode_str =
+      match mode with
+      | Link_mode.Byte
+      | Byte_with_stubs_statically_linked_in ->
+        "_byte"
+      | _ -> ""
+    in
+    let dst =
+      Path.Build.relative dir (obj ^ mode_str ^ ctx.lib_config.ext_obj)
+    in
+    let stubs = src.Foreign.Source.stubs in
+    let extra_flags = include_dir_flags ~expander ~dir src.stubs in
+    let extra_deps =
+      let open Action_builder.O in
+      let+ () = Dep_conf_eval.unnamed stubs.extra_deps ~expander in
+      Command.Args.empty
+    in
+    let include_flags =
+      Command.Args.S [ includes; extra_flags; Dyn extra_deps ]
+    in
+    let build_file =
+      match Foreign.Source.language src with
+      | C -> build_c ~kind:Foreign_language.C
+      | Cxx -> build_c ~kind:Foreign_language.Cxx
+    in
+    build_file ~sctx ~dir ~expander ~include_flags (loc, src, dst)
+    |> Memo.Build.map ~f:Path.build
+  in
+
+  let res : Path.t Link_mode.Map.Multi.t Memo.Build.t =
+    String.Map.foldi foreign_sources
+      ~init:(Memo.Build.return Link_mode.Map.empty)
+      ~f:(fun obj { byte; native } acc ->
+        let open Memo.Build.O in
+        match (byte, native) with
+        | Some source, None ->
+          let+ build_file = build_file obj Link_mode.Byte source
+          and+ acc = acc in
+          Link_mode.Map.Multi.cons acc Link_mode.Byte build_file
+        | None, Some source ->
+          let+ build_file = build_file obj Link_mode.Native source
+          and+ acc = acc in
+          Link_mode.Map.Multi.cons acc Link_mode.Native build_file
+        | Some source_byte, Some source_native ->
+          let+ build_file_byte = build_file obj Link_mode.Byte source_byte
+          and+ build_file_native = build_file obj Link_mode.Native source_native
+          and+ acc = acc in
+          let acc =
+            Link_mode.Map.Multi.cons acc Link_mode.Byte build_file_byte
           in
-          let dst =
-            Path.Build.relative dir (obj ^ mode_str ^ ctx.lib_config.ext_obj)
-          in
-          let stubs = src.Foreign.Source.stubs in
-          let extra_flags = include_dir_flags ~expander ~dir src.stubs in
-          let extra_deps =
-            let open Action_builder.O in
-            let+ () = Dep_conf_eval.unnamed stubs.extra_deps ~expander in
-            Command.Args.empty
-          in
-          let include_flags =
-            Command.Args.S [ includes; extra_flags; Dyn extra_deps ]
-          in
-          let build_file =
-            match Foreign.Source.language src with
-            | C -> build_c ~kind:Foreign_language.C
-            | Cxx -> build_c ~kind:Foreign_language.Cxx
-          in
-          build_file ~sctx ~dir ~expander ~include_flags (loc, src, dst)))
-  |> List.flatten
+          Link_mode.Map.Multi.cons acc Link_mode.Native build_file_native
+        | _, _ -> failwith ""
+        (* let open Memo.Build.O in let b = Option.map byte ~f:(build_file obj
+           Link_mode.Byte) |> Option.value ~default:Memo.Build.return in let n =
+           Option.map native ~f:(build_file obj Link_mode.Byte) in
+           Link_mode.Map.Multi.cons *))
+    (* |> Link_mode.Map.Memo.parallel_map ~f:(fun _ a -> a) *)
+  in
+
+  res
+
+(* String.Map.to_list_map foreign_sources ~f:(fun obj modes ->
+   Foreign.Source.For_mode.to_list_map modes ~f:(fun _mode (loc, src) -> (*
+   Mode.to_string (Foreign.Source.mode ) *) (* TODO ulysse *) let mode_str =
+   match _mode with | Only_byte -> "_byte" | _ -> "" in let dst =
+   Path.Build.relative dir (obj ^ mode_str ^ ctx.lib_config.ext_obj) in let
+   stubs = src.Foreign.Source.stubs in let extra_flags = include_dir_flags
+   ~expander ~dir src.stubs in let extra_deps = let open Action_builder.O in
+   let+ () = Dep_conf_eval.unnamed stubs.extra_deps ~expander in
+   Command.Args.empty in let include_flags = Command.Args.S [ includes;
+   extra_flags; Dyn extra_deps ] in let build_file = match
+   Foreign.Source.language src with | C -> build_c ~kind:Foreign_language.C |
+   Cxx -> build_c ~kind:Foreign_language.Cxx in build_file ~sctx ~dir ~expander
+   ~include_flags (loc, src, dst))) |> List.flatten *)

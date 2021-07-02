@@ -63,7 +63,7 @@ let programs ~modules ~(exes : Executables.t) =
 let o_files sctx ~dir ~expander ~(exes : Executables.t) ~linkages ~dir_contents
     ~requires_compile =
   if not (Executables.has_foreign exes) then
-    Memo.Build.return []
+    Memo.Build.return Link_mode.Map.empty
   else
     let what =
       if List.is_empty exes.buildable.Dune_file.Buildable.foreign_stubs then
@@ -87,9 +87,10 @@ let o_files sctx ~dir ~expander ~(exes : Executables.t) ~linkages ~dir_contents
     let+ o_files =
       Foreign_rules.build_o_files ~sctx ~dir ~expander
         ~requires:requires_compile ~dir_contents ~foreign_sources
-      |> Memo.Build.all_concurrently
+      (* |> Memo.Build.all_concurrently *)
     in
-    List.map o_files ~f:Path.build
+    let res : Path.t Link_mode.Map.Multi.t = o_files in
+    res
 
 let with_empty_intf ~sctx ~dir module_ =
   let name =
@@ -208,7 +209,14 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
       o_files sctx ~dir ~expander ~exes ~linkages ~dir_contents
         ~requires_compile
     in
-    let* () = Check_rules.add_files sctx ~dir o_files in
+    (* TODO ulysse shorter ? *)
+    let* () =
+      Check_rules.add_files sctx ~dir
+        (Link_mode.Map.find o_files Link_mode.Byte |> Option.value ~default:[])
+    and* () =
+      Check_rules.add_files sctx ~dir
+        (Link_mode.Map.find o_files Link_mode.Native |> Option.value ~default:[])
+    in
     Exe.build_and_link_many cctx ~programs ~linkages ~link_args ~o_files
       ~promote:exes.promote ~embed_in_plugin_libraries
   in
