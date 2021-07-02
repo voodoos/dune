@@ -133,7 +133,7 @@ let exe_path_from_name cctx ~name ~(linkage : Linkage.t) =
 
 let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
     ~promote ?(link_args = Action_builder.return Command.Args.empty)
-    ?(o_files = []) cctx =
+    ?(o_files = Link_mode.Map.empty) cctx =
   let sctx = CC.super_context cctx in
   let ctx = SC.context sctx in
   let dir = CC.dir cctx in
@@ -149,6 +149,16 @@ let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
       |> Action_builder.dyn_paths_unit
     in
     let+ fdo_linker_script_flags = Fdo.Linker_script.flags fdo_linker_script in
+    let linkage_mode =
+      if Link_mode.(equal linkage.mode Byte_with_stubs_statically_linked_in)
+      then
+        Link_mode.Byte
+      else
+        linkage.mode
+    in
+    let o_files =
+      Link_mode.Map.find o_files linkage_mode |> Option.value ~default:[]
+    in
     let open Action_builder.With_targets.O in
     (* NB. Below we take care to pass [link_args] last on the command-line for
        the following reason: [link_args] contains the list of foreign libraries
