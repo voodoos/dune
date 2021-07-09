@@ -54,6 +54,11 @@ module Archive = struct
 
     let dll_file archive_name ~dir ~ext_dll =
       Path.Build.relative dir (sprintf "dll%s%s" archive_name ext_dll)
+
+    let add_mode_suffix t (mode : Mode.t) =
+      match mode with
+      | Byte -> t ^ "_byte"
+      | Native -> t ^ "_native"
   end
 
   (** Archive directories can appear as part of the [(foreign_archives ...)]
@@ -71,7 +76,7 @@ module Archive = struct
 
   let dir_path ~dir t = Path.Build.relative dir t.dir
 
-  let name t = t.name
+  let name t mode = Name.add_mode_suffix t.name mode
 
   let stubs archive_name = { dir = "."; name = Name.stubs archive_name }
 
@@ -80,13 +85,13 @@ module Archive = struct
     let+ s = string in
     { dir = Filename.dirname s; name = Filename.basename s }
 
-  let lib_file ~archive ~dir ~ext_lib =
+  let lib_file ~archive mode ~dir ~ext_lib =
     let dir = dir_path ~dir archive in
-    Name.lib_file archive.name ~dir ~ext_lib
+    Name.lib_file (name archive mode) ~dir ~ext_lib
 
   let dll_file ~archive ~dir ~ext_dll =
     let dir = dir_path ~dir archive in
-    Name.dll_file archive.name ~dir ~ext_dll
+    Name.dll_file (name archive Byte) ~dir ~ext_dll
 end
 
 module Compilation_mode = struct
