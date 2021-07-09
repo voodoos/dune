@@ -1,48 +1,58 @@
 open! Import
 
-type t =
-  | Byte
-  | Native
+module T = struct
+  type t =
+    | Byte
+    | Native
 
-let equal (x : t) (y : t) = Poly.equal x y
+  let equal (x : t) (y : t) = Poly.equal x y
 
-let compare = Poly.compare
+  let compare = Poly.compare
 
-let all = [ Byte; Native ]
+  let all = [ Byte; Native ]
 
-let decode =
-  let open Dune_lang.Decoder in
-  enum [ ("byte", Byte); ("native", Native) ]
+  let decode =
+    let open Dune_lang.Decoder in
+    enum [ ("byte", Byte); ("native", Native) ]
 
-let choose byte native = function
-  | Byte -> byte
-  | Native -> native
+  let choose byte native = function
+    | Byte -> byte
+    | Native -> native
 
-let to_string = choose "byte" "native"
+  let to_string = choose "byte" "native"
 
-let encode t = Dune_lang.Encoder.string (to_string t)
+  let encode t = Dune_lang.Encoder.string (to_string t)
 
-let to_dyn t =
-  let open Dyn.Encoder in
-  constr (to_string t) []
+  let to_dyn t =
+    let open Dyn.Encoder in
+    constr (to_string t) []
 
-let compiled_unit_ext = choose (Cm_kind.ext Cmo) (Cm_kind.ext Cmx)
+  let compiled_unit_ext = choose (Cm_kind.ext Cmo) (Cm_kind.ext Cmx)
 
-let compiled_lib_ext = choose ".cma" ".cmxa"
+  let compiled_lib_ext = choose ".cma" ".cmxa"
 
-let plugin_ext = choose ".cma" ".cmxs"
+  let plugin_ext = choose ".cma" ".cmxs"
 
-let variant = choose Variant.byte Variant.native
+  let variant = choose Variant.byte Variant.native
 
-let cm_kind = choose Cm_kind.Cmo Cmx
+  let cm_kind = choose Cm_kind.Cmo Cmx
 
-let exe_ext = choose ".bc" ".exe"
+  let exe_ext = choose ".bc" ".exe"
 
-let of_cm_kind : Cm_kind.t -> t = function
-  | Cmi
-  | Cmo ->
-    Byte
-  | Cmx -> Native
+  let of_cm_kind : Cm_kind.t -> t = function
+    | Cmi
+    | Cmo ->
+      Byte
+    | Cmx -> Native
+end
+
+include T
+module M = Map.Make (T)
+
+module Map = struct
+  include M
+  module Memo = Memo.Build.Make_map_traversals (M)
+end
 
 module Dict = struct
   let mode_equal = equal

@@ -45,7 +45,7 @@ val build_and_link :
   -> promote:Rule.Promote.t option
   -> ?link_args:
        Command.Args.without_targets Command.Args.t Mode.Dict.t Action_builder.t
-  -> ?o_files:Path.t list Link_mode.Map.t
+  -> ?o_files:Path.t list Mode.Map.t
   -> ?embed_in_plugin_libraries:(Loc.t * Lib_name.t) list
   -> Compilation_context.t
   -> unit Memo.Build.t
@@ -56,7 +56,7 @@ val build_and_link_many :
   -> promote:Rule.Promote.t option
   -> ?link_args:
        Command.Args.without_targets Command.Args.t Mode.Dict.t Action_builder.t
-  -> ?o_files:Path.t list Link_mode.Map.t
+  -> ?o_files:Path.t list Mode.Map.t
   -> ?embed_in_plugin_libraries:(Loc.t * Lib_name.t) list
   -> Compilation_context.t
   -> unit Memo.Build.t

@@ -162,8 +162,8 @@ let ocamlmklib ~loc ~c_library_flags ~sctx ~dir ~expander ~o_files ~archive_name
       List.map targets ~f:(fun f -> f archive_name_for_native)
     in
     (* TODO ulysse optimize when both are the same*)
-    let o_files_byte = Link_mode.Map.Multi.find o_files Link_mode.Byte in
-    let o_files_native = Link_mode.Map.Multi.find o_files Link_mode.Native in
+    let o_files_byte = Mode.Map.Multi.find o_files Mode.Byte in
+    let o_files_native = Mode.Map.Multi.find o_files Mode.Native in
     let* () =
       build ~custom ~sandbox archive_name_for_bytes o_files_byte
         targets_for_byte
@@ -237,7 +237,7 @@ let build_stubs lib ~cctx ~dir ~expander ~requires ~dir_contents
   in
   (* TODO let* () = Check_rules.add_files sctx ~dir lib_o_files in *)
   match (vlib_stubs_o_files, lib_o_files) with
-  | [], o_files when Link_mode.Map.is_empty o_files -> Memo.Build.return ()
+  | [], o_files when Mode.Map.is_empty o_files -> Memo.Build.return ()
   | _, o_files ->
     (* TODO vlibs *)
     let ctx = Super_context.context sctx in
