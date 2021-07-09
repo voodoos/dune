@@ -109,6 +109,7 @@ let eval_foreign_stubs (d : _ Dir_with_dune.t) foreign_stubs
                    |> List.map ~f:(fun s -> sprintf "%S" s)))
             ])
   in
+  (* List (for each stub field) of maps from their obj name to the sources *)
   let stub_maps = List.map foreign_stubs ~f:eval in
   (* we need to check that sources are used by only one foreign_stubs field
      except if they are used in different compilation modes *)

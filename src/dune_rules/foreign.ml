@@ -96,7 +96,8 @@ end
 
 module Compilation_mode = struct
   type t =
-  | All | Only of Mode.t
+    | All
+    | Only of Mode.t
 
   let decode =
     let open Dune_lang.Decoder in
@@ -104,6 +105,7 @@ module Compilation_mode = struct
     match mode with
     | None -> All
     | Some m -> Only m
+
   let equal = ( = )
 end
 
@@ -209,20 +211,16 @@ module Source = struct
   let make ~stubs ~path = { stubs; path }
 
   module For_mode = struct
-    type 'a t =
-      { byte : 'a option
-      ; native : 'a option
-      }
+    type 'a t = 'a option Mode.Dict.t
 
-    let empty = { byte = None; native = None }
+    let empty = Mode.Dict.{ byte = None; native = None }
 
-    let map ~f { byte; native } =
-      { byte = Option.map ~f byte; native = Option.map ~f native }
+    let map ~f Mode.Dict.{ byte; native } =
+      Mode.Dict.{ byte = Option.map ~f byte; native = Option.map ~f native }
 
-    let to_list_map ~f { byte; native } =
+    let to_list_map ~f Mode.Dict.{ byte; native } =
       match (byte, native) with
-      | Some byte, Some _
-        when mode (snd byte) = Compilation_mode.All ->
+      | Some byte, Some _ when mode (snd byte) = Compilation_mode.All ->
         [ f Compilation_mode.All byte ]
       | Some byte, Some native ->
         [ f (Compilation_mode.Only Byte) byte
@@ -242,6 +240,7 @@ module Source = struct
 
     let add_source t source_with_loc =
       let open Compilation_mode in
+      let open Mode.Dict in
       let source = snd source_with_loc in
       match (mode (snd source_with_loc), t) with
       | Only Byte, { byte = None; native } ->
@@ -254,7 +253,7 @@ module Source = struct
       | _, { native = Some (loc, src2); _ } ->
         Error (loc, [ source.path; src2.path ])
 
-    let union { byte; native } t2 =
+    let union Mode.Dict.{ byte; native } t2 =
       let open Result.O in
       let* t =
         Option.map byte ~f:(add_source t2) |> Option.value ~default:(Ok t2)

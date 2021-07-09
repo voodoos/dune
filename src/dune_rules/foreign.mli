@@ -79,7 +79,8 @@ end
     libraries, but not both. *)
 module Compilation_mode : sig
   type t =
-    | All | Only of Mode.t
+    | All
+    | Only of Mode.t
 
   val equal : t -> t -> bool
 end
@@ -178,10 +179,7 @@ module Source : sig
   val make : stubs:Stubs.t -> path:Path.Build.t -> t
 
   module For_mode : sig
-    type 'a t =
-      { byte : 'a option
-      ; native : 'a option
-      }
+    type 'a t = 'a option Mode.Dict.t
 
     val empty : 'a t
 
