@@ -208,9 +208,7 @@ let build_o_files ~sctx ~(foreign_sources : Foreign.Sources.t)
     (* TODO ulysse *)
     let mode_str =
       match mode with
-      | Link_mode.Byte
-      | Byte_with_stubs_statically_linked_in ->
-        "_byte"
+      | Mode.Byte -> "_byte"
       | _ -> ""
     in
     let dst =
@@ -235,28 +233,25 @@ let build_o_files ~sctx ~(foreign_sources : Foreign.Sources.t)
     |> Memo.Build.map ~f:Path.build
   in
 
-  let res : Path.t Link_mode.Map.Multi.t Memo.Build.t =
-    String.Map.foldi foreign_sources
-      ~init:(Memo.Build.return Link_mode.Map.empty)
+  let res : Path.t Mode.Map.Multi.t Memo.Build.t =
+    String.Map.foldi foreign_sources ~init:(Memo.Build.return Mode.Map.empty)
       ~f:(fun obj { byte; native } acc ->
         let open Memo.Build.O in
         match (byte, native) with
         | Some source, None ->
-          let+ build_file = build_file obj Link_mode.Byte source
+          let+ build_file = build_file obj Mode.Byte source
           and+ acc = acc in
-          Link_mode.Map.Multi.cons acc Link_mode.Byte build_file
+          Mode.Map.Multi.cons acc Mode.Byte build_file
         | None, Some source ->
-          let+ build_file = build_file obj Link_mode.Native source
+          let+ build_file = build_file obj Mode.Native source
           and+ acc = acc in
-          Link_mode.Map.Multi.cons acc Link_mode.Native build_file
+          Mode.Map.Multi.cons acc Mode.Native build_file
         | Some source_byte, Some source_native ->
-          let+ build_file_byte = build_file obj Link_mode.Byte source_byte
-          and+ build_file_native = build_file obj Link_mode.Native source_native
+          let+ build_file_byte = build_file obj Mode.Byte source_byte
+          and+ build_file_native = build_file obj Mode.Native source_native
           and+ acc = acc in
-          let acc =
-            Link_mode.Map.Multi.cons acc Link_mode.Byte build_file_byte
-          in
-          Link_mode.Map.Multi.cons acc Link_mode.Native build_file_native
+          let acc = Mode.Map.Multi.cons acc Mode.Byte build_file_byte in
+          Mode.Map.Multi.cons acc Mode.Native build_file_native
         | _, _ -> failwith ""
         (* let open Memo.Build.O in let b = Option.map byte ~f:(build_file obj
            Link_mode.Byte) |> Option.value ~default:Memo.Build.return in let n =

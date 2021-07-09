@@ -30,6 +30,17 @@ val to_string : t -> string
 
 val to_dyn : t -> Dyn.t
 
+module Map : sig
+  type mode := t
+
+  include Map.S with type key = t
+
+  module Memo : sig
+    val parallel_map :
+      'a t -> f:(mode -> 'a -> 'b Memo.Build.t) -> 'b t Memo.Build.t
+  end
+end
+
 module Dict : sig
   type mode = t
 
