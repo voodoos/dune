@@ -132,12 +132,15 @@ let exe_path_from_name cctx ~name ~(linkage : Linkage.t) =
   Path.Build.relative (CC.dir cctx) (name ^ linkage.ext)
 
 let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
-    ~promote ?(link_args = Action_builder.return Command.Args.empty)
+    ~promote
+    ?(link_args =
+      Action_builder.return (Mode.Dict.make_both Command.Args.empty))
     ?(o_files = Link_mode.Map.empty) cctx =
   let sctx = CC.super_context cctx in
   let ctx = SC.context sctx in
   let dir = CC.dir cctx in
   let mode = Link_mode.mode linkage.mode in
+  (* Printf.eprintf "Linkage: %s\n%!" @@ Mode.to_string mode; *)
   let exe = exe_path_from_name cctx ~name ~linkage in
   let top_sorted_cms = Cm_files.top_sorted_cms cm_files ~mode in
   let fdo_linker_script = Fdo.Linker_script.create cctx (Path.build exe) in
@@ -206,7 +209,8 @@ let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
               (Action_builder.map top_sorted_cms ~f:(fun x ->
                    Command.Args.Deps x))
           ; fdo_linker_script_flags
-          ; Dyn link_args
+          ; Dyn
+              (Action_builder.map link_args ~f:(fun l -> Mode.Dict.get l mode))
           ]
   in
   SC.add_rule sctx ~loc ~dir
