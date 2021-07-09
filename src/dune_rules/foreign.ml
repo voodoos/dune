@@ -96,18 +96,14 @@ end
 
 module Compilation_mode = struct
   type t =
-    | Both_byte_and_native
-    | Only_byte
-    | Only_native
+  | All | Only of Mode.t
 
   let decode =
     let open Dune_lang.Decoder in
     let+ mode = field_o "mode" Mode.decode in
     match mode with
-    | None -> Both_byte_and_native
-    | Some Byte -> Only_byte
-    | Some Native -> Only_native
-
+    | None -> All
+    | Some m -> Only m
   let equal = ( = )
 end
 
@@ -141,7 +137,7 @@ module Stubs = struct
     }
 
   let make ~loc ~language ~names ~flags =
-    let mode = Compilation_mode.Both_byte_and_native in
+    let mode = Compilation_mode.All in
     { loc; language; mode; names; flags; include_dirs = []; extra_deps = [] }
 
   let decode_stubs =
@@ -226,11 +222,11 @@ module Source = struct
     let to_list_map ~f { byte; native } =
       match (byte, native) with
       | Some byte, Some _
-        when mode (snd byte) = Compilation_mode.Both_byte_and_native ->
-        [ f Compilation_mode.Both_byte_and_native byte ]
+        when mode (snd byte) = Compilation_mode.All ->
+        [ f Compilation_mode.All byte ]
       | Some byte, Some native ->
-        [ f Compilation_mode.Only_byte byte
-        ; f Compilation_mode.Only_native native
+        [ f (Compilation_mode.Only Byte) byte
+        ; f (Compilation_mode.Only Native) native
         ]
       | Some s, None
       | None, Some s ->
@@ -240,19 +236,19 @@ module Source = struct
     let from_source source =
       let open Compilation_mode in
       match mode (snd source) with
-      | Only_byte -> { empty with byte = Some source }
-      | Only_native -> { empty with native = Some source }
-      | Both_byte_and_native -> { byte = Some source; native = Some source }
+      | Only Byte -> { empty with byte = Some source }
+      | Only Native -> { empty with native = Some source }
+      | All -> { byte = Some source; native = Some source }
 
     let add_source t source_with_loc =
       let open Compilation_mode in
       let source = snd source_with_loc in
       match (mode (snd source_with_loc), t) with
-      | Only_byte, { byte = None; native } ->
+      | Only Byte, { byte = None; native } ->
         Ok { byte = Some source_with_loc; native }
-      | Only_native, { byte; native = None } ->
+      | Only Native, { byte; native = None } ->
         Ok { byte; native = Some source_with_loc }
-      | Both_byte_and_native, { byte = None; native = None } ->
+      | All, { byte = None; native = None } ->
         Ok { byte = Some source_with_loc; native = Some source_with_loc }
       | _, { byte = Some (loc, src2); _ }
       | _, { native = Some (loc, src2); _ } ->
