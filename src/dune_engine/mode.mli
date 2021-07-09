@@ -40,6 +40,8 @@ module Dict : sig
 
   val equal : ('a -> 'a -> bool) -> 'a t -> 'a t -> bool
 
+  val both_equal : ?compare:('a -> 'a -> bool) -> 'a t -> bool
+
   val exists : 'a t -> f:('a -> bool) -> bool
 
   val for_all : 'a t -> f:('a -> bool) -> bool

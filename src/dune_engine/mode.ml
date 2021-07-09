@@ -54,6 +54,8 @@ module Dict = struct
 
   let equal f { byte; native } t = f byte t.byte && f native t.native
 
+  let both_equal ?(compare = ( = )) t = compare t.byte t.native
+
   let exists { byte; native } ~f = f byte || f native
 
   let for_all { byte; native } ~f = f byte && f native
