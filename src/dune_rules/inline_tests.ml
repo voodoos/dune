@@ -176,7 +176,9 @@ include Sub_system.Register_end_point (struct
       Exe.build_and_link cctx
         ~program:{ name; main_module_name = Module.name main_module; loc }
         ~linkages
-        ~link_args:(Action_builder.return (Command.Args.A "-linkall"))
+        ~link_args:
+          (Action_builder.return
+             (Command.Args.A "-linkall" |> Mode.Dict.make_both))
         ~promote:None
     in
     let flags =
