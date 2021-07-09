@@ -43,7 +43,7 @@ module Buildable : sig
     ; modules : Ordered_set_lang.t
     ; modules_without_implementation : Ordered_set_lang.t
     ; libraries : Lib_dep.t list
-    ; foreign_archives : (Loc.t * Foreign.Archive.t) list
+    ; foreign_archives : (Loc.t * Foreign.Archive.t) list Mode.Dict.t
     ; foreign_stubs : Foreign.Stubs.t list
     ; preprocess : Preprocess.With_instrumentation.t Preprocess.Per_module.t
     ; preprocessor_deps : Dep_conf.t list
@@ -160,12 +160,12 @@ module Library : sig
   val has_foreign : t -> bool
 
   (** The list of all foreign archives, including the foreign stubs archive. *)
-  val foreign_archives : t -> Foreign.Archive.t list
+  val foreign_archives : t -> Mode.t -> Foreign.Archive.t list
 
   (** The [lib*.a] files of all foreign archives, including foreign stubs. [dir]
       is the directory the library is declared in. *)
   val foreign_lib_files :
-    t -> dir:Path.Build.t -> ext_lib:string -> Path.Build.t list
+    t -> mode:Mode.t -> dir:Path.Build.t -> ext_lib:string -> Path.Build.t list
 
   (** The path to a library archive. [dir] is the directory the library is
       declared in. *)

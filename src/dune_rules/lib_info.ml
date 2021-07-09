@@ -275,7 +275,7 @@ type 'path t =
   ; archives : 'path list Mode.Dict.t
   ; plugins : 'path list Mode.Dict.t
   ; foreign_objects : 'path list Source.t
-  ; foreign_archives : 'path list
+  ; foreign_archives : 'path list Mode.Dict.t
   ; native_archives : 'path native_archives
   ; foreign_dll_files : 'path list
   ; jsoo_runtime : 'path list
@@ -479,7 +479,7 @@ let map t ~path_kind ~f_path ~f_obj_dir =
   ; archives = mode_list t.archives
   ; plugins = mode_list t.plugins
   ; foreign_objects = Source.map ~f:(List.map ~f) t.foreign_objects
-  ; foreign_archives = List.map ~f t.foreign_archives
+  ; foreign_archives = Mode.Dict.map t.foreign_archives ~f:(List.map ~f)
   ; foreign_dll_files = List.map ~f t.foreign_dll_files
   ; native_archives
   ; jsoo_runtime = List.map ~f t.jsoo_runtime
@@ -548,7 +548,7 @@ let to_dyn path
     ; ("archives", Mode.Dict.to_dyn (list path) archives)
     ; ("plugins", Mode.Dict.to_dyn (list path) plugins)
     ; ("foreign_objects", Source.to_dyn (list path) foreign_objects)
-    ; ("foreign_archives", list path foreign_archives)
+    ; ("foreign_archives", Mode.Dict.to_dyn (list path) foreign_archives)
     ; ("native_archives", dyn_of_native_archives path native_archives)
     ; ("foreign_dll_files", list path foreign_dll_files)
     ; ("jsoo_runtime", list path jsoo_runtime)

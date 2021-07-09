@@ -71,7 +71,9 @@ end = struct
         let files = Foreign_sources.for_lib foreign_sources ~name in
         Foreign.Sources.object_files files ~dir ~ext_obj
       else
-        Memo.Build.return (Lib_info.foreign_archives lib)
+        (* TODO ulysse check *)
+        let foreign_archives = Lib_info.foreign_archives lib in
+        Memo.Build.return (foreign_archives.byte @ foreign_archives.native)
     in
     List.concat_map
       ~f:(List.map ~f:(fun f -> (Section.Lib, f)))

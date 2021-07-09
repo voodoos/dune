@@ -35,7 +35,7 @@ module Lib = struct
     let _, components = Lib_name.split name in
     Path.Local.L.relative Path.Local.root components
 
-  let encode ~package_root { info; main_module_name; modules } =
+  let encode ~dune_version ~package_root { info; main_module_name; modules } =
     let open Dune_lang.Encoder in
     let no_loc f (_loc, x) = f x in
     let path = Dpath.Local.encode ~dir:package_root in
@@ -72,6 +72,12 @@ module Lib = struct
       | Needs_module_info _ ->
         Code_error.raise "caller must set native archives to known value" []
     in
+    let foreign_archives =
+      if dune_version >= (3, 0) then
+        mode_paths "foreign_archives" (Lib_info.foreign_archives info)
+      else
+        paths "foreign_archives" (Lib_info.foreign_archives info).byte
+    in
     record_fields
     @@ [ field "name" Lib_name.encode name
        ; field "kind" Lib_kind.encode kind
@@ -81,7 +87,9 @@ module Lib = struct
        ; mode_paths "archives" archives
        ; mode_paths "plugins" plugins
        ; paths "foreign_objects" foreign_objects
-       ; paths "foreign_archives" (Lib_info.foreign_archives info)
+         (* TODO ulysse: mshinwell: This will presumably need a language version
+            bump *)
+       ; foreign_archives
        ; paths "native_archives" native_archives
        ; paths "jsoo_runtime" jsoo_runtime
        ; Lib_dep.L.field_encode requires ~name:"requires"
@@ -137,11 +145,16 @@ module Lib = struct
        and+ plugins = mode_paths "plugins"
        and+ foreign_objects = paths "foreign_objects"
        and+ foreign_archives =
-         if lang.version >= (2, 0) then
-           paths "foreign_archives"
+         if lang.version >= (3, 0) then
+           (* TODO ulysse: mshinwell: FIXMEif lang.version >= (2, 0) then paths
+              "foreign_archives" else*)
+           mode_paths "foreign_archives"
+         else if lang.version >= (2, 0) then
+           let+ paths = paths "foreign_archives" in
+           Mode.Dict.make_both paths
          else
            let+ m = mode_paths "foreign_archives" in
-           m.byte
+           Mode.Dict.make_both m.byte
        and+ native_archives = paths "native_archives"
        and+ jsoo_runtime = paths "jsoo_runtime"
        and+ requires = field_l "requires" (Lib_dep.decode ~allow_re_export:true)
@@ -388,7 +401,9 @@ let encode ~dune_version { entries; name; version; dir; sections; sites; files }
     Lib_name.Map.to_list_map entries ~f:(fun _name e ->
         match e with
         | Entry.Library lib ->
-          list (Dune_lang.atom "library" :: Lib.encode lib ~package_root:dir)
+          list
+            (Dune_lang.atom "library"
+             :: Lib.encode ~dune_version lib ~package_root:dir)
         | Deprecated_library_name d ->
           list
             (Dune_lang.atom "deprecated_library_name"

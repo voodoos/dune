@@ -128,7 +128,8 @@ let setup_rules t =
     Exe.build_and_link t.cctx ~program ~linkages:[ linkage ]
       ~link_args:
         (Action_builder.return
-           (Command.Args.As [ "-linkall"; "-warn-error"; "-31" ]))
+           (Command.Args.As [ "-linkall"; "-warn-error"; "-31" ]
+           |> Mode.Dict.make_both))
       ~promote:None
   in
   let src = Exe.exe_path t.cctx ~program ~linkage in

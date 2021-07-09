@@ -482,11 +482,14 @@ module Link_params = struct
 
   let get (t : lib) (mode : Link_mode.t) =
     let open Memo.Build.O in
-    let lib_files = Lib_info.foreign_archives t.info
+    let lib_files =
+      Mode.Dict.get (Lib_info.foreign_archives t.info) (Link_mode.mode mode)
     and dll_files = Lib_info.foreign_dll_files t.info in
     (* OCaml library archives [*.cma] and [*.cmxa] are directly listed in the
        command line. *)
     let deps = Mode.Dict.get (Lib_info.archives t.info) (Link_mode.mode mode) in
+    (* Printf.eprintf "DEPS: [%s]\n%!" (String.concat ~sep:"; " (List.map deps
+       ~f:Path.to_string)); *)
     (* Foreign archives [lib*.a] and [dll*.so] and native archives [lib*.a] are
        declared as hidden dependencies, and appropriate [-I] flags are provided
        separately to help the linker locate them. *)
