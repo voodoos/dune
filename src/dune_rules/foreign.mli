@@ -79,9 +79,7 @@ end
     libraries, but not both. *)
 module Compilation_mode : sig
   type t =
-    | Both_byte_and_native
-    | Only_byte
-    | Only_native
+    | All | Only of Mode.t
 
   val equal : t -> t -> bool
 end
