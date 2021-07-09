@@ -184,7 +184,7 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
   let+ () =
     (* Building an archive for foreign stubs, we link the corresponding object
        files directly to improve perf. *)
-    let link_args =
+    let create_link_args mode =
       let open Action_builder.O in
       let link_flags =
         let link_deps = Dep_conf_eval.unnamed ~expander exes.link_deps in
@@ -193,17 +193,25 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
               ~standard:(Action_builder.return [])
       in
       let+ flags = link_flags in
+      let ext_lib = ctx.lib_config.ext_lib in
+      let foreign_archives =
+        Mode.Dict.get exes.buildable.foreign_archives mode
+      in
       Command.Args.S
         [ Command.Args.As flags
         ; Command.Args.S
-            (let ext_lib = ctx.lib_config.ext_lib in
-             let foreign_archives =
-               exes.buildable.foreign_archives |> List.map ~f:snd
-             in
-             List.map foreign_archives ~f:(fun archive ->
-                 let lib = Foreign.Archive.lib_file ~archive ~dir ~ext_lib in
+            (List.map foreign_archives ~f:(fun (_, archive) ->
+                 let lib =
+                   Foreign.Archive.lib_file ~archive mode ~dir ~ext_lib
+                 in
                  Command.Args.S [ A "-cclib"; Dep (Path.build lib) ]))
         ]
+    in
+    let link_args =
+      let open Action_builder.O in
+      let* byte = create_link_args Byte in
+      let+ native = create_link_args Native in
+      Mode.Dict.make ~byte ~native
     in
     let* o_files =
       o_files sctx ~dir ~expander ~exes ~linkages ~dir_contents
