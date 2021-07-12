@@ -123,23 +123,18 @@ let eval_foreign_stubs (d : _ Dir_with_dune.t) foreign_stubs
       let modes =
         List.fold_left l ~init:Mode.Map.empty
           ~f:(fun acc (mode, loc, stubs, path) ->
-            let mode =
-              match mode with
-              | Foreign.Compilation_mode.All ->
-                User_error.raise ~loc
-                  [ Pp.textf
-                      "Foreign stubs fields without a mode subfield cannot be \
-                       mixed with foreign stubs field with a mode subfield. \
-                       Please specify which mode this field is for."
-                  ]
-              | Only mode -> mode
-            in
             let source = Foreign.Source.make ~stubs ~loc path in
-            match Mode.Map.add acc mode source with
-            | Ok acc -> acc
-            | Error s ->
-              multiple_sources_error ~name ~loc
-                ~paths:[ path; Foreign.Source.path s ])
+            let add mode acc =
+              match Mode.Map.add acc mode source with
+              | Ok acc -> acc
+              | Error s ->
+                multiple_sources_error ~name ~loc
+                  ~paths:[ path; Foreign.Source.path s ]
+            in
+            match mode with
+            | Foreign.Compilation_mode.All ->
+              add Mode.Byte acc |> add Mode.Native
+            | Only mode -> add mode acc)
       in
       Foreign.Source.Few modes)
 
@@ -206,19 +201,54 @@ let make (d : _ Dir_with_dune.t) ~(sources : Foreign.Sources.Unresolved.t)
     String.Map.of_list_map_exn exes ~f:(fun (exes, m) ->
         (snd (List.hd exes.names), m))
   in
-  ignore lib_config;
-  (* TOD ulysse restore checks let () = let objects = List.concat [ List.map
-     libs ~f:snd ; List.map foreign_libs ~f:(fun (_, (_, sources)) -> sources) ;
-     List.map exes ~f:snd ] |> List.concat_map ~f:(fun (sources :
-     Foreign.Sources.t) -> String.Map.values sources |> List.map ~f:
-     (Foreign.Source.For_mode.map ~f:(fun (loc, source) -> (
-     Foreign.Source.object_name source ^ lib_config.ext_obj , loc )))) in ignore
-     objects (* TODO CHECK DUPLICATES *) (* match String.Map.of_list objects
-     with | Ok _ -> () | Error (path, loc, another_loc) -> User_error.raise ~loc
-     [ Pp.textf "Multiple definitions for the same object file %S. See another \
-     definition at %s." path (Loc.to_file_colon_line another_loc) ] ~hints: [
-     Pp.text "You can avoid the name clash by renaming one of the objects, or \
-     by placing it into a different directory." ] *) in *)
+  let () =
+    (* Check that no obj is used twice for the same build mode *)
+    let objects =
+      List.concat
+        [ List.map libs ~f:snd
+        ; List.map foreign_libs ~f:(fun (_, (_, sources)) -> sources)
+        ; List.map exes ~f:snd
+        ]
+      |> List.concat_map
+           ~f:
+             (String.Map.to_list_map ~f:(fun _obj for_mode ->
+                  let str_for_mode mode source =
+                    let unique_name =
+                      Printf.sprintf "%s__%s__%s" (Mode.to_string mode)
+                        (Foreign.Source.object_name source)
+                        lib_config.ext_obj
+                    in
+                    let debug_name =
+                      Printf.sprintf "%s%s"
+                        (Foreign.Source.object_name source)
+                        lib_config.ext_obj
+                    in
+                    (unique_name, (debug_name, source.loc))
+                  in
+                  match for_mode with
+                  | Foreign.Source.All s ->
+                    [ str_for_mode Byte s; str_for_mode Native s ]
+                  | Few for_modes ->
+                    Mode.Map.to_list_map for_modes ~f:(fun mode source ->
+                        str_for_mode mode source)))
+      |> List.flatten
+    in
+    match String.Map.of_list objects with
+    | Ok _ -> ()
+    | Error (_path, (name, loc), (_, another_loc)) ->
+      User_error.raise ~loc
+        [ Pp.textf
+            "Multiple definitions for the same object file %S. See another \
+             definition at %s."
+            name
+            (Loc.to_file_colon_line another_loc)
+        ]
+        ~hints:
+          [ Pp.text
+              "You can avoid the name clash by renaming one of the objects, or \
+               by placing it into a different directory."
+          ]
+  in
   { libraries; archives; executables }
 
 let make (d : _ Dir_with_dune.t) ~include_subdirs ~(lib_config : Lib_config.t)
