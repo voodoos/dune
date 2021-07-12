@@ -95,18 +95,49 @@ module Archive = struct
 end
 
 module Compilation_mode = struct
-  type t =
-    | All
-    | Only of Mode.t
+  module T = struct
+    type t =
+      | All
+      | Only of Mode.t
 
-  let decode =
-    let open Dune_lang.Decoder in
-    let+ mode = field_o "mode" Mode.decode in
-    match mode with
-    | None -> All
-    | Some m -> Only m
+    let decode =
+      let open Dune_lang.Decoder in
+      let+ mode = field_o "mode" Mode.decode in
+      match mode with
+      | None -> All
+      | Some m -> Only m
 
-  let equal = ( = )
+    let equal = Poly.equal
+
+    let to_string = function
+      | All -> "all"
+      | Only Byte -> "byte"
+      | Only Native -> "native"
+
+    let to_dyn t =
+      let open Dyn.Encoder in
+      constr (to_string t) []
+
+    let compare = Poly.compare
+  end
+
+  include T
+
+  module Map = struct
+    include Map.Make (T)
+
+    let add_exn t k e =
+      if mem t All then
+        Code_error.raise "Map.add_exn: key All cannot coexist with others" []
+      else
+        add_exn t k e
+
+    let add t k e =
+      if mem t All then
+        Error e
+      else
+        add t k e
+  end
 end
 
 module Stubs = struct
@@ -192,10 +223,13 @@ module Source = struct
      individual source file *)
   type t =
     { stubs : Stubs.t
+    ; loc : Loc.t
     ; path : Path.Build.t
     }
 
-  type with_loc = Loc.t * t
+  type for_mode =
+    | All of t
+    | Few of t Mode.Map.t
 
   let language t = t.stubs.language
 
@@ -208,62 +242,11 @@ module Source = struct
   let object_name t =
     t.path |> Path.Build.split_extension |> fst |> Path.Build.basename
 
-  let make ~stubs ~path = { stubs; path }
-
-  module For_mode = struct
-    type 'a t = 'a option Mode.Dict.t
-
-    let empty = Mode.Dict.{ byte = None; native = None }
-
-    let map ~f Mode.Dict.{ byte; native } =
-      Mode.Dict.{ byte = Option.map ~f byte; native = Option.map ~f native }
-
-    let to_list_map ~f Mode.Dict.{ byte; native } =
-      match (byte, native) with
-      | Some byte, Some _ when mode (snd byte) = Compilation_mode.All ->
-        [ f Compilation_mode.All byte ]
-      | Some byte, Some native ->
-        [ f (Compilation_mode.Only Byte) byte
-        ; f (Compilation_mode.Only Native) native
-        ]
-      | Some s, None
-      | None, Some s ->
-        [ f (mode (snd s)) s ]
-      | None, None -> []
-
-    let from_source source =
-      let open Compilation_mode in
-      match mode (snd source) with
-      | Only Byte -> { empty with byte = Some source }
-      | Only Native -> { empty with native = Some source }
-      | All -> { byte = Some source; native = Some source }
-
-    let add_source t source_with_loc =
-      let open Compilation_mode in
-      let open Mode.Dict in
-      let source = snd source_with_loc in
-      match (mode (snd source_with_loc), t) with
-      | Only Byte, { byte = None; native } ->
-        Ok { byte = Some source_with_loc; native }
-      | Only Native, { byte; native = None } ->
-        Ok { byte; native = Some source_with_loc }
-      | All, { byte = None; native = None } ->
-        Ok { byte = Some source_with_loc; native = Some source_with_loc }
-      | _, { byte = Some (loc, src2); _ }
-      | _, { native = Some (loc, src2); _ } ->
-        Error (loc, [ source.path; src2.path ])
-
-    let union Mode.Dict.{ byte; native } t2 =
-      let open Result.O in
-      let* t =
-        Option.map byte ~f:(add_source t2) |> Option.value ~default:(Ok t2)
-      in
-      Option.map native ~f:(add_source t2) |> Option.value ~default:(Ok t)
-  end
+  let make ~stubs ~loc path = { stubs; loc; path }
 end
 
 module Sources = struct
-  type t = Source.with_loc Source.For_mode.t String.Map.t
+  type t = Source.for_mode String.Map.t
 
   let object_files t ~dir ~ext_obj =
     String.Map.keys t

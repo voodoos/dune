@@ -139,6 +139,7 @@ let impl sctx ~(lib : Dune_file.Library.t) ~scope =
             |> Foreign_sources.for_lib ~name
             |> Foreign.Sources.object_files ~ext_obj ~dir
             |> List.map ~f:Path.build
+            (* TODO ulysse check *)
           in
           (modules, foreign_objects)
       in

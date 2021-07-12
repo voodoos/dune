@@ -94,7 +94,7 @@ let include_dir_flags ~expander ~dir (stubs : Foreign.Stubs.t) =
            in
            Command.Args.S [ A "-I"; Path include_dir; dep_args ])))
 
-let build_c ~kind ~sctx ~dir ~expander ~include_flags (loc, src, dst) =
+let build_c ~kind ~sctx ~dir ~expander ~include_flags (src, dst) =
   let ctx = Super_context.context sctx in
   let project = Super_context.find_scope_by_dir sctx dir |> Scope.project in
   let use_standard_flags = Dune_project.use_standard_c_and_cxx_flags project in
@@ -133,7 +133,7 @@ let build_c ~kind ~sctx ~dir ~expander ~include_flags (loc, src, dst) =
       && Option.is_none use_standard_flags
       && (not is_vendored) && not has_standard
     then
-      User_warning.emit ~loc
+      User_warning.emit ~loc:src.loc
         [ Pp.text
             "The flag set for these foreign sources overrides the `:standard` \
              set of flags. However the flags in this standard set are still \
@@ -156,7 +156,7 @@ let build_c ~kind ~sctx ~dir ~expander ~include_flags (loc, src, dst) =
     | Other _ -> [ A "-o"; Target dst ]
   in
   let+ () =
-    Super_context.add_rule sctx ~loc
+    Super_context.add_rule sctx ~loc:src.loc
       ~dir
         (* With sandboxing we get errors like: bar.c:2:19: fatal error: foo.cxx:
            No such file or directory #include "foo.cxx". (These errors happen
@@ -202,12 +202,14 @@ let build_o_files ~sctx ~(foreign_sources : Foreign.Sources.t)
             ])
       ]
   in
-  let build_file obj mode (loc, src) =
+  let build_file obj mode src =
     (* TODO ulysse *)
     let mode_str =
+      let open Foreign.Compilation_mode in
       match mode with
-      | Mode.Byte -> "_byte"
-      | _ -> ""
+      | Only Byte -> "_byte"
+      | Only Native -> "_native"
+      | All -> ""
     in
     let dst =
       Path.Build.relative dir (obj ^ mode_str ^ ctx.lib_config.ext_obj)
@@ -227,35 +229,26 @@ let build_o_files ~sctx ~(foreign_sources : Foreign.Sources.t)
       | C -> build_c ~kind:Foreign_language.C
       | Cxx -> build_c ~kind:Foreign_language.Cxx
     in
-    build_file ~sctx ~dir ~expander ~include_flags (loc, src, dst)
+    build_file ~sctx ~dir ~expander ~include_flags (src, dst)
     |> Memo.Build.map ~f:Path.build
   in
 
   let res : Path.t Mode.Map.Multi.t Memo.Build.t =
     String.Map.foldi foreign_sources ~init:(Memo.Build.return Mode.Map.empty)
-      ~f:(fun obj { byte; native } acc ->
+      ~f:(fun obj for_mode acc ->
         let open Memo.Build.O in
-        match (byte, native) with
-        | Some source, None ->
-          let+ build_file = build_file obj Mode.Byte source
+        let open Foreign.Compilation_mode in
+        match for_mode with
+        | All source ->
+          let cons mode elt acc = Mode.Map.Multi.cons acc mode elt in
+          let+ build_file = build_file obj All source
           and+ acc = acc in
-          Mode.Map.Multi.cons acc Mode.Byte build_file
-        | None, Some source ->
-          let+ build_file = build_file obj Mode.Native source
-          and+ acc = acc in
-          Mode.Map.Multi.cons acc Mode.Native build_file
-        | Some source_byte, Some source_native ->
-          let+ build_file_byte = build_file obj Mode.Byte source_byte
-          and+ build_file_native = build_file obj Mode.Native source_native
-          and+ acc = acc in
-          let acc = Mode.Map.Multi.cons acc Mode.Byte build_file_byte in
-          Mode.Map.Multi.cons acc Mode.Native build_file_native
-        | _, _ -> failwith ""
-        (* let open Memo.Build.O in let b = Option.map byte ~f:(build_file obj
-           Link_mode.Byte) |> Option.value ~default:Memo.Build.return in let n =
-           Option.map native ~f:(build_file obj Link_mode.Byte) in
-           Link_mode.Map.Multi.cons *))
-    (* |> Link_mode.Map.Memo.parallel_map ~f:(fun _ a -> a) *)
+          cons Mode.Byte build_file acc |> cons Mode.Native build_file
+        | Few modes ->
+          Mode.Map.foldi modes ~init:acc ~f:(fun mode source acc ->
+              let+ build_file = build_file obj (Only mode) source
+              and+ acc = acc in
+              Mode.Map.Multi.cons acc mode build_file))
   in
 
   res
