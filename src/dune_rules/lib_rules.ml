@@ -23,7 +23,7 @@ let build_lib (lib : Library.t) ~native_archives ~sctx ~expander ~flags ~dir
   Memo.Build.Result.iter (Context.compiler ctx mode) ~f:(fun compiler ->
       let target = Library.archive lib ~dir ~ext:(Mode.compiled_lib_ext mode) in
       let stubs_flags =
-        List.concat_map (Library.foreign_archives lib mode) ~f:(fun archive ->
+        List.concat_map (Library.foreign_archives lib) ~f:(fun archive ->
             let lname =
               "-l" ^ Foreign.Archive.(name archive mode |> Name.to_string)
             in
@@ -263,8 +263,7 @@ let build_shared lib ~native_archives ~sctx ~dir ~flags =
         let ext = Mode.plugin_ext Native in
         Library.archive lib ~dir ~ext
       in
-      (* TODO ulysse check: only native ? *)
-      let foreign_archives = lib.buildable.foreign_archives.native in
+      let foreign_archives = lib.buildable.foreign_archives in
       let include_flags_for_relative_foreign_archives =
         Command.Args.S
           (List.map foreign_archives ~f:(fun (_loc, archive) ->

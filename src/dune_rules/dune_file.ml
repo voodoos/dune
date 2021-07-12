@@ -153,7 +153,7 @@ module Buildable = struct
     ; modules : Ordered_set_lang.t
     ; modules_without_implementation : Ordered_set_lang.t
     ; libraries : Lib_dep.t list
-    ; foreign_archives : (Loc.t * Foreign.Archive.t) list Mode.Dict.t
+    ; foreign_archives : (Loc.t * Foreign.Archive.t) list
     ; foreign_stubs : Foreign.Stubs.t list
     ; preprocess : Preprocess.With_instrumentation.t Preprocess.Per_module.t
     ; preprocessor_deps : Dep_conf.t list
@@ -306,8 +306,6 @@ module Buildable = struct
            the "lib" prefix, however, since standard linkers require it). *)
         | Some name -> (loc, Foreign.Archive.stubs name) :: foreign_archives
     in
-    (* TODO ulysse check *)
-    let foreign_archives = Mode.Dict.make_both foreign_archives in
     { loc
     ; preprocess
     ; preprocessor_deps
@@ -324,8 +322,7 @@ module Buildable = struct
     }
 
   let has_foreign t =
-    List.is_non_empty t.foreign_stubs
-    || Mode.Dict.exists t.foreign_archives ~f:List.is_non_empty
+    List.is_non_empty t.foreign_stubs || List.is_non_empty t.foreign_archives
 end
 
 module Public_lib = struct
@@ -755,19 +752,19 @@ module Library = struct
 
   let has_foreign t = Buildable.has_foreign t.buildable
 
-  let foreign_archives t mode =
+  let foreign_archives t =
     (if List.is_empty t.buildable.foreign_stubs then
       []
     else
       [ Foreign.Archive.stubs (Lib_name.Local.to_string (snd t.name)) ])
-    @ List.map ~f:snd (Mode.Dict.get t.buildable.foreign_archives mode)
+    @ List.map ~f:snd t.buildable.foreign_archives
 
   let foreign_lib_files t ~mode ~dir ~ext_lib =
-    List.map (foreign_archives t mode) ~f:(fun archive ->
+    List.map (foreign_archives t) ~f:(fun archive ->
         Foreign.Archive.lib_file ~archive mode ~dir ~ext_lib)
 
   let foreign_dll_files t ~dir ~ext_dll =
-    List.map (foreign_archives t Byte) ~f:(fun archive ->
+    List.map (foreign_archives t) ~f:(fun archive ->
         Foreign.Archive.dll_file ~archive ~dir ~ext_dll)
 
   let archive_basename t ~ext = Lib_name.Local.to_string (snd t.name) ^ ext

@@ -194,9 +194,7 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
       in
       let+ flags = link_flags in
       let ext_lib = ctx.lib_config.ext_lib in
-      let foreign_archives =
-        Mode.Dict.get exes.buildable.foreign_archives mode
-      in
+      let foreign_archives = exes.buildable.foreign_archives in
       Command.Args.S
         [ Command.Args.As flags
         ; Command.Args.S
