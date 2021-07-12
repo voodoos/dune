@@ -83,6 +83,9 @@ module Compilation_mode : sig
     | Only of Mode.t
 
   val equal : t -> t -> bool
+
+  (* In a Map of Compilation_mode, the [All] key must always be alone *)
+  module Map : Map.S with type key = t
 end
 
 (** A type of foreign library "stubs", which includes all fields of the
@@ -155,18 +158,25 @@ module Library : sig
 end
 
 (** A foreign source file that has a [path] and all information of the
-    corresponding [Foreign.Stubs.t] declaration. *)
+    corresponding [Foreign.Stubs.t] declaration.
+
+    The same source file can correspond to multiple Stubs fields if they are
+    specifying a compilation mode *)
 module Source : sig
   type t =
     { stubs : Stubs.t
+    ; loc : Loc.t
     ; path : Path.Build.t
     }
 
-  type with_loc = Loc.t * t
-
-  val language : t -> Foreign_language.t
+  (* Some sources are built the same for every mod e, some differ *)
+  type for_mode =
+    | All of t
+    | Few of t Mode.Map.t
 
   val mode : t -> Compilation_mode.t
+
+  val language : t -> Foreign_language.t
 
   val flags : t -> Ordered_set_lang.Unexpanded.t
 
@@ -174,33 +184,15 @@ module Source : sig
 
   (* The name of the corresponding object file; for example, [name] for a source
      file [some/path/name.cpp]. *)
+  (* TODO should take a mode argument return with the _byte / _native*)
   val object_name : t -> string
 
-  val make : stubs:Stubs.t -> path:Path.Build.t -> t
-
-  module For_mode : sig
-    type 'a t = 'a option Mode.Dict.t
-
-    val empty : 'a t
-
-    val map : f:('a -> 'b) -> 'a t -> 'b t
-
-    val to_list_map :
-      f:(Compilation_mode.t -> with_loc -> 'b) -> with_loc t -> 'b list
-
-    val from_source : with_loc -> with_loc t
-
-    val add_source :
-      with_loc t -> with_loc -> (with_loc t, Loc.t * Path.Build.t list) result
-
-    val union :
-      with_loc t -> with_loc t -> (with_loc t, Loc.t * Path.Build.t list) result
-  end
+  val make : stubs:Stubs.t -> loc:Loc.t -> Path.Build.t -> t
 end
 
 (** A map from object names to the corresponding sources. *)
 module Sources : sig
-  type t = Source.with_loc Source.For_mode.t String.Map.t
+  type t = Source.for_mode String.Map.t
 
   val object_files :
     t -> dir:Path.Build.t -> ext_obj:string -> Path.Build.t list

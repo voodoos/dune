@@ -64,7 +64,7 @@ let eval_foreign_stubs (d : _ Dir_with_dune.t) foreign_stubs
              (foreign_library ...) stanza."
         ]
   in
-  let eval (stubs : Foreign.Stubs.t) =
+  let eval acc (stubs : Foreign.Stubs.t) =
     let language = stubs.language in
     let standard : (Loc.t * string) String.Map.t =
       String.Map.filter_mapi sources ~f:(fun name srcs ->
@@ -77,7 +77,7 @@ let eval_foreign_stubs (d : _ Dir_with_dune.t) foreign_stubs
       Ordered_set_lang.Unordered_string.eval_loc stubs.names ~key:Fun.id
         ~standard ~parse:(fun ~loc:_ -> Fun.id)
     in
-    String.Map.map names ~f:(fun (loc, s) ->
+    String.Map.fold ~init:acc names ~f:(fun (loc, s) acc ->
         let name = valid_name language ~loc s in
         let basename = Filename.basename s in
         if name <> basename then
@@ -94,12 +94,12 @@ let eval_foreign_stubs (d : _ Dir_with_dune.t) foreign_stubs
             List.filter_map candidates ~f:(fun (l, path) ->
                 Option.some_if (Foreign_language.equal l language) path)
           with
-          | [ path ] -> Some (loc, Foreign.Source.make ~stubs ~path)
+          | [ path ] -> Some (stubs.mode, loc, stubs, path)
           | [] -> None
           | _ :: _ :: _ as paths -> multiple_sources_error ~name ~loc ~paths
         in
         match source with
-        | Some source -> Foreign.Source.For_mode.from_source source
+        | Some source -> String.Map.Multi.cons acc name source
         | None ->
           User_error.raise ~loc
             [ Pp.textf "Object %S has no source; %s must be present." name
@@ -109,16 +109,39 @@ let eval_foreign_stubs (d : _ Dir_with_dune.t) foreign_stubs
                    |> List.map ~f:(fun s -> sprintf "%S" s)))
             ])
   in
-  (* List (for each stub field) of maps from their obj name to the sources *)
-  let stub_maps = List.map foreign_stubs ~f:eval in
-  (* we need to check that sources are used by only one foreign_stubs field
-     except if they are used in different compilation modes *)
-  List.fold_left stub_maps ~init:String.Map.empty ~f:(fun sources source_map ->
-      String.Map.union sources source_map ~f:(fun name a b ->
-          let res = Foreign.Source.For_mode.union a b in
-          match res with
-          | Error (loc, paths) -> multiple_sources_error ~name ~loc ~paths
-          | Ok r -> Some r))
+  (* A map from objects name to the various stubs referencing them and
+     associated sources*)
+  let stub_maps = List.fold_left ~init:String.Map.empty foreign_stubs ~f:eval in
+  (* We now check that no object file has more than one source for the same mode
+     and classify them using the Foreign.Source.for_mode variant *)
+  String.Map.mapi stub_maps ~f:(fun name -> function
+    | [] ->
+      Code_error.raise "An object name does not correspond to any stubs" []
+    | [ (Foreign.Compilation_mode.All, loc, stubs, source_path) ] ->
+      Foreign.Source.(All (make ~stubs ~loc source_path))
+    | l ->
+      let modes =
+        List.fold_left l ~init:Mode.Map.empty
+          ~f:(fun acc (mode, loc, stubs, path) ->
+            let mode =
+              match mode with
+              | Foreign.Compilation_mode.All ->
+                User_error.raise ~loc
+                  [ Pp.textf
+                      "Foreign stubs fields without a mode subfield cannot be \
+                       mixed with foreign stubs field with a mode subfield. \
+                       Please specify which mode this field is for."
+                  ]
+              | Only mode -> mode
+            in
+            let source = Foreign.Source.make ~stubs ~loc path in
+            match Mode.Map.add acc mode source with
+            | Ok acc -> acc
+            | Error s ->
+              multiple_sources_error ~name ~loc
+                ~paths:[ path; Foreign.Source.path s ])
+      in
+      Foreign.Source.Few modes)
 
 let check_no_qualified (loc, include_subdirs) =
   if include_subdirs = Dune_file.Include_subdirs.Include Qualified then
@@ -183,30 +206,19 @@ let make (d : _ Dir_with_dune.t) ~(sources : Foreign.Sources.Unresolved.t)
     String.Map.of_list_map_exn exes ~f:(fun (exes, m) ->
         (snd (List.hd exes.names), m))
   in
-  let () =
-    let objects =
-      List.concat
-        [ List.map libs ~f:snd
-        ; List.map foreign_libs ~f:(fun (_, (_, sources)) -> sources)
-        ; List.map exes ~f:snd
-        ]
-      |> List.concat_map ~f:(fun (sources : Foreign.Sources.t) ->
-             String.Map.values sources
-             |> List.map
-                  ~f:
-                    (Foreign.Source.For_mode.map ~f:(fun (loc, source) ->
-                         ( Foreign.Source.object_name source ^ lib_config.ext_obj
-                         , loc ))))
-    in
-    ignore objects
-    (* TODO CHECK DUPLICATES *)
-    (* match String.Map.of_list objects with | Ok _ -> () | Error (path, loc,
-       another_loc) -> User_error.raise ~loc [ Pp.textf "Multiple definitions
-       for the same object file %S. See another \ definition at %s." path
-       (Loc.to_file_colon_line another_loc) ] ~hints: [ Pp.text "You can avoid
-       the name clash by renaming one of the objects, or \ by placing it into a
-       different directory." ] *)
-  in
+  ignore lib_config;
+  (* TOD ulysse restore checks let () = let objects = List.concat [ List.map
+     libs ~f:snd ; List.map foreign_libs ~f:(fun (_, (_, sources)) -> sources) ;
+     List.map exes ~f:snd ] |> List.concat_map ~f:(fun (sources :
+     Foreign.Sources.t) -> String.Map.values sources |> List.map ~f:
+     (Foreign.Source.For_mode.map ~f:(fun (loc, source) -> (
+     Foreign.Source.object_name source ^ lib_config.ext_obj , loc )))) in ignore
+     objects (* TODO CHECK DUPLICATES *) (* match String.Map.of_list objects
+     with | Ok _ -> () | Error (path, loc, another_loc) -> User_error.raise ~loc
+     [ Pp.textf "Multiple definitions for the same object file %S. See another \
+     definition at %s." path (Loc.to_file_colon_line another_loc) ] ~hints: [
+     Pp.text "You can avoid the name clash by renaming one of the objects, or \
+     by placing it into a different directory." ] *) in *)
   { libraries; archives; executables }
 
 let make (d : _ Dir_with_dune.t) ~include_subdirs ~(lib_config : Lib_config.t)
