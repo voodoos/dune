@@ -24,76 +24,6 @@ let possible_sources ~language obj ~dune_version =
         (Foreign_language.equal lang language && dune_version >= version)
         (obj ^ "." ^ ext))
 
-module Archive = struct
-  module Name = struct
-    include String
-
-    let to_string t = t
-
-    let path ~dir t = Path.Build.relative dir t
-
-    let decode =
-      Dune_lang.Decoder.plain_string (fun ~loc s ->
-          match s with
-          | "."
-          | ".." ->
-            User_error.raise ~loc
-              [ Pp.textf "%S is not a valid archive name." s ]
-          | fn when String.exists fn ~f:Path.is_dir_sep ->
-            User_error.raise ~loc
-              [ Pp.textf "Path separators are not allowed in archive names." ]
-          | fn -> fn)
-
-    let stubs archive_name = archive_name ^ "_stubs"
-
-    let lib_file_prefix = "lib"
-
-    let lib_file archive_name ~dir ~ext_lib =
-      Path.Build.relative dir
-        (sprintf "%s%s%s" lib_file_prefix archive_name ext_lib)
-
-    let dll_file archive_name ~dir ~ext_dll =
-      Path.Build.relative dir (sprintf "dll%s%s" archive_name ext_dll)
-
-    let add_mode_suffix t (mode : Mode.t) =
-      match mode with
-      | Byte -> t ^ "_byte"
-      | Native -> t ^ "_native"
-  end
-
-  (** Archive directories can appear as part of the [(foreign_archives ...)]
-      fields. For example, in [(foreign_archives some/dir/lib1 lib2)], the
-      archive [some/dir/lib1] has the directory [some/dir], whereas the archive
-      [lib2] does not specify the directory and is assumed to be located in [.]. *)
-  module Dir = struct
-    type t = string
-  end
-
-  type t =
-    { dir : Dir.t
-    ; name : Name.t
-    }
-
-  let dir_path ~dir t = Path.Build.relative dir t.dir
-
-  let name t mode = Name.add_mode_suffix t.name mode
-
-  let stubs archive_name = { dir = "."; name = Name.stubs archive_name }
-
-  let decode =
-    let open Dune_lang.Decoder in
-    let+ s = string in
-    { dir = Filename.dirname s; name = Filename.basename s }
-
-  let lib_file ~archive mode ~dir ~ext_lib =
-    let dir = dir_path ~dir archive in
-    Name.lib_file (name archive mode) ~dir ~ext_lib
-
-  let dll_file ~archive ~dir ~ext_dll =
-    let dir = dir_path ~dir archive in
-    Name.dll_file (name archive Byte) ~dir ~ext_dll
-end
-
 module Compilation_mode = struct
   module T = struct
     type t =
@@ -138,6 +68,77 @@ module Compilation_mode = struct
       else
         add t k e
   end
+end
+
+module Archive = struct
+  module Name = struct
+    include String
+
+    let to_string t = t
+
+    let path ~dir t = Path.Build.relative dir t
+
+    let decode =
+      Dune_lang.Decoder.plain_string (fun ~loc s ->
+          match s with
+          | "."
+          | ".." ->
+            User_error.raise ~loc
+              [ Pp.textf "%S is not a valid archive name." s ]
+          | fn when String.exists fn ~f:Path.is_dir_sep ->
+            User_error.raise ~loc
+              [ Pp.textf "Path separators are not allowed in archive names." ]
+          | fn -> fn)
+
+    let lib_file_prefix = "lib"
+
+    let lib_file archive_name ~dir ~ext_lib =
+      Path.Build.relative dir
+        (sprintf "%s%s%s" lib_file_prefix archive_name ext_lib)
+
+    let dll_file archive_name ~dir ~ext_dll =
+      Path.Build.relative dir (sprintf "dll%s%s" archive_name ext_dll)
+
+    let add_mode_suffix t (mode : Compilation_mode.t) =
+      match mode with
+      | All -> t
+      | Only Byte -> t ^ "_byte"
+      | Only Native -> t ^ "_native"
+
+    let stubs archive_name = archive_name ^ "_stubs"
+  end
+
+  (** Archive directories can appear as part of the [(foreign_archives ...)]
+      fields. For example, in [(foreign_archives some/dir/lib1 lib2)], the
+      archive [some/dir/lib1] has the directory [some/dir], whereas the archive
+      [lib2] does not specify the directory and is assumed to be located in [.]. *)
+  module Dir = struct
+    type t = string
+  end
+
+  type t =
+    { dir : Dir.t
+    ; name : Name.t
+    }
+
+  let dir_path ~dir t = Path.Build.relative dir t.dir
+
+  let name t mode = Name.add_mode_suffix t.name mode
+
+  let stubs archive_name = { dir = "."; name = Name.stubs archive_name }
+
+  let decode =
+    let open Dune_lang.Decoder in
+    let+ s = string in
+    { dir = Filename.dirname s; name = Filename.basename s }
+
+  let lib_file ~archive mode ~dir ~ext_lib =
+    let dir = dir_path ~dir archive in
+    Name.lib_file (name archive mode) ~dir ~ext_lib
+
+  let dll_file ~archive ~dir ~ext_dll =
+    let dir = dir_path ~dir archive in
+    Name.dll_file (name archive (All)) ~dir ~ext_dll
 end
 
 module Stubs = struct
@@ -227,9 +228,9 @@ module Source = struct
     ; path : Path.Build.t
     }
 
-  type for_mode =
-    | All of t
-    | Few of t Mode.Map.t
+  type 'a for_mode =
+    | All of 'a
+    | Few of 'a Mode.Map.t
 
   let language t = t.stubs.language
 
@@ -243,10 +244,22 @@ module Source = struct
     t.path |> Path.Build.split_extension |> fst |> Path.Build.basename
 
   let make ~stubs ~loc path = { stubs; loc; path }
+
+  module For_mode = struct
+    type 'a t = 'a for_mode
+
+    let get t ~mode = match t with
+      | All path -> Some path
+      | Few paths -> Mode.Map.find paths mode
+
+    let all t = match t with
+    | All path -> [ path ]
+    | Few paths -> Mode.Map.fold paths ~init:[] ~f:(fun path acc -> path :: acc) 
+  end
 end
 
 module Sources = struct
-  type t = Source.for_mode String.Map.t
+  type t = Source.t Source.for_mode String.Map.t
 
   let object_files t ~dir ~ext_obj =
     String.Map.keys t
