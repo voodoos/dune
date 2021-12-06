@@ -135,12 +135,12 @@ let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
     ~promote
     ?(link_args =
       Action_builder.return (Mode.Dict.make_both Command.Args.empty))
-    ?(o_files = Mode.Map.empty) cctx =
+    ?(o_files = []) cctx =
   let sctx = CC.super_context cctx in
   let ctx = SC.context sctx in
   let dir = CC.dir cctx in
   let mode = Link_mode.mode linkage.mode in
-  (* Printf.eprintf "Linkage: %s\n%!" @@ Mode.to_string mode; *)
+  Printf.eprintf "Linkage: %s\n%!" @@ Mode.to_string mode;
   let exe = exe_path_from_name cctx ~name ~linkage in
   let top_sorted_cms = Cm_files.top_sorted_cms cm_files ~mode in
   let fdo_linker_script = Fdo.Linker_script.create cctx (Path.build exe) in
@@ -152,7 +152,7 @@ let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
       |> Action_builder.dyn_paths_unit
     in
     let+ fdo_linker_script_flags = Fdo.Linker_script.flags fdo_linker_script in
-    let o_files = Mode.Map.find o_files mode |> Option.value ~default:[] in
+    let o_files = List.filter_map o_files ~f:(Foreign.Source.For_mode.get ~mode) in
     let open Action_builder.With_targets.O in
     (* NB. Below we take care to pass [link_args] last on the command-line for
        the following reason: [link_args] contains the list of foreign libraries

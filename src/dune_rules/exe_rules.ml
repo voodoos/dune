@@ -63,7 +63,7 @@ let programs ~modules ~(exes : Executables.t) =
 let o_files sctx ~dir ~expander ~(exes : Executables.t) ~linkages ~dir_contents
     ~requires_compile =
   if not (Executables.has_foreign exes) then
-    Memo.Build.return Mode.Map.empty
+    Memo.Build.return []
   else
     let what =
       if List.is_empty exes.buildable.Dune_file.Buildable.foreign_stubs then
@@ -84,13 +84,8 @@ let o_files sctx ~dir ~expander ~(exes : Executables.t) ~linkages ~dir_contents
       let first_exe = first_exe exes in
       Foreign_sources.for_exes foreign_sources ~first_exe
     in
-    let+ o_files =
       Foreign_rules.build_o_files ~sctx ~dir ~expander
         ~requires:requires_compile ~dir_contents ~foreign_sources
-      (* |> Memo.Build.all_concurrently *)
-    in
-    let res : Path.t Mode.Map.Multi.t = o_files in
-    res
 
 let with_empty_intf ~sctx ~dir module_ =
   let name =
@@ -200,6 +195,7 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
         ; Command.Args.S
             (List.map foreign_archives ~f:(fun (_, archive) ->
                  let lib =
+                  (* TODO ulysse: what if the archive is not mode-dependent ? *)
                    Foreign.Archive.lib_file ~archive mode ~dir ~ext_lib
                  in
                  Command.Args.S [ A "-cclib"; Dep (Path.build lib) ]))
@@ -207,21 +203,19 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
     in
     let link_args =
       let open Action_builder.O in
-      let* byte = create_link_args Byte in
-      let+ native = create_link_args Native in
+      let* byte = create_link_args (Only Byte) in
+      let+ native = create_link_args (Only Native) in
       Mode.Dict.make ~byte ~native
     in
     let* o_files =
       o_files sctx ~dir ~expander ~exes ~linkages ~dir_contents
         ~requires_compile
     in
-    (* TODO ulysse shorter ? *)
     let* () =
-      Check_rules.add_files sctx ~dir
-        (Mode.Map.find o_files Mode.Byte |> Option.value ~default:[])
-    and* () =
-      Check_rules.add_files sctx ~dir
-        (Mode.Map.find o_files Mode.Native |> Option.value ~default:[])
+    List.fold_left o_files ~init:[] ~f:(fun acc fm ->
+      Foreign.Source.For_mode.all fm @ acc)
+      |> Check_rules.add_files sctx ~dir
+
     in
     Exe.build_and_link_many cctx ~programs ~linkages ~link_args ~o_files
       ~promote:exes.promote ~embed_in_plugin_libraries

@@ -235,22 +235,24 @@ let build_o_files ~sctx ~(foreign_sources : Foreign.Sources.t)
     |> Memo.Build.map ~f:Path.build
   in
 
-  let res : Path.t Mode.Map.Multi.t Memo.Build.t =
-    String.Map.foldi foreign_sources ~init:(Memo.Build.return Mode.Map.empty)
+  let res : Path.t Foreign.Source.for_mode list Memo.Build.t =
+    String.Map.foldi foreign_sources ~init:(Memo.Build.return [])
       ~f:(fun obj for_mode acc ->
         let open Memo.Build.O in
         let open Foreign.Compilation_mode in
         match for_mode with
         | All source ->
-          let cons mode elt acc = Mode.Map.Multi.cons acc mode elt in
           let+ build_file = build_file obj All source
           and+ acc = acc in
-          cons Mode.Byte build_file acc |> cons Mode.Native build_file
+          Foreign.Source.All build_file :: acc
         | Few modes ->
-          Mode.Map.foldi modes ~init:acc ~f:(fun mode source acc ->
+          let* acc = acc in
+          let+ modes_paths = Mode.Map.Memo.parallel_map modes ~f:(fun mode source ->
               let+ build_file = build_file obj (Only mode) source
-              and+ acc = acc in
-              Mode.Map.Multi.cons acc mode build_file))
+               in
+              build_file)
+          in
+          Foreign.Source.Few modes_paths :: acc)
   in
 
   res

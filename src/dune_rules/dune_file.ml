@@ -759,9 +759,9 @@ module Library = struct
       [ Foreign.Archive.stubs (Lib_name.Local.to_string (snd t.name)) ])
     @ List.map ~f:snd t.buildable.foreign_archives
 
-  let foreign_lib_files t ~mode ~dir ~ext_lib =
+  let foreign_lib_files t ~dir ~ext_lib =
     List.map (foreign_archives t) ~f:(fun archive ->
-        Foreign.Archive.lib_file ~archive mode ~dir ~ext_lib)
+        Foreign.Archive.lib_file ~archive Foreign.Compilation_mode.All ~dir ~ext_lib)
 
   let foreign_dll_files t ~dir ~ext_dll =
     List.map (foreign_archives t) ~f:(fun archive ->
@@ -835,8 +835,8 @@ module Library = struct
       | Public p -> Public (conf.project, p.package)
     in
     let virtual_library = is_virtual conf in
-    let foreign_archives =
-      Mode.Dict.of_func (foreign_lib_files conf ~dir ~ext_lib)
+    let foreign_archives = 
+      Mode.Dict.make_both (foreign_lib_files conf ~dir ~ext_lib)
     in
     let native_archives =
       let archive = archive ext_lib in
