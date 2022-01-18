@@ -159,7 +159,8 @@ module Buildable = struct
         let flags =
           Option.value ~default:Ordered_set_lang.Unexpanded.standard flags
         in
-        Foreign.Stubs.make ~loc ~language ~names ~flags :: foreign_stubs
+        Foreign.Stubs.make ~loc ~language ~names ~mode:None ~flags
+        :: foreign_stubs
     in
     let+ loc = loc
     and+ project = Dune_project.get_exn ()

@@ -111,13 +111,14 @@ module Stubs = struct
     { loc : Loc.t
     ; language : Foreign_language.t
     ; names : Ordered_set_lang.t
+    ; mode : Mode.t option
     ; flags : Ordered_set_lang.Unexpanded.t
     ; include_dirs : Include_dir.t list
     ; extra_deps : Dep_conf.t list
     }
 
-  let make ~loc ~language ~names ~flags =
-    { loc; language; names; flags; include_dirs = []; extra_deps = [] }
+  let make ~loc ~language ~names ~mode ~flags =
+    { loc; language; names; mode; flags; include_dirs = []; extra_deps = [] }
 
   let decode_stubs =
     let open Dune_lang.Decoder in
@@ -126,6 +127,7 @@ module Stubs = struct
       located (field_o "archive_name" string)
     and+ language = field "language" decode_lang
     and+ names = Ordered_set_lang.field "names"
+    and+ mode = field_o "mode" Mode.decode
     and+ flags = Ordered_set_lang.Unexpanded.field "flags"
     and+ include_dirs =
       field ~default:[] "include_dirs" (repeat Include_dir.decode)
@@ -142,7 +144,7 @@ module Stubs = struct
                (foreign_library ...) stanza."
           ]
     in
-    { loc; language; names; flags; include_dirs; extra_deps }
+    { loc; language; names; mode; flags; include_dirs; extra_deps }
 
   let decode = Dune_lang.Decoder.fields decode_stubs
 end

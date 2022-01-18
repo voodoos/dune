@@ -89,6 +89,7 @@ module Stubs : sig
     { loc : Loc.t
     ; language : Foreign_language.t
     ; names : Ordered_set_lang.t
+    ; mode : Mode.t option
     ; flags : Ordered_set_lang.Unexpanded.t
     ; include_dirs : Include_dir.t list
     ; extra_deps : Dep_conf.t list
@@ -99,6 +100,7 @@ module Stubs : sig
        loc:Loc.t
     -> language:Foreign_language.t
     -> names:Ordered_set_lang.t
+    -> mode:Mode.t option
     -> flags:Ordered_set_lang.Unexpanded.t
     -> t
 
