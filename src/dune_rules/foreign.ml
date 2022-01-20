@@ -24,6 +24,9 @@ let possible_sources ~language obj ~dune_version =
         (Foreign_language.equal lang language && dune_version >= version)
         (obj ^ "." ^ ext))
 
+let add_mode_suffix mode s =
+  String.concat ~sep:"_" [s; Mode.to_string mode]
+
 module Archive = struct
   module Name = struct
     include String
@@ -180,6 +183,7 @@ module Source = struct
   let path t = t.path
 
   let object_name t =
+    (* TODO @FOREIGN for mode *)
     t.path |> Path.Build.split_extension |> fst |> Path.Build.basename
 
   let make ~stubs ~path = { stubs; path }
@@ -189,8 +193,16 @@ module Sources = struct
   type t = (Loc.t * Source.t) String.Map.t Mode.Dict.t
 
   let object_files t ~dir ~ext_obj =
+    let add_mode_suffix mode t = 
     String.Map.keys t
-    |> List.map ~f:(fun c -> Path.Build.relative dir (c ^ ext_obj))
+    |> List.map ~f:(fun c -> Path.Build.relative dir (
+      (add_mode_suffix mode c)
+       ^ ext_obj))
+    in
+    let dict =
+      Mode.Dict.mapi t ~f:add_mode_suffix
+    in
+    List.rev_append dict.byte dict.native
 
   let has_cxx_sources modes (t : t) =
     let search t =
