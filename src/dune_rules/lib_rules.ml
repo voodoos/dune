@@ -208,11 +208,9 @@ let foreign_rules (library : Foreign.Library.t) ~sctx ~expander ~dir
   let standard =
     let project = Super_context.find_scope_by_dir sctx dir |> Scope.project in
     let ctx = Super_context.context sctx in
-    match 
-      Dune_project.use_standard_c_and_cxx_flags project
-    with
-    | Some true when 
-      Foreign.Sources.has_cxx_sources Mode.Dict.Set.all foreign_sources ->
+
+    match Dune_project.use_standard_c_and_cxx_flags project with
+    | Some true when Foreign.Sources.has_cxx_sources foreign_sources ->
       Cxx_flags.get_flags ~for_:Link ctx
     | _ -> Action_builder.return []
   in
@@ -252,7 +250,7 @@ let build_stubs lib ~cctx ~dir ~expander ~requires ~dir_contents
     let standard =
       let project = Super_context.find_scope_by_dir sctx dir |> Scope.project in
       match Dune_project.use_standard_c_and_cxx_flags project with
-      | Some true when Foreign.Sources.has_cxx_sources modes foreign_sources ->
+      | Some true when Foreign.Sources.has_cxx_sources foreign_sources ->
         Cxx_flags.get_flags ~for_:Link ctx
       | _ -> Action_builder.return []
     in

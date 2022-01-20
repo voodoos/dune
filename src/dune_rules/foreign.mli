@@ -164,12 +164,11 @@ end
 (** A map from object names to the corresponding sources. *)
 module Sources : sig
   type t = (Loc.t * Source.t) String.Map.t
-  Mode.Dict.t
 
   val object_files :
     t -> dir:Path.Build.t -> ext_obj:string -> Path.Build.t list
 
-  val has_cxx_sources : Mode.Dict.Set.t -> t -> bool
+  val has_cxx_sources : t -> bool
 
   (** A map from object names to lists of possible language/path combinations. *)
   module Unresolved : sig

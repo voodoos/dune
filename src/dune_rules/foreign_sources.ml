@@ -75,51 +75,43 @@ let eval_foreign_stubs (d : _ Dir_with_dune.t) foreign_stubs
       Ordered_set_lang.Unordered_string.eval_loc stubs.names ~key:Fun.id
         ~standard ~parse:(fun ~loc:_ -> Fun.id)
     in
-    let sources =
-      String.Map.map names ~f:(fun (loc, s) ->
-          let name = valid_name language ~loc s in
-          let basename = Filename.basename s in
-          if name <> basename then
-            User_error.raise ~loc
-              [ Pp.text
-                  "Relative part of stub is not necessary and should be removed. \
-                  To include sources in subdirectories, use the \
-                  (include_subdirs ...) stanza."
-              ];
-          let open Option.O in
-          let source =
-            let* candidates = String.Map.find sources name in
-            match
-              List.filter_map candidates ~f:(fun (l, path) ->
-                  Option.some_if (Foreign_language.equal l language) path)
-            with
-            | [ path ] -> Some (loc, Foreign.Source.make ~stubs ~path)
-            | [] -> None
-            | _ :: _ :: _ as paths -> multiple_sources_error ~name ~loc ~paths
-          in
-          match source with
-          | Some source -> source
-          | None ->
-            User_error.raise ~loc
-              [ Pp.textf "Object %S has no source; %s must be present." name
-                  (String.enumerate_one_of
-                    (Foreign.possible_sources ~language name
-                        ~dune_version:d.dune_version
-                    |> List.map ~f:(fun s -> sprintf "%S" s)))
-              ])
-    in
-    match stubs.mode with
-    | None -> Mode.Dict.make_both sources
-    | Some Byte -> Mode.Dict.make ~byte:sources ~native:String.Map.empty
-    | Some Native -> Mode.Dict.make ~byte:String.Map.empty ~native:sources
-
+    String.Map.map names ~f:(fun (loc, s) ->
+        let name = valid_name language ~loc s in
+        let basename = Filename.basename s in
+        if name <> basename then
+          User_error.raise ~loc
+            [ Pp.text
+                "Relative part of stub is not necessary and should be removed. \
+                 To include sources in subdirectories, use the \
+                 (include_subdirs ...) stanza."
+            ];
+        let open Option.O in
+        let source =
+          let* candidates = String.Map.find sources name in
+          match
+            List.filter_map candidates ~f:(fun (l, path) ->
+                Option.some_if (Foreign_language.equal l language) path)
+          with
+          | [ path ] -> Some (loc, Foreign.Source.make ~stubs ~path)
+          | [] -> None
+          | _ :: _ :: _ as paths -> multiple_sources_error ~name ~loc ~paths
+        in
+        match source with
+        | Some source -> source
+        | None ->
+          User_error.raise ~loc
+            [ Pp.textf "Object %S has no source; %s must be present." name
+                (String.enumerate_one_of
+                   (Foreign.possible_sources ~language name
+                      ~dune_version:d.dune_version
+                   |> List.map ~f:(fun s -> sprintf "%S" s)))
+            ])
   in
   let stub_maps = List.map foreign_stubs ~f:eval in
-  List.fold_left stub_maps ~init:(Mode.Dict.make_both String.Map.empty) ~f:(fun a b ->
-  Mode.Dict.map2 a b ~f:(fun a b ->
+  List.fold_left stub_maps ~init:String.Map.empty ~f:(fun a b ->
       String.Map.union a b ~f:(fun name (loc, src1) (_, src2) ->
           multiple_sources_error ~name ~loc
-            ~paths:Foreign.Source.[ path src1; path src2 ])))
+            ~paths:Foreign.Source.[ path src1; path src2 ]))
 
 let check_no_qualified (loc, include_subdirs) =
   if include_subdirs = Dune_file.Include_subdirs.Include Qualified then
@@ -155,9 +147,8 @@ let make (d : _ Dir_with_dune.t) ~(sources : Foreign.Sources.Unresolved.t)
     in
     List.(rev libs, rev foreign_libs, rev exes)
   in
-  let () = ignore lib_config
-  (* TODO @FOREIGN Ulysse: RE-ENABLE THE CHECk *)
-    (* let objects =
+  let () =
+    let objects =
       List.concat
         [ List.map libs ~f:snd
         ; List.map foreign_libs ~f:(fun (_, (_, sources)) -> sources)
@@ -181,7 +172,7 @@ let make (d : _ Dir_with_dune.t) ~(sources : Foreign.Sources.Unresolved.t)
           [ Pp.text
               "You can avoid the name clash by renaming one of the objects, or \
                by placing it into a different directory."
-          ] *)
+          ]
   in
   (* TODO: Make this more type-safe by switching to non-empty lists. *)
   let executables =
