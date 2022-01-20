@@ -203,7 +203,8 @@ let build_o_files ~sctx ~foreign_sources ~(dir : Path.Build.t) ~expander
             ])
       ]
   in
-  String.Map.to_list_map foreign_sources ~f:(fun obj (loc, src) ->
+  let res = Mode.Dict.map foreign_sources ~f:(fun fs ->
+  String.Map.to_list_map fs ~f:(fun obj (loc, src) ->
       let dst = Path.Build.relative dir (obj ^ ctx.lib_config.ext_obj) in
       let stubs = src.Foreign.Source.stubs in
       let extra_flags = include_dir_flags ~expander ~dir src.stubs in
@@ -225,3 +226,5 @@ let build_o_files ~sctx ~foreign_sources ~(dir : Path.Build.t) ~expander
         | Cxx -> build_c ~kind:Foreign_language.Cxx
       in
       build_file ~sctx ~dir ~expander ~include_flags (loc, src, dst))
+  )
+    in List.rev_append res.byte res.native

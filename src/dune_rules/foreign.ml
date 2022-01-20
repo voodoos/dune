@@ -186,15 +186,20 @@ module Source = struct
 end
 
 module Sources = struct
-  type t = (Loc.t * Source.t) String.Map.t
+  type t = (Loc.t * Source.t) String.Map.t Mode.Dict.t
 
   let object_files t ~dir ~ext_obj =
     String.Map.keys t
     |> List.map ~f:(fun c -> Path.Build.relative dir (c ^ ext_obj))
 
-  let has_cxx_sources (t : t) =
-    String.Map.exists t ~f:(fun (_loc, source) ->
-        Foreign_language.(equal Cxx source.stubs.language))
+  let has_cxx_sources modes (t : t) =
+    let search t =
+      String.Map.exists t ~f:(fun (_loc, source) ->
+        Foreign_language.(equal Cxx source.Source.stubs.language))
+    in
+    modes.Mode.Dict.byte && search t.byte
+    || modes.native && search t.native
+
 
   module Unresolved = struct
     type t = (Foreign_language.t * Path.Build.t) String.Map.Multi.t
