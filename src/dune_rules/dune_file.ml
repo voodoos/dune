@@ -758,7 +758,8 @@ module Library = struct
 
   let foreign_archives t =
     (if List.is_empty t.buildable.foreign_stubs then []
-    else [ Foreign.Archive.stubs (Lib_name.Local.to_string (snd t.name)) ])
+    else (* TODO @ulysse FOREIGN STUBS ?*)
+    [ Foreign.Archive.stubs (Lib_name.Local.to_string (snd t.name)) ])
     @ List.map ~f:snd t.buildable.foreign_archives
 
   let foreign_lib_files t ~dir ~ext_lib =
