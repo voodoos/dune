@@ -58,7 +58,8 @@ let programs ~modules ~(exes : Executables.t) =
 
 let o_files sctx ~dir ~expander ~(exes : Executables.t) ~linkages ~dir_contents
     ~requires_compile =
-  if not (Executables.has_foreign exes) then Memo.return []
+  if not (Executables.has_foreign exes) then
+    Memo.return (Mode.Dict.make_both [])
   else
     let what =
       if List.is_empty exes.buildable.Buildable.foreign_stubs then "archives"
@@ -80,9 +81,9 @@ let o_files sctx ~dir ~expander ~(exes : Executables.t) ~linkages ~dir_contents
     let+ o_files =
       Foreign_rules.build_o_files ~sctx ~dir ~expander
         ~requires:requires_compile ~dir_contents ~foreign_sources
-      |> Memo.all_concurrently
+      |> Mode.Dict.map_concurrently ~f:Memo.all_concurrently
     in
-    List.map o_files ~f:Path.build
+    Mode.Dict.map o_files ~f:(List.map ~f:Path.build)
 
 let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
     ~embed_in_plugin_libraries (exes : Dune_file.Executables.t) =
@@ -205,7 +206,9 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
       o_files sctx ~dir ~expander ~exes ~linkages ~dir_contents
         ~requires_compile
     in
-    let* () = Check_rules.add_files sctx ~dir o_files in
+    (* let () = Mode.Dict.map o_files ~f:(fun o_files -> let* o_files = o_files
+       in Check_rules.add_files sctx ~dir o_files ) in *)
+    (* TODO @FOREIGN *)
     let buildable = exes.Executables.buildable in
     match buildable.Buildable.ctypes with
     | None ->

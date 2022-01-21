@@ -202,8 +202,11 @@ let foreign_rules (library : Foreign.Library.t) ~sctx ~expander ~dir
   let* o_files =
     Foreign_rules.build_o_files ~sctx ~dir ~expander
       ~requires:(Resolve.return []) ~dir_contents ~foreign_sources
-    |> Memo.parallel_map ~f:(Memo.map ~f:Path.build)
+    |> Mode.Dict.map_concurrently ~f:Memo.all_concurrently
   in
+  let o_files = Mode.Dict.map o_files ~f:(List.map ~f:Path.build) in
+  (* TODO @FOREIGN foreign libs are mode independant *)
+  let o_files = o_files.byte in
   let* () = Check_rules.add_files sctx ~dir o_files in
   let standard =
     let project = Super_context.find_scope_by_dir sctx dir |> Scope.project in
@@ -233,8 +236,10 @@ let build_stubs lib ~cctx ~dir ~expander ~requires ~dir_contents
   let* lib_o_files =
     Foreign_rules.build_o_files ~sctx ~dir ~expander ~requires ~dir_contents
       ~foreign_sources
-    |> Memo.parallel_map ~f:(Memo.map ~f:Path.build)
+    |> Mode.Dict.map_concurrently ~f:Memo.all_concurrently
   in
+  let lib_o_files = Mode.Dict.map lib_o_files ~f:(List.map ~f:Path.build) in
+  let lib_o_files = lib_o_files.byte in
   let* () = Check_rules.add_files sctx ~dir lib_o_files in
   match vlib_stubs_o_files @ lib_o_files with
   | [] -> Memo.return ()
