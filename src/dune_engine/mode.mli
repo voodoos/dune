@@ -67,6 +67,8 @@ module Dict : sig
 
   val mapi : 'a t -> f:(mode -> 'a -> 'b) -> 'b t
 
+  val map_concurrently : 'a t -> f:('a -> 'b Memo.Build.t) -> 'b t Memo.Build.t
+
   val iteri : 'a t -> f:(mode -> 'a -> unit) -> unit
 
   val make_both : 'a -> 'a t
