@@ -1,4 +1,5 @@
 (executable
+ (modes native byte_complete)
  (name stubs_exe)
   (foreign_stubs
     (language c)
@@ -9,3 +10,4 @@
     (mode native)
     (flags :standard -DNATIVE_CODE)
     (names c_stubs)))
+ 
