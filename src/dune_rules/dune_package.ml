@@ -133,8 +133,16 @@ module Lib = struct
        and+ archives = mode_paths "archives"
        and+ plugins = mode_paths "plugins"
        and+ foreign_objects = paths "foreign_objects"
-       and+ foreign_archives = mode_paths "foreign_archives"
-       (* TODO @FOREIGN check for lang < 2 *)
+       and+ foreign_archives =
+         if lang.version >= (3, 0) then
+           (* TODO @FOREIGN ADD TESTS *)
+           mode_paths "foreign_archives"
+         else if lang.version >= (2, 0) then
+           let+ paths = paths "foreign_archives" in
+           Mode.Dict.make_both paths
+         else
+           let+ m = mode_paths "foreign_archives" in
+           Mode.Dict.make_both m.byte
        and+ native_archives = paths "native_archives"
        and+ jsoo_runtime = paths "jsoo_runtime"
        and+ requires = field_l "requires" (Lib_dep.decode ~allow_re_export:true)
