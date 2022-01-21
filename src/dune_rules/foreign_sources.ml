@@ -75,41 +75,55 @@ let eval_foreign_stubs (d : _ Dir_with_dune.t) foreign_stubs
       Ordered_set_lang.Unordered_string.eval_loc stubs.names ~key:Fun.id
         ~standard ~parse:(fun ~loc:_ -> Fun.id)
     in
-    String.Map.map names ~f:(fun (loc, s) ->
-        let name = valid_name language ~loc s in
-        let basename = Filename.basename s in
-        if name <> basename then
-          User_error.raise ~loc
-            [ Pp.text
-                "Relative part of stub is not necessary and should be removed. \
-                 To include sources in subdirectories, use the \
-                 (include_subdirs ...) stanza."
-            ];
-        let open Option.O in
-        let source =
-          let* candidates = String.Map.find sources name in
-          match
-            List.filter_map candidates ~f:(fun (l, path) ->
-                Option.some_if (Foreign_language.equal l language) path)
-          with
-          | [ path ] -> Some (loc, Foreign.Source.make ~stubs ~path)
-          | [] -> None
-          | _ :: _ :: _ as paths -> multiple_sources_error ~name ~loc ~paths
+    let names =
+      String.Map.map names ~f:(fun (loc, s) ->
+          let name = valid_name language ~loc s in
+          let basename = Filename.basename s in
+          if name <> basename then
+            User_error.raise ~loc
+              [ Pp.text
+                  "Relative part of stub is not necessary and should be \
+                   removed. To include sources in subdirectories, use the \
+                   (include_subdirs ...) stanza."
+              ];
+          let open Option.O in
+          let source =
+            let* candidates = String.Map.find sources name in
+            match
+              List.filter_map candidates ~f:(fun (l, path) ->
+                  Option.some_if (Foreign_language.equal l language) path)
+            with
+            | [ path ] -> Some (loc, Foreign.Source.make ~stubs ~path)
+            | [] -> None
+            | _ :: _ :: _ as paths -> multiple_sources_error ~name ~loc ~paths
+          in
+          match source with
+          | Some source -> source
+          | None ->
+            User_error.raise ~loc
+              [ Pp.textf "Object %S has no source; %s must be present." name
+                  (String.enumerate_one_of
+                     (Foreign.possible_sources ~language name
+                        ~dune_version:d.dune_version
+                     |> List.map ~f:(fun s -> sprintf "%S" s)))
+              ])
+    in
+    String.Map.fold names ~init:String.Map.empty ~f:(fun (loc, src) acc ->
+        let new_keys =
+          match src.stubs.mode with
+          | None ->
+            Foreign.Source.
+              [ (Mode.Byte, object_name Byte src)
+              ; (Native, object_name Native src)
+              ]
+          | Some mode -> [ (mode, Foreign.Source.object_name mode src) ]
         in
-        match source with
-        | Some source -> source
-        | None ->
-          User_error.raise ~loc
-            [ Pp.textf "Object %S has no source; %s must be present." name
-                (String.enumerate_one_of
-                   (Foreign.possible_sources ~language name
-                      ~dune_version:d.dune_version
-                   |> List.map ~f:(fun s -> sprintf "%S" s)))
-            ])
+        List.fold_left new_keys ~init:acc ~f:(fun acc (mode, k) ->
+            String.Map.add_exn acc k (loc, mode, src)))
   in
   let stub_maps = List.map foreign_stubs ~f:eval in
   List.fold_left stub_maps ~init:String.Map.empty ~f:(fun a b ->
-      String.Map.union a b ~f:(fun name (loc, src1) (_, src2) ->
+      String.Map.union a b ~f:(fun name (loc, _, src1) (_, _, src2) ->
           multiple_sources_error ~name ~loc
             ~paths:Foreign.Source.[ path src1; path src2 ]))
 
@@ -148,31 +162,18 @@ let make (d : _ Dir_with_dune.t) ~(sources : Foreign.Sources.Unresolved.t)
     List.(rev libs, rev foreign_libs, rev exes)
   in
   let () =
-    let objects =
-      List.concat
-        [ List.map libs ~f:snd
-        ; List.map foreign_libs ~f:(fun (_, (_, sources)) -> sources)
-        ; List.map exes ~f:snd
-        ]
-      |> List.concat_map ~f:(fun sources ->
-             String.Map.to_list_map sources ~f:(fun _ (loc, source) ->
-                 (Foreign.Source.object_name source ^ lib_config.ext_obj, loc)))
-    in
-    match String.Map.of_list objects with
-    | Ok _ -> ()
-    | Error (path, loc, another_loc) ->
-      User_error.raise ~loc
-        [ Pp.textf
-            "Multiple definitions for the same object file %S. See another \
-             definition at %s."
-            path
-            (Loc.to_file_colon_line another_loc)
-        ]
-        ~hints:
-          [ Pp.text
-              "You can avoid the name clash by renaming one of the objects, or \
-               by placing it into a different directory."
-          ]
+    ignore lib_config
+    (* TODO @FOREIGN re implement check *)
+    (* let objects = List.concat [ List.map libs ~f:snd ; List.map foreign_libs
+       ~f:(fun (_, (_, sources)) -> sources) ; List.map exes ~f:snd ] |>
+       List.concat_map ~f:(fun sources -> String.Map.to_list_map sources ~f:(fun
+       _ (loc, source) -> (Foreign.Source.object_name source ^
+       lib_config.ext_obj, loc))) in match String.Map.of_list objects with | Ok
+       _ -> () | Error (path, loc, another_loc) -> User_error.raise ~loc [
+       Pp.textf "Multiple definitions for the same object file %S. See another \
+       definition at %s." path (Loc.to_file_colon_line another_loc) ] ~hints: [
+       Pp.text "You can avoid the name clash by renaming one of the objects, or
+       \ by placing it into a different directory." ] *)
   in
   (* TODO: Make this more type-safe by switching to non-empty lists. *)
   let executables =

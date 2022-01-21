@@ -156,14 +156,14 @@ module Source : sig
 
   (* The name of the corresponding object file; for example, [name] for a source
      file [some/path/name.cpp]. *)
-  val object_name : t -> string
+  val object_name : Mode.t -> t -> string
 
   val make : stubs:Stubs.t -> path:Path.Build.t -> t
 end
 
 (** A map from object names to the corresponding sources. *)
 module Sources : sig
-  type t = (Loc.t * Source.t) String.Map.t
+  type t = (Loc.t * Mode.t * Source.t) String.Map.t
 
   val object_files :
     t -> dir:Path.Build.t -> ext_obj:string -> Path.Build.t list
