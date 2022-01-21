@@ -32,7 +32,9 @@ module Archive = struct
 
     let to_string t = t
 
-    let path ~dir t = Path.Build.relative dir t
+    let path ~dir ~mode archive_name =
+      let archive_name = add_mode_suffix mode archive_name in
+      Path.Build.relative dir archive_name
 
     let decode =
       Dune_lang.Decoder.plain_string (fun ~loc s ->
@@ -74,7 +76,7 @@ module Archive = struct
 
   let dir_path ~dir t = Path.Build.relative dir t.dir
 
-  let name t = t.name
+  let name ~mode t = add_mode_suffix mode t.name
 
   let stubs archive_name = { dir = "."; name = Name.stubs archive_name }
 

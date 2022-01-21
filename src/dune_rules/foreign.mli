@@ -42,7 +42,7 @@ module Archive : sig
 
     val to_string : t -> string
 
-    val path : dir:Path.Build.t -> t -> Path.Build.t
+    val path : dir:Path.Build.t -> mode:Mode.t -> t -> Path.Build.t
 
     val decode : t Dune_lang.Decoder.t
 
@@ -61,7 +61,7 @@ module Archive : sig
 
   val dir_path : dir:Path.Build.t -> t -> Path.Build.t
 
-  val name : t -> Name.t
+  val name : mode:Mode.t -> t -> Name.t
 
   val stubs : string -> t
 
