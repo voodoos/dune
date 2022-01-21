@@ -163,7 +163,7 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
     (* Building an archive for foreign stubs, we link the corresponding object
        files directly to improve perf. *)
     let link_deps, sandbox = Dep_conf_eval.unnamed ~expander exes.link_deps in
-    let link_args =
+    let make_link_args ~mode =
       let use_standard_cxx_flags =
         match Dune_project.use_standard_c_and_cxx_flags project with
         | Some true -> Buildable.has_foreign_cxx exes.buildable
@@ -194,7 +194,9 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
              (* XXX: don't these need the msvc hack being done in lib_rules? *)
              (* XXX: also the Command.quote_args being done in lib_rules? *)
              List.map foreign_archives ~f:(fun archive ->
-                 let lib = Foreign.Archive.lib_file ~archive ~dir ~ext_lib in
+                 let lib =
+                   Foreign.Archive.lib_file ~archive ~dir ~ext_lib ~mode
+                 in
                  Command.Args.S [ A "-cclib"; Dep (Path.build lib) ]))
           (* XXX: don't these need the msvc hack being done in lib_rules? *)
           (* XXX: also the Command.quote_args being done in lib_rules? *)
@@ -202,6 +204,7 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
             (List.concat_map ctypes_cclib_flags ~f:(fun f -> [ "-cclib"; f ]))
         ]
     in
+    let link_args = Mode.Dict.of_func make_link_args in
     let* o_files =
       o_files sctx ~dir ~expander ~exes ~linkages ~dir_contents
         ~requires_compile

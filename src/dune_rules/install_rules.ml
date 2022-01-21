@@ -62,7 +62,11 @@ end = struct
         let name = Lib_info.name lib in
         let files = Foreign_sources.for_lib foreign_sources ~name in
         Foreign.Sources.object_files files ~dir ~ext_obj
-      else Memo.return (Lib_info.foreign_archives lib)
+      else
+        Memo.return
+          (let d = Lib_info.foreign_archives lib in
+           (* TODO @FOREIGN check *)
+           List.rev_append d.byte d.native)
     in
     List.concat_map
       ~f:(List.map ~f:(fun f -> (Section.Lib, f)))
@@ -79,7 +83,7 @@ end = struct
       (modes.byte
       && Dynlink_supported.get dynlink ctx.supports_shared_libraries
       && ctx.dynamically_linked_foreign_archives)
-      (Lib_info.foreign_dll_files lib)
+      (Lib_info.foreign_dll_files lib).byte
 
   let lib_install_files sctx ~scope ~dir_contents ~dir ~sub_dir:lib_subdir
       (lib : Library.t) =

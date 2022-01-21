@@ -763,13 +763,13 @@ module Library = struct
       [ Foreign.Archive.stubs (Lib_name.Local.to_string (snd t.name)) ])
     @ List.map ~f:snd t.buildable.foreign_archives
 
-  let foreign_lib_files t ~dir ~ext_lib =
+  let foreign_lib_files t ~dir ~ext_lib ~mode =
     List.map (foreign_archives t) ~f:(fun archive ->
-        Foreign.Archive.lib_file ~archive ~dir ~ext_lib)
+        Foreign.Archive.lib_file ~archive ~dir ~ext_lib ~mode)
 
-  let foreign_dll_files t ~dir ~ext_dll =
+  let foreign_dll_files t ~dir ~ext_dll ~mode =
     List.map (foreign_archives t) ~f:(fun archive ->
-        Foreign.Archive.dll_file ~archive ~dir ~ext_dll)
+        Foreign.Archive.dll_file ~archive ~dir ~ext_dll ~mode)
 
   let archive_basename t ~ext = Lib_name.Local.to_string (snd t.name) ^ ext
 
@@ -833,7 +833,9 @@ module Library = struct
       | Public p -> Public (conf.project, p.package)
     in
     let virtual_library = is_virtual conf in
-    let foreign_archives = foreign_lib_files conf ~dir ~ext_lib in
+    let foreign_archives =
+      Mode.Dict.of_func (foreign_lib_files conf ~dir ~ext_lib)
+    in
     let native_archives =
       let archive = archive ext_lib in
       if virtual_library || not modes.native then Lib_info.Files []
@@ -845,7 +847,9 @@ module Library = struct
       then Lib_info.Files [ archive ]
       else Lib_info.Needs_module_info archive
     in
-    let foreign_dll_files = foreign_dll_files conf ~dir ~ext_dll in
+    let foreign_dll_files =
+      Mode.Dict.of_func (foreign_dll_files conf ~dir ~ext_dll)
+    in
     let exit_module = Option.bind conf.stdlib ~f:(fun x -> x.exit_module) in
     let jsoo_archive =
       (* XXX we shouldn't access the directory of the obj_dir directly. We

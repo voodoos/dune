@@ -482,8 +482,8 @@ module Link_params = struct
        separately to help the linker locate them. *)
     let+ hidden_deps =
       match mode with
-      | Byte | Byte_for_jsoo -> Memo.return dll_files
-      | Byte_with_stubs_statically_linked_in -> Memo.return lib_files
+      | Byte | Byte_for_jsoo -> Memo.return dll_files.byte
+      | Byte_with_stubs_statically_linked_in -> Memo.return lib_files.byte
       | Native ->
         let+ native_archives =
           let+ modules =
@@ -493,13 +493,13 @@ module Link_params = struct
           in
           Lib_info.eval_native_archives_exn t.info ~modules
         in
-        List.rev_append native_archives lib_files
+        List.rev_append native_archives lib_files.native
     in
     let include_dirs =
       let files =
         match mode with
-        | Byte | Byte_for_jsoo -> dll_files
-        | Byte_with_stubs_statically_linked_in | Native -> lib_files
+        | Byte | Byte_for_jsoo -> dll_files.byte
+        | Byte_with_stubs_statically_linked_in | Native -> lib_files.byte
       in
       let files =
         match Lib_info.exit_module t.info with
@@ -599,7 +599,7 @@ module L = struct
   let toplevel_include_paths ts =
     let with_dlls =
       List.filter ts ~f:(fun t ->
-          match Lib_info.foreign_dll_files (info t) with
+          match (Lib_info.foreign_dll_files (info t)).byte with
           | [] -> false
           | _ -> true)
     in

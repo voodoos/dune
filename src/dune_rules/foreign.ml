@@ -49,11 +49,13 @@ module Archive = struct
 
     let lib_file_prefix = "lib"
 
-    let lib_file archive_name ~dir ~ext_lib =
+    let lib_file archive_name ~dir ~ext_lib ~mode =
+      let archive_name = add_mode_suffix mode archive_name in
       Path.Build.relative dir
         (sprintf "%s%s%s" lib_file_prefix archive_name ext_lib)
 
-    let dll_file archive_name ~dir ~ext_dll =
+    let dll_file archive_name ~dir ~ext_dll ~mode =
+      let archive_name = add_mode_suffix mode archive_name in
       Path.Build.relative dir (sprintf "dll%s%s" archive_name ext_dll)
   end
 
@@ -81,13 +83,13 @@ module Archive = struct
     let+ s = string in
     { dir = Filename.dirname s; name = Filename.basename s }
 
-  let lib_file ~archive ~dir ~ext_lib =
+  let lib_file ~archive ~dir ~ext_lib ~mode =
     let dir = dir_path ~dir archive in
-    Name.lib_file archive.name ~dir ~ext_lib
+    Name.lib_file archive.name ~dir ~ext_lib ~mode
 
-  let dll_file ~archive ~dir ~ext_dll =
+  let dll_file ~archive ~dir ~ext_dll ~mode =
     let dir = dir_path ~dir archive in
-    Name.dll_file archive.name ~dir ~ext_dll
+    Name.dll_file archive.name ~dir ~ext_dll ~mode
 end
 
 module Stubs = struct

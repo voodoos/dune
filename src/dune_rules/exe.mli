@@ -48,7 +48,8 @@ end
 (* [link_many] is like [build_and_link_many], but it allows you to share modules
    between executables without requiring an intermediate library. *)
 val link_many :
-     ?link_args:Command.Args.without_targets Command.Args.t Action_builder.t
+     ?link_args:
+       Command.Args.without_targets Command.Args.t Action_builder.t Mode.Dict.t
   -> ?o_files:Path.t list Mode.Dict.t
   -> ?embed_in_plugin_libraries:(Loc.t * Lib_name.t) list
   -> ?sandbox:Sandbox_config.t
@@ -59,7 +60,8 @@ val link_many :
   -> unit Memo.t
 
 val build_and_link :
-     ?link_args:Command.Args.without_targets Command.Args.t Action_builder.t
+     ?link_args:
+       Command.Args.without_targets Command.Args.t Action_builder.t Mode.Dict.t
   -> ?o_files:Path.t list Mode.Dict.t
   -> ?embed_in_plugin_libraries:(Loc.t * Lib_name.t) list
   -> ?sandbox:Sandbox_config.t
@@ -70,7 +72,8 @@ val build_and_link :
   -> unit Memo.t
 
 val build_and_link_many :
-     ?link_args:Command.Args.without_targets Command.Args.t Action_builder.t
+     ?link_args:
+       Command.Args.without_targets Command.Args.t Action_builder.t Mode.Dict.t
   -> ?o_files:Path.t list Mode.Dict.t
   -> ?embed_in_plugin_libraries:(Loc.t * Lib_name.t) list
   -> ?sandbox:Sandbox_config.t

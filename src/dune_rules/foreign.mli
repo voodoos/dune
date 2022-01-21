@@ -50,9 +50,11 @@ module Archive : sig
 
     val lib_file_prefix : string
 
-    val lib_file : t -> dir:Path.Build.t -> ext_lib:string -> Path.Build.t
+    val lib_file :
+      t -> dir:Path.Build.t -> ext_lib:string -> mode:Mode.t -> Path.Build.t
 
-    val dll_file : t -> dir:Path.Build.t -> ext_dll:string -> Path.Build.t
+    val dll_file :
+      t -> dir:Path.Build.t -> ext_dll:string -> mode:Mode.t -> Path.Build.t
   end
 
   type t
@@ -65,9 +67,19 @@ module Archive : sig
 
   val decode : t Dune_lang.Decoder.t
 
-  val lib_file : archive:t -> dir:Path.Build.t -> ext_lib:string -> Path.Build.t
+  val lib_file :
+       archive:t
+    -> dir:Path.Build.t
+    -> ext_lib:string
+    -> mode:Mode.t
+    -> Path.Build.t
 
-  val dll_file : archive:t -> dir:Path.Build.t -> ext_dll:string -> Path.Build.t
+  val dll_file :
+       archive:t
+    -> dir:Path.Build.t
+    -> ext_dll:string
+    -> mode:Mode.t
+    -> Path.Build.t
 end
 
 (** A type of foreign library "stubs", which includes all fields of the

@@ -78,7 +78,7 @@ module Lib = struct
        ; mode_paths "archives" archives
        ; mode_paths "plugins" plugins
        ; paths "foreign_objects" foreign_objects
-       ; paths "foreign_archives" (Lib_info.foreign_archives info)
+       ; mode_paths "foreign_archives" (Lib_info.foreign_archives info)
        ; paths "native_archives" native_archives
        ; paths "jsoo_runtime" jsoo_runtime
        ; Lib_dep.L.field_encode requires ~name:"requires"
@@ -133,11 +133,8 @@ module Lib = struct
        and+ archives = mode_paths "archives"
        and+ plugins = mode_paths "plugins"
        and+ foreign_objects = paths "foreign_objects"
-       and+ foreign_archives =
-         if lang.version >= (2, 0) then paths "foreign_archives"
-         else
-           let+ m = mode_paths "foreign_archives" in
-           m.byte
+       and+ foreign_archives = mode_paths "foreign_archives"
+       (* TODO @FOREIGN check for lang < 2 *)
        and+ native_archives = paths "native_archives"
        and+ jsoo_runtime = paths "jsoo_runtime"
        and+ requires = field_l "requires" (Lib_dep.decode ~allow_re_export:true)
@@ -188,11 +185,12 @@ module Lib = struct
            ~orig_src_dir ~obj_dir ~version ~synopsis ~main_module_name
            ~sub_systems ~requires ~foreign_objects ~plugins ~archives
            ~ppx_runtime_deps ~foreign_archives
-           ~native_archives:(Files native_archives) ~foreign_dll_files:[]
-           ~jsoo_runtime ~jsoo_archive ~preprocess ~enabled ~virtual_deps
-           ~dune_version ~virtual_ ~entry_modules ~implements
-           ~default_implementation ~modes ~wrapped ~special_builtin_support
-           ~exit_module:None ~instrumentation_backend
+           ~native_archives:(Files native_archives)
+           ~foreign_dll_files:(Mode.Dict.make_both []) ~jsoo_runtime
+           ~jsoo_archive ~preprocess ~enabled ~virtual_deps ~dune_version
+           ~virtual_ ~entry_modules ~implements ~default_implementation ~modes
+           ~wrapped ~special_builtin_support ~exit_module:None
+           ~instrumentation_backend
        in
        { info; main_module_name; modules = Some modules })
 

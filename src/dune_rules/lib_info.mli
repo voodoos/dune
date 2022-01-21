@@ -94,7 +94,7 @@ val archives : 'path t -> 'path list Mode.Dict.t
    to [native_lib_files] for consistent naming with [foreign_dll_files]. *)
 
 (** All the [lib*.a] files for stubs *)
-val foreign_archives : 'path t -> 'path list
+val foreign_archives : 'path t -> 'path list Mode.Dict.t
 
 type 'path native_archives =
   | Needs_module_info of 'path
@@ -109,7 +109,7 @@ val eval_native_archives_exn : 'path t -> modules:Modules.t option -> 'path list
 
 (** [dll*.so] files for stubs. These are read when linking a bytecode executable
     and are loaded dynamically at runtime by bytecode executables. *)
-val foreign_dll_files : 'path t -> 'path list
+val foreign_dll_files : 'path t -> 'path list Mode.Dict.t
 
 val foreign_objects : 'path t -> 'path list Source.t
 
@@ -221,9 +221,9 @@ val create :
   -> plugins:'a list Mode.Dict.t
   -> archives:'a list Mode.Dict.t
   -> ppx_runtime_deps:(Loc.t * Lib_name.t) list
-  -> foreign_archives:'a list
+  -> foreign_archives:'a list Mode.Dict.t
   -> native_archives:'a native_archives
-  -> foreign_dll_files:'a list
+  -> foreign_dll_files:'a list Mode.Dict.t
   -> jsoo_runtime:'a list
   -> jsoo_archive:'a option
   -> preprocess:Preprocess.With_instrumentation.t Preprocess.Per_module.t
