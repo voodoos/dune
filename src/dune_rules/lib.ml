@@ -599,8 +599,9 @@ module L = struct
   let toplevel_include_paths ts =
     let with_dlls =
       List.filter ts ~f:(fun t ->
-          match (Lib_info.foreign_dll_files (info t)).byte with
-          | [] -> false
+          let foreign_dll_files = Lib_info.foreign_dll_files (info t) in
+          match (foreign_dll_files.byte, foreign_dll_files.native) with
+          | [], [] -> false
           | _ -> true)
     in
     Path.Set.union (include_paths ts Mode.Byte) (c_include_paths with_dlls)
