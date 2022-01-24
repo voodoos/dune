@@ -499,7 +499,7 @@ module Link_params = struct
       let files =
         match mode with
         | Byte | Byte_for_jsoo -> dll_files.byte
-        | Byte_with_stubs_statically_linked_in | Native -> lib_files.byte
+        | Byte_with_stubs_statically_linked_in | Native -> dll_files.native
       in
       let files =
         match Lib_info.exit_module t.info with
