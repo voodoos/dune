@@ -24,7 +24,10 @@ let possible_sources ~language obj ~dune_version =
         (Foreign_language.equal lang language && dune_version >= version)
         (obj ^ "." ^ ext))
 
-let add_mode_suffix mode s = String.concat ~sep:"_" [ s; Mode.to_string mode ]
+let add_mode_suffix mode s =
+  match mode with
+  | Mode.Byte -> s
+  | mode -> String.concat ~sep:"_" [ s; Mode.to_string mode ]
 
 module Archive = struct
   module Name = struct
