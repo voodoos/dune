@@ -834,19 +834,7 @@ module Library = struct
     in
     let virtual_library = is_virtual conf in
     let foreign_archives =
-      let byte =
-        if modes.byte then
-          foreign_lib_files conf ~dir ~ext_lib ~mode:Byte
-        else
-          []
-      in
-      let native =
-        if modes.native then
-          foreign_lib_files conf ~dir ~ext_lib ~mode:Native
-        else
-          []
-      in
-      Mode.Dict.{ byte; native }
+      Mode.Dict.of_func (foreign_lib_files conf ~dir ~ext_lib)
     in
     let native_archives =
       let archive = archive ext_lib in
