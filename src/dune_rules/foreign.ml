@@ -26,8 +26,8 @@ let possible_sources ~language obj ~dune_version =
 
 let add_mode_suffix mode s =
   match mode with
-  | Mode.Byte -> s
-  | mode -> String.concat ~sep:"_" [ s; Mode.to_string mode ]
+  | None -> s
+  | Some mode -> String.concat ~sep:"_" [ s; Mode.to_string mode ]
 
 module Archive = struct
   module Name = struct
@@ -188,16 +188,16 @@ module Source = struct
 
   let path t = t.path
 
-  let object_name mode t =
+  let object_name t =
     (* TODO @FOREIGN for mode *)
     t.path |> Path.Build.split_extension |> fst |> Path.Build.basename
-    |> add_mode_suffix mode
+    |> add_mode_suffix t.stubs.mode
 
   let make ~stubs ~path = { stubs; path }
 end
 
 module Sources = struct
-  type t = (Loc.t * Mode.t * Source.t) String.Map.t
+  type t = (Loc.t * Mode.t option * Source.t) String.Map.t
 
   let object_files t ~dir ~ext_obj =
     String.Map.keys t
@@ -227,5 +227,33 @@ module Sources = struct
           | Some (obj, language) ->
             let path = Path.Build.relative dir fn in
             String.Map.add_multi acc obj (language, path))
+  end
+end
+
+module Object = struct
+  type 'path t = Mode.t option * 'path
+
+  let for_both (mode, _) = Option.is_none mode
+
+  let for_ ~mode (m, _) =
+    match m with
+    | Some m -> Mode.equal m mode
+    | None -> false
+
+  let filter mode l =
+    List.filter_map
+      ~f:(fun (m, p) ->
+        match m with
+        | None -> Some p
+        | Some m when Mode.equal mode m -> Some p
+        | _ -> None)
+      l
+
+  module L = struct
+    type nonrec 'path t = 'path t list
+
+    let byte l = filter Mode.Byte l
+
+    let native l = filter Mode.Native l
   end
 end

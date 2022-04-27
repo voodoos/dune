@@ -133,11 +133,7 @@ let exe_path_from_name cctx ~name ~(linkage : Linkage.t) =
   Path.Build.relative (CC.dir cctx) (name ^ linkage.ext)
 
 let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
-    ~promote
-    ?(link_args =
-      Mode.Dict.make_both (Action_builder.return Command.Args.empty))
-    ?(o_files : Path.t list Mode.Dict.t = Mode.Dict.make_both [])
-    ?(sandbox = Sandbox_config.default) cctx =
+    ~promote ~link_args ~o_files ?(sandbox = Sandbox_config.default) cctx =
   let sctx = CC.super_context cctx in
   let ctx = SC.context sctx in
   let dir = CC.dir cctx in
@@ -153,12 +149,6 @@ let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
       |> Action_builder.dyn_paths_unit
     in
     let+ fdo_linker_script_flags = Fdo.Linker_script.flags fdo_linker_script in
-    let link_args, o_files =
-      match linkage.mode with
-      | Native -> (link_args.native, o_files.native)
-      | Byte | Byte_for_jsoo | Byte_with_stubs_statically_linked_in ->
-        (link_args.byte, o_files.byte)
-    in
     let open Action_builder.With_targets.O in
     (* NB. Below we take care to pass [link_args] last on the command-line for
        the following reason: [link_args] contains the list of foreign libraries
@@ -235,8 +225,12 @@ let link_js ~name ~cm_files ~promote ~link_time_code_gen cctx =
   Jsoo_rules.build_exe cctx ~in_context ~src ~cm:top_sorted_cms ~promote
     ~link_time_code_gen:other_cm
 
-let link_many ?link_args ?o_files ?(embed_in_plugin_libraries = []) ?sandbox
-    ~programs ~linkages ~promote cctx =
+let link_many
+    ?(link_args =
+      Mode.Dict.make_both (Action_builder.return Command.Args.empty))
+    ?(o_files : Path.Build.t Foreign.Object.t list = [])
+    ?(embed_in_plugin_libraries = []) ?sandbox ~programs ~linkages ~promote cctx
+    =
   let open Memo.O in
   let modules = Compilation_context.modules cctx in
   let* link_time_code_gen = Link_time_code_gen.handle_special_libs cctx in
@@ -266,8 +260,15 @@ let link_many ?link_args ?o_files ?(embed_in_plugin_libraries = []) ?sandbox
                 in
                 Link_time_code_gen.handle_special_libs cc
             in
+            let link_args, o_files =
+              match linkage.mode with
+              | Native -> (link_args.native, Foreign.Object.L.native o_files)
+              | Byte | Byte_for_jsoo | Byte_with_stubs_statically_linked_in ->
+                (link_args.byte, Foreign.Object.L.byte o_files)
+            in
+            let o_files = List.map ~f:Path.build o_files in
             link_exe cctx ~loc ~name ~linkage ~cm_files ~link_time_code_gen
-              ~promote ?link_args ?o_files ?sandbox))
+              ~promote ~link_args ~o_files ?sandbox))
 
 let build_and_link_many ?link_args ?o_files ?embed_in_plugin_libraries ?sandbox
     ~programs ~linkages ~promote cctx =

@@ -42,7 +42,7 @@ module Archive : sig
 
     val to_string : t -> string
 
-    val path : dir:Path.Build.t -> mode:Mode.t -> t -> Path.Build.t
+    val path : dir:Path.Build.t -> mode:Mode.t option -> t -> Path.Build.t
 
     val decode : t Dune_lang.Decoder.t
 
@@ -51,17 +51,25 @@ module Archive : sig
     val lib_file_prefix : string
 
     val lib_file :
-      t -> dir:Path.Build.t -> ext_lib:string -> mode:Mode.t -> Path.Build.t
+         t
+      -> dir:Path.Build.t
+      -> ext_lib:string
+      -> mode:Mode.t option
+      -> Path.Build.t
 
     val dll_file :
-      t -> dir:Path.Build.t -> ext_dll:string -> mode:Mode.t -> Path.Build.t
+         t
+      -> dir:Path.Build.t
+      -> ext_dll:string
+      -> mode:Mode.t option
+      -> Path.Build.t
   end
 
   type t
 
   val dir_path : dir:Path.Build.t -> t -> Path.Build.t
 
-  val name : mode:Mode.t -> t -> Name.t
+  val name : mode:Mode.t option -> t -> Name.t
 
   val stubs : string -> t
 
@@ -71,14 +79,14 @@ module Archive : sig
        archive:t
     -> dir:Path.Build.t
     -> ext_lib:string
-    -> mode:Mode.t
+    -> mode:Mode.t option
     -> Path.Build.t
 
   val dll_file :
        archive:t
     -> dir:Path.Build.t
     -> ext_dll:string
-    -> mode:Mode.t
+    -> mode:Mode.t option
     -> Path.Build.t
 end
 
@@ -168,14 +176,14 @@ module Source : sig
 
   (* The name of the corresponding object file; for example, [name] for a source
      file [some/path/name.cpp]. *)
-  val object_name : Mode.t -> t -> string
+  val object_name : t -> string
 
   val make : stubs:Stubs.t -> path:Path.Build.t -> t
 end
 
 (** A map from object names to the corresponding sources. *)
 module Sources : sig
-  type t = (Loc.t * Mode.t * Source.t) String.Map.t
+  type t = (Loc.t * Mode.t option * Source.t) String.Map.t
 
   val object_files :
     t -> dir:Path.Build.t -> ext_obj:string -> Path.Build.t list
@@ -195,5 +203,21 @@ module Sources : sig
       -> dir:Path.Build.t
       -> files:String.Set.t
       -> t
+  end
+end
+
+module Object : sig
+  type 'path t = Mode.t option * 'path
+
+  val for_both : 'path t -> bool
+
+  val for_ : mode:Mode.t -> 'path t -> bool
+
+  module L : sig
+    type nonrec 'path t = 'path t list
+
+    val byte : 'path t -> 'path list
+
+    val native : 'path t -> 'path list
   end
 end

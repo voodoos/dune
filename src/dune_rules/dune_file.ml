@@ -765,11 +765,11 @@ module Library = struct
 
   let foreign_lib_files t ~dir ~ext_lib ~mode =
     List.map (foreign_archives t) ~f:(fun archive ->
-        Foreign.Archive.lib_file ~archive ~dir ~ext_lib ~mode)
+        Foreign.Archive.lib_file ~archive ~dir ~ext_lib ~mode:(Some mode))
 
   let foreign_dll_files t ~dir ~ext_dll ~mode =
     List.map (foreign_archives t) ~f:(fun archive ->
-        Foreign.Archive.dll_file ~archive ~dir ~ext_dll ~mode)
+        Foreign.Archive.dll_file ~archive ~dir ~ext_dll ~mode:(Some mode))
 
   let archive_basename t ~ext = Lib_name.Local.to_string (snd t.name) ^ ext
 

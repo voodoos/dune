@@ -110,13 +110,10 @@ let eval_foreign_stubs (d : _ Dir_with_dune.t) foreign_stubs
     in
     String.Map.fold names ~init:String.Map.empty ~f:(fun (loc, src) acc ->
         let new_keys =
-          match src.stubs.mode with
-          | None ->
-            Foreign.Source.
-              [ (Mode.Byte, object_name Byte src)
-              ; (Native, object_name Native src)
-              ]
-          | Some mode -> [ (mode, Foreign.Source.object_name mode src) ]
+          (* match src.stubs.mode with | None -> Foreign.Source. [ (Mode.Byte,
+             object_name Byte src) ; (Native, object_name Native src) ] | Some
+             mode -> *)
+          [ (src.stubs.mode, Foreign.Source.object_name src) ]
         in
         List.fold_left new_keys ~init:acc ~f:(fun acc (mode, k) ->
             String.Map.add_exn acc k (loc, mode, src)))

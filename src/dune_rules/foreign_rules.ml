@@ -179,8 +179,9 @@ let build_c ~kind ~sctx ~dir ~expander ~include_flags (loc, src, dst) =
 
 (* TODO: [requires] is a confusing name, probably because it's too general: it
    looks like it's a list of libraries we depend on. *)
-let build_o_files ~sctx ~foreign_sources ~(dir : Path.Build.t) ~expander
-    ~requires ~dir_contents =
+let build_o_files ~sctx ~(foreign_sources : Foreign.Sources.t)
+    ~(dir : Path.Build.t) ~expander ~requires ~dir_contents =
+  let open Memo.O in
   let ctx = Super_context.context sctx in
   let all_dirs = Dir_contents.dirs dir_contents in
   let h_files =
@@ -203,30 +204,29 @@ let build_o_files ~sctx ~foreign_sources ~(dir : Path.Build.t) ~expander
             ])
       ]
   in
-  String.Map.foldi foreign_sources ~init:(Mode.Dict.make_both [])
-    ~f:(fun obj (loc, src_mode, src) by_mode ->
-      let dst = Path.Build.relative dir (obj ^ ctx.lib_config.ext_obj) in
-      let stubs = src.Foreign.Source.stubs in
-      let extra_flags = include_dir_flags ~expander ~dir src.stubs in
-      let extra_deps, sandbox =
-        Dep_conf_eval.unnamed stubs.extra_deps ~expander
-      in
-      (* We don't sandbox the C compiler, see comment in [build_file] about
-         this. *)
-      ignore sandbox;
-      let extra_deps =
-        Action_builder.map extra_deps ~f:(fun () -> Command.Args.empty)
-      in
-      let include_flags =
-        Command.Args.S [ includes; extra_flags; Dyn extra_deps ]
-      in
-      let build_file =
-        match Foreign.Source.language src with
-        | C -> build_c ~kind:Foreign_language.C
-        | Cxx -> build_c ~kind:Foreign_language.Cxx
-      in
-      let target_path =
-        build_file ~sctx ~dir ~expander ~include_flags (loc, src, dst)
-      in
-      Mode.Dict.mapi by_mode ~f:(fun mode paths ->
-          if Mode.equal mode src_mode then target_path :: paths else paths))
+  String.Map.to_list foreign_sources
+  |> List.map ~f:(fun (obj, (loc, src_mode, src)) ->
+         let dst = Path.Build.relative dir (obj ^ ctx.lib_config.ext_obj) in
+         let stubs = src.Foreign.Source.stubs in
+         let extra_flags = include_dir_flags ~expander ~dir src.stubs in
+         let extra_deps, sandbox =
+           Dep_conf_eval.unnamed stubs.extra_deps ~expander
+         in
+         (* We don't sandbox the C compiler, see comment in [build_file] about
+            this. *)
+         ignore sandbox;
+         let extra_deps =
+           Action_builder.map extra_deps ~f:(fun () -> Command.Args.empty)
+         in
+         let include_flags =
+           Command.Args.S [ includes; extra_flags; Dyn extra_deps ]
+         in
+         let build_file =
+           match Foreign.Source.language src with
+           | C -> build_c ~kind:Foreign_language.C
+           | Cxx -> build_c ~kind:Foreign_language.Cxx
+         in
+         let+ build_file =
+           build_file ~sctx ~dir ~expander ~include_flags (loc, src, dst)
+         in
+         (src_mode, build_file))

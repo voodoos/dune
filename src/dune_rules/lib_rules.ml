@@ -25,7 +25,9 @@ let build_lib (lib : Library.t) ~native_archives ~sctx ~expander ~flags ~dir
       let stubs_flags =
         List.concat_map (Library.foreign_archives lib) ~f:(fun archive ->
             let lname =
-              "-l" ^ Foreign.Archive.(name ~mode archive |> Name.to_string)
+              "-l"
+              ^ Foreign.Archive.(
+                  name ~mode:(Some mode) archive |> Name.to_string)
             in
             let cclib = [ "-cclib"; lname ] in
             let dllib = [ "-dllib"; lname ] in
@@ -127,9 +129,6 @@ let ocamlmklib ~loc ~c_library_flags ~sctx ~dir ~o_files ~archive_name
     ~build_targets_together =
   let ctx = Super_context.context sctx in
   let { Lib_config.ext_lib; ext_dll; _ } = ctx.lib_config in
-  let static_target =
-    Foreign.Archive.Name.lib_file archive_name ~dir ~ext_lib
-  in
   (* Printf.eprintf "Archive_name: %s\n%!" (Foreign.Archive.Name.to_string
      archive_name); Printf.eprintf "Static_target: %s\n%!" (Path.Build.to_string
      static_target); *)
@@ -153,17 +152,21 @@ let ocamlmklib ~loc ~c_library_flags ~sctx ~dir ~o_files ~archive_name
           ; (if custom then A "-custom" else Command.Args.empty)
           ; A "-o"
           ; Path
-              (Path.build (Foreign.Archive.Name.path ~dir ~mode archive_name))
+              (Path.build
+                 (Foreign.Archive.Name.path ~dir ~mode:(Some mode) archive_name))
           ; Deps (Mode.Dict.get o_files mode)
             (* The [c_library_flags] is needed only for the [dynamic_target]
                case, but we pass them unconditionally for simplicity. *)
           ; Dyn cclibs
-          ; Hidden_targets (List.map targets ~f:(fun t -> t ~mode))
+          ; Hidden_targets (List.map targets ~f:(fun t -> t ~mode:(Some mode)))
           ]
         (* TODO @ulysse check sandbox usage*)
         >>| Action.Full.add_sandbox sandbox)
     in
     Memo.Build.parallel_iter [ Mode.Byte; Native ] ~f:aux
+  in
+  let static_target =
+    Foreign.Archive.Name.lib_file archive_name ~dir ~ext_lib
   in
   let dynamic_target =
     Foreign.Archive.Name.dll_file archive_name ~dir ~ext_dll
@@ -208,11 +211,19 @@ let foreign_rules (library : Foreign.Library.t) ~sctx ~expander ~dir
     >>| Foreign_sources.for_archive ~archive_name
   in
   let* o_files =
-    Foreign_rules.build_o_files ~sctx ~dir ~expander
-      ~requires:(Resolve.return []) ~dir_contents ~foreign_sources
-    |> Mode.Dict.map_concurrently ~f:Memo.all_concurrently
+    let+ o_files_by_mode =
+      Foreign_rules.build_o_files ~sctx ~dir ~expander
+        ~requires:(Resolve.return []) ~dir_contents ~foreign_sources
+      |> Memo.all
+    in
+    let byte =
+      Foreign.Object.L.byte o_files_by_mode |> List.map ~f:Path.build
+    in
+    let native =
+      Foreign.Object.L.native o_files_by_mode |> List.map ~f:Path.build
+    in
+    Mode.Dict.make ~byte ~native
   in
-  let o_files = Mode.Dict.map o_files ~f:(List.map ~f:Path.build) in
   (* let* () = Check_rules.add_files sctx ~dir o_files in *)
   (* TODO @FOREIGN *)
   let standard =
@@ -241,11 +252,19 @@ let build_stubs lib ~cctx ~dir ~expander ~requires ~dir_contents
     Foreign_sources.for_lib foreign_sources ~name
   in
   let* lib_o_files =
-    Foreign_rules.build_o_files ~sctx ~dir ~expander ~requires ~dir_contents
-      ~foreign_sources
-    |> Mode.Dict.map_concurrently ~f:Memo.all_concurrently
+    let+ o_files_by_mode =
+      Foreign_rules.build_o_files ~sctx ~dir ~expander ~requires ~dir_contents
+        ~foreign_sources
+      |> Memo.all
+    in
+    let byte =
+      Foreign.Object.L.byte o_files_by_mode |> List.map ~f:Path.build
+    in
+    let native =
+      Foreign.Object.L.native o_files_by_mode |> List.map ~f:Path.build
+    in
+    Mode.Dict.make ~byte ~native
   in
-  let lib_o_files = Mode.Dict.map lib_o_files ~f:(List.map ~f:Path.build) in
   (* let* () = Check_rules.add_files sctx ~dir lib_o_files in *)
   (* TODO @FOREIGN*)
   let o_files =

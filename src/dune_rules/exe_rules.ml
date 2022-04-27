@@ -58,8 +58,7 @@ let programs ~modules ~(exes : Executables.t) =
 
 let o_files sctx ~dir ~expander ~(exes : Executables.t) ~linkages ~dir_contents
     ~requires_compile =
-  if not (Executables.has_foreign exes) then
-    Memo.return (Mode.Dict.make_both [])
+  if not (Executables.has_foreign exes) then Memo.return []
   else
     let what =
       if List.is_empty exes.buildable.Buildable.foreign_stubs then "archives"
@@ -78,12 +77,21 @@ let o_files sctx ~dir ~expander ~(exes : Executables.t) ~linkages ~dir_contents
       let first_exe = first_exe exes in
       Foreign_sources.for_exes foreign_sources ~first_exe
     in
-    let+ o_files =
-      Foreign_rules.build_o_files ~sctx ~dir ~expander
-        ~requires:requires_compile ~dir_contents ~foreign_sources
-      |> Mode.Dict.map_concurrently ~f:Memo.all_concurrently
-    in
-    Mode.Dict.map o_files ~f:(List.map ~f:Path.build)
+    (* let+ o_files = *)
+    (* let o_files_by_mode = *)
+    Foreign_rules.build_o_files ~sctx ~dir ~expander ~requires:requires_compile
+      ~dir_contents ~foreign_sources
+    |> Memo.all
+
+(* in *)
+(* let byte, native = List.fold_left o_files_by_mode ~init:([], []) ~f:(fun
+   (byte, native) (mode, path) -> let path = Memo.Build.map ~f:Path.build path
+   in match mode with | None -> path::byte, path::native | Some Mode.Byte ->
+   path::byte, native | Some Native -> byte, path::native ) in let dict =
+   Mode.Dict.make ~byte ~native in *)
+(* Mode.Dict.map_concurrently ~f:(Memo.Build.all_concurrently) dict *)
+(* in *)
+(* o_files *)
 
 let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
     ~embed_in_plugin_libraries (exes : Dune_file.Executables.t) =
@@ -195,7 +203,8 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
              (* XXX: also the Command.quote_args being done in lib_rules? *)
              List.map foreign_archives ~f:(fun archive ->
                  let lib =
-                   Foreign.Archive.lib_file ~archive ~dir ~ext_lib ~mode
+                   Foreign.Archive.lib_file ~archive ~dir ~ext_lib
+                     ~mode:(Some mode)
                  in
                  Command.Args.S [ A "-cclib"; Dep (Path.build lib) ]))
           (* XXX: don't these need the msvc hack being done in lib_rules? *)
