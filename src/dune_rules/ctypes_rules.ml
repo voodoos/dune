@@ -468,6 +468,7 @@ let exe_link_only ~dir ~shared_cctx ~sandbox program ~deps =
     let+ () = deps in
     Command.Args.empty
   in
+  let link_args = Mode.Dict.make_both link_args in
   let program = program_of_module_and_dir ~dir program in
   Exe.link_many ~link_args ~programs:[ program ]
     ~linkages:[ Exe.Linkage.native ] ~promote:None shared_cctx ~sandbox
@@ -512,8 +513,8 @@ let gen_rules ~cctx ~buildable ~loc ~scope ~dir ~sctx =
     let ext_dll = ctx.Context.lib_config.ext_dll in
     List.concat_map buildable.Buildable.foreign_archives
       ~f:(fun (_loc, archive) ->
-        [ Foreign.Archive.lib_file ~archive ~dir ~ext_lib
-        ; Foreign.Archive.dll_file ~archive ~dir ~ext_dll
+        [ Foreign.Archive.lib_file ~mode:None ~archive ~dir ~ext_lib
+        ; Foreign.Archive.dll_file ~mode:None ~archive ~dir ~ext_dll
         ])
   in
   let* expander = Super_context.expander sctx ~dir in

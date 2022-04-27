@@ -163,7 +163,7 @@ let ocamlmklib ~loc ~c_library_flags ~sctx ~dir ~o_files ~archive_name
         (* TODO @ulysse check sandbox usage*)
         >>| Action.Full.add_sandbox sandbox)
     in
-    Memo.Build.parallel_iter [ Mode.Byte; Native ] ~f:aux
+    Memo.parallel_iter [ Mode.Byte; Native ] ~f:aux
   in
   let static_target =
     Foreign.Archive.Name.lib_file archive_name ~dir ~ext_lib
