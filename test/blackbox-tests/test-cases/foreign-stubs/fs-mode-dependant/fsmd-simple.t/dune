@@ -2,11 +2,17 @@
  (modes native byte_complete)
  (modules stubs_exe)
  (name stubs_exe)
-  (foreign_stubs
-   (language c)
-   (flags :standard -DNATIVE_CODE)
-   (names c_stubs)))
- 
+ (foreign_stubs
+  (mode native)
+  (language c)
+  (flags :standard -DNATIVE_CODE)
+  (names c_stubs))
+ (foreign_stubs
+  (mode byte)
+  (language c)
+  (flags :standard)
+  (names c_stubs)))
+
 (executable
  (modes native byte_complete)
  (modules stubs_lib)
