@@ -113,11 +113,11 @@ let setup_rules_and_return_exe_path t =
   let open Memo.O in
   let linkage = Exe.Linkage.custom (Compilation_context.context t.cctx) in
   let program = Source.program t.source in
-  let link_args =
-    Action_builder.return (Command.Args.As [ "-linkall"; "-warn-error"; "-31" ])
-  in
   let* () =
-    Exe.build_and_link t.cctx ~program ~linkages:[ linkage ] ~link_args
+    Exe.build_and_link t.cctx ~program ~linkages:[ linkage ]
+      ~link_args:
+        (Action_builder.return
+           (Command.Args.As [ "-linkall"; "-warn-error"; "-31" ]))
       ~promote:None
   in
   let+ () = setup_module_rules t in
