@@ -23,8 +23,7 @@ let build_lib (lib : Library.t) ~native_archives ~sctx ~expander ~flags ~dir
   Memo.Result.iter (Context.compiler ctx mode) ~f:(fun compiler ->
       let target = Library.archive lib ~dir ~ext:(Mode.compiled_lib_ext mode) in
       let stubs_flags =
-        let open Option.O in
-        let+ lib_archive, foreign_archives = Library.foreign_archives lib in
+        let lib_archive, foreign_archives = Library.foreign_archives lib in
         let make_args ~stub_mode archive =
           let lname =
             "-l"
@@ -41,10 +40,11 @@ let build_lib (lib : Library.t) ~native_archives ~sctx ~expander ~flags ~dir
             Some mode
           else None
         in
-        make_args ~stub_mode lib_archive
-        @ List.concat_map foreign_archives ~f:(make_args ~stub_mode:None)
+        let foreign_archives = List.concat_map foreign_archives ~f:(make_args ~stub_mode:None) in
+        match lib_archive with
+        | Some lib_archive -> make_args ~stub_mode lib_archive @ foreign_archives
+        | None -> foreign_archives
       in
-      let stubs_flags = Option.value ~default:[] stubs_flags in
       let map_cclibs =
         (* https://github.com/ocaml/dune/issues/119 *)
         match ctx.lib_config.ccomp_type with

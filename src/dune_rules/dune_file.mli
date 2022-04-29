@@ -172,7 +172,7 @@ module Library : sig
 
   (** The list of all foreign archives, including the foreign stubs archive. *)
   val foreign_archives :
-    t -> (Foreign.Archive.t * Foreign.Archive.t list) option
+    t -> Foreign.Archive.t option * Foreign.Archive.t list
 
   (** The [lib*.a] files of all foreign archives, including foreign stubs. [dir]
       is the directory the library is declared in. *)
