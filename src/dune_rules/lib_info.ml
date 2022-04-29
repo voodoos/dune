@@ -304,7 +304,7 @@ type 'path t =
   ; foreign_objects : 'path list Source.t
   ; foreign_archives : 'path list Mode.Dict.t
   ; native_archives : 'path native_archives
-  ; foreign_dll_files : 'path list Mode.Dict.t
+  ; foreign_dll_files : 'path list
   ; jsoo_runtime : 'path list
   ; jsoo_archive : 'path option
   ; requires : Lib_dep.t list
@@ -382,8 +382,7 @@ let equal (type a) (t : a t)
   && Source.equal (List.equal path_equal) foreign_objects t.foreign_objects
   && Mode.Dict.equal (List.equal path_equal) foreign_archives t.foreign_archives
   && equal_native_archives path_equal native_archives t.native_archives
-  && Mode.Dict.equal (List.equal path_equal) foreign_dll_files
-       t.foreign_dll_files
+  && List.equal path_equal foreign_dll_files t.foreign_dll_files
   && List.equal path_equal jsoo_runtime t.jsoo_runtime
   && Option.equal path_equal jsoo_archive t.jsoo_archive
   && List.equal Lib_dep.equal requires t.requires
@@ -597,7 +596,7 @@ let map t ~path_kind ~f_path ~f_obj_dir =
   ; plugins = mode_list t.plugins
   ; foreign_objects = Source.map ~f:(List.map ~f) t.foreign_objects
   ; foreign_archives = mode_list t.foreign_archives
-  ; foreign_dll_files = mode_list t.foreign_dll_files
+  ; foreign_dll_files = List.map ~f t.foreign_dll_files
   ; native_archives
   ; jsoo_runtime = List.map ~f t.jsoo_runtime
   ; jsoo_archive = Option.map ~f t.jsoo_archive
@@ -667,7 +666,7 @@ let to_dyn path
     ; ("foreign_objects", Source.to_dyn (list path) foreign_objects)
     ; ("foreign_archives", Mode.Dict.to_dyn (list path) foreign_archives)
     ; ("native_archives", dyn_of_native_archives path native_archives)
-    ; ("foreign_dll_files", Mode.Dict.to_dyn (list path) foreign_dll_files)
+    ; ("foreign_dll_files", list path foreign_dll_files)
     ; ("jsoo_runtime", list path jsoo_runtime)
     ; ("jsoo_archive", option path jsoo_archive)
     ; ("requires", list Lib_dep.to_dyn requires)

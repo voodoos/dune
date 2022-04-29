@@ -782,12 +782,12 @@ module Library = struct
     in
     Option.value ~default:[] archives
 
-  let foreign_dll_files t ~dir ~ext_dll ~mode =
+  let foreign_dll_files t ~dir ~ext_dll =
     let open Option.O in
     let archives =
       let+ lib_archive, foreign_archives = foreign_archives t in
       let mode =
-        if Buildable.has_mode_dependent_foreign_stubs t.buildable then Some mode
+        if Buildable.has_mode_dependent_foreign_stubs t.buildable then Some Mode.Byte
         else None
       in
       (* Stubs can have mode-dependent versions, not foreign archives *)
@@ -874,7 +874,7 @@ module Library = struct
       else Lib_info.Needs_module_info archive
     in
     let foreign_dll_files =
-      Mode.Dict.of_func (foreign_dll_files conf ~dir ~ext_dll)
+      foreign_dll_files conf ~dir ~ext_dll
     in
     let exit_module = Option.bind conf.stdlib ~f:(fun x -> x.exit_module) in
     let jsoo_archive =

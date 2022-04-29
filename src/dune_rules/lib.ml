@@ -482,7 +482,7 @@ module Link_params = struct
        separately to help the linker locate them. *)
     let+ hidden_deps =
       match mode with
-      | Byte | Byte_for_jsoo -> Memo.return dll_files.byte
+      | Byte | Byte_for_jsoo -> Memo.return dll_files
       | Byte_with_stubs_statically_linked_in -> Memo.return lib_files.byte
       | Native ->
         let+ native_archives =
@@ -498,7 +498,7 @@ module Link_params = struct
     let include_dirs =
       let files =
         match mode with
-        | Byte | Byte_for_jsoo -> dll_files.byte
+        | Byte | Byte_for_jsoo -> dll_files
         | Byte_with_stubs_statically_linked_in | Native -> lib_files.native
       in
       let files =
@@ -599,9 +599,8 @@ module L = struct
   let toplevel_include_paths ts =
     let with_dlls =
       List.filter ts ~f:(fun t ->
-          let foreign_dll_files = Lib_info.foreign_dll_files (info t) in
-          match (foreign_dll_files.byte, foreign_dll_files.native) with
-          | [], [] -> false
+          match Lib_info.foreign_dll_files (info t) with
+          | [] -> false
           | _ -> true)
     in
     Path.Set.union (include_paths ts Mode.Byte) (c_include_paths with_dlls)
