@@ -5,7 +5,8 @@ type kind =
   | Exe
   | Lib of Path.Build.t Lib_info.t option
 
-val output_file : kind -> Mode.t -> string -> string
+val output_file : kind -> string -> string
+val with_mode :  Mode.t -> string -> string
 
 val setup_rules :
      sctx:Super_context.t
@@ -25,3 +26,5 @@ val build_action :
   -> ?kind:kind
   -> Mode.t
   -> Action.t Build.With_targets.t list
+
+val id : Mode.t -> int

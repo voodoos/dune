@@ -10,9 +10,15 @@ let kind_to_string = function
   | Exe -> "exe"
   | Lib _ -> "lib"
 
-let output_file kind mode name =
-  Printf.sprintf ".%s_%s_%s_cbi.txt-gen" (kind_to_string kind)
-    (Mode.to_string mode) name
+let output_file kind name =
+    Printf.sprintf ".%s_%s_cbi.txt-gen" (kind_to_string kind) name
+
+let mode_to_int = function
+| Mode.Byte -> 0
+| Mode.Native -> 1
+
+let with_mode mode file  =
+  Printf.sprintf "%s-%i" file (mode_to_int mode)
 
 let pr buf fmt = Printf.bprintf buf (fmt ^^ "\n")
 
@@ -42,7 +48,7 @@ let cbi_modules cctx =
 
 let expand ~cctx kind mode { link_time_action = loc, action; module_; _ } =
   let dir = Compilation_context.dir cctx in
-  let raw_filename = output_file kind mode (Module_name.to_string module_) in
+  let raw_filename = output_file kind (Module_name.to_string module_) |> with_mode mode in
   let filename = String_with_vars.make_text Loc.none raw_filename in
   let action = Action_unexpanded.with_stdout_to filename action in
   let path = Path.Build.relative dir raw_filename in
@@ -58,3 +64,5 @@ let expand ~cctx kind mode { link_time_action = loc, action; module_; _ } =
 let build_action cctx ?(kind = Exe) mode =
   let cbi = cbi_modules cctx in
   List.map cbi ~f:(expand ~cctx kind mode)
+
+let id = mode_to_int

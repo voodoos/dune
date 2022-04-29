@@ -194,16 +194,11 @@ let link_exe ~loc ~name ~(linkage : Linkage.t) ~cm_files ~link_time_code_gen
            Action.copy (Path.build exe)
              Path.Build.(relative (parent_exn exe) "backup.exe")
            |> Build.return |> Build.with_no_targets
-         and+ _str_replace =
-           Printf.eprintf "replace\n%!";
+         and+ str_replace =
            let+ () = Build.with_no_targets (Build.return ()) in
-           let path = Path.reach (Path.build exe) ~from:(Path.build dir) in
-           Printf.eprintf "Path: %s\n%!" path;
-           Action.arti (Path.build exe)
-           (* Artifact_substitution.in_place_replace ~src:(Path.build exe) |>
-              Fiber.run ~iter:(fun () -> assert false); *)
+           Action.arti (Path.build exe) (Generate_build_info.id mode)
          in
-         Action.progn (cmd_run :: backup :: _str_replace :: cbi_exe))
+         Action.progn (cmd_run :: backup :: str_replace :: cbi_exe))
 
 let link_js ~name ~cm_files ~promote cctx =
   let sctx = CC.super_context cctx in

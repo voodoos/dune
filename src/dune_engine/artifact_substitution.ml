@@ -34,7 +34,7 @@ type configpath =
 
 type cbi_mode =
   | NA
-  | S of int
+  | Id of int
 
 type t =
   | Vcs_describe of Path.Source.t
@@ -115,7 +115,7 @@ let to_dyn = function
     let mode =
       match mode with
       | NA -> Dyn.String "N/A"
-      | S i -> Dyn.Int i
+      | Id i -> Dyn.Int i
     in
     Dyn.Variant ("Custom", [ mode; String name; Path.Build.to_dyn dir ])
   | Location (kind, lib_name) ->
@@ -155,7 +155,7 @@ let encode ?(min_len = 0) t =
         let mode =
           match mode with
           | NA -> "N/A"
-          | S i -> Printf.sprintf "%.3i" i
+          | Id i -> Printf.sprintf "%.3i" i
         in
         let s = Path.Build.to_string dir in
         sprintf "custom:%s:%s:%d:%s" mode name (String.length s) s
@@ -203,12 +203,11 @@ let eval t ~conf =
     match conf.get_vcs p with
     | None -> Fiber.return ""
     | Some vcs -> Vcs.describe vcs )
-  | Custom_build_info (NA, name, dir) ->
-    (* TODO CBI correct number *)
-    Fiber.return (encode (Custom_build_info (S 1, name, dir)))
-  | Custom_build_info (S i, name, dir) ->
-    ignore i;
-    (* TODO CBI *)
+  | Custom_build_info (NA, _name, _dir) ->
+    Code_error.raise "Artifact_substitution.decode: unreplaced cbi placeholder "
+      [ ("t", to_dyn t) ];
+  | Custom_build_info (Id i, name, dir) ->
+    let name = Printf.sprintf "%s-%i" name i in
     let f = Path.Build.relative dir name in
     let s, _ = Build.(contents (Path.build f) |> exec) in
     Fiber.return s
@@ -276,7 +275,7 @@ let decode s =
       let s = read_string_payload rest in
       let mode =
         match int_of_string_opt mode with
-        | Some i -> S i
+        | Some i -> Id i
         | None -> NA
       in
       match String.drop_prefix ~prefix:"_build/" s with
@@ -491,11 +490,8 @@ output the replacement        |                                             |
     v} *)
 let copy ~conf ~input_file ~input ~output ?(seek = None) () =
   let open Fiber.O in
-  let rec loop scanner_state ~absolute_begining_of_data ~beginning_of_data ~pos
+  let rec loop scanner_state ~absolute_beginning_of_data ~beginning_of_data ~pos
       ~end_of_data =
-    Printf.eprintf
-      "Absolute beg data: %i\nBegining of data: %i\nPos: %i\nEnd data: %i\n%!"
-      absolute_begining_of_data beginning_of_data pos end_of_data;
     let scanner_state = Scanner.run scanner_state ~buf ~pos ~end_of_data in
     let placeholder_start =
       match scanner_state with
@@ -516,8 +512,27 @@ let copy ~conf ~input_file ~input ~output ?(seek = None) () =
     match scanner_state with
     | Scan_placeholder (placeholder_start, len) when len <= leftover -> (
       let placeholder = Bytes.sub_string buf ~pos:placeholder_start ~len in
-      match decode placeholder with
-      | Some t ->
+      let pos = placeholder_start + len in
+      match decode placeholder, seek with
+      | Some (Custom_build_info (NA, name, path) as t), Some (seek_out, id) ->
+        (* We replace in-place only non-complete cbi placeholders *)
+        let s = encode (Custom_build_info (Id id, name, path)) in
+        ( if !Clflags.debug_artifact_substitution then
+        let open Pp.O in
+        Console.print
+          [ Pp.textf "Found placeholder in %s:"
+              (Path.to_string_maybe_quoted input_file)
+          ; Pp.enumerate ~f:Fun.id
+              [ Pp.text "placeholder: " ++ Dyn.pp (to_dyn t)
+              ; Pp.text "replaced by: " ++ Dyn.pp (to_dyn (Custom_build_info (Id id, name, path)))
+              ]
+          ]);
+        seek_out (absolute_beginning_of_data + placeholder_start);
+        output (Bytes.unsafe_of_string s) 0 len;
+        flush_all ();
+        loop Scan0 ~absolute_beginning_of_data ~beginning_of_data:pos ~pos
+          ~end_of_data
+      | Some t, None ->
         let* s = eval t ~conf in
         ( if !Clflags.debug_artifact_substitution then
           let open Pp.O in
@@ -530,24 +545,14 @@ let copy ~conf ~input_file ~input ~output ?(seek = None) () =
                 ]
             ] );
         let pos = placeholder_start + len in
-        ( match seek with
-        | None ->
-          let s = encode_replacement ~len ~repl:s in
-          output (Bytes.unsafe_of_string s) 0 len
-        | Some (seek_out, pos_in) ->
-          Printf.eprintf "pos: %i %i %i %i \n%!" (pos_in ()) placeholder_start
-            pos (pos - placeholder_start);
-          Printf.eprintf "Realbeg? %i\n%!"
-            (absolute_begining_of_data + placeholder_start);
-          seek_out (absolute_begining_of_data + placeholder_start);
-          output (Bytes.unsafe_of_string s) 0 len;
-          flush_all () (* seek_out pos *) );
-        loop Scan0 ~absolute_begining_of_data ~beginning_of_data:pos ~pos
+        let s = encode_replacement ~len ~repl:s in
+        output (Bytes.unsafe_of_string s) 0 len;
+        loop Scan0 ~absolute_beginning_of_data ~beginning_of_data:pos ~pos
           ~end_of_data
-      | None ->
+      | _, _ ->
         (* Restart just after [prefix] since we know for sure that a placeholder
            cannot start before that. *)
-        loop Scan0 ~absolute_begining_of_data
+        loop Scan0 ~absolute_beginning_of_data
           ~beginning_of_data:placeholder_start
           ~pos:(placeholder_start + prefix_len)
           ~end_of_data )
@@ -569,8 +574,8 @@ let copy ~conf ~input_file ~input ~output ?(seek = None) () =
         | Scan_length (_, acc) -> Scan_length (0, acc)
         | Scan_placeholder (_, len) -> Scan_placeholder (0, len)
       in
-      let absolute_begining_of_data =
-        absolute_begining_of_data + end_of_data - leftover
+      let absolute_beginning_of_data =
+        absolute_beginning_of_data + end_of_data - leftover
       in
       match input buf leftover (buf_len - leftover) with
       | 0 -> (
@@ -578,7 +583,7 @@ let copy ~conf ~input_file ~input ~output ?(seek = None) () =
         | Scan_placeholder _ ->
           (* There might still be another placeholder after this invalid one
              with a length that is too long *)
-          loop Scan0 ~absolute_begining_of_data ~beginning_of_data:0
+          loop Scan0 ~absolute_beginning_of_data ~beginning_of_data:0
             ~pos:prefix_len ~end_of_data:leftover
         | _ ->
           (* Nothing more to read; [leftover] is definitely not the beginning of
@@ -586,13 +591,13 @@ let copy ~conf ~input_file ~input ~output ?(seek = None) () =
           if seek = None then output buf 0 leftover;
           Fiber.return () )
       | n ->
-        loop scanner_state ~absolute_begining_of_data ~beginning_of_data:0
+        loop scanner_state ~absolute_beginning_of_data ~beginning_of_data:0
           ~pos:leftover ~end_of_data:(leftover + n) )
   in
   match input buf 0 buf_len with
   | 0 -> Fiber.return ()
   | n ->
-    loop Scan0 ~absolute_begining_of_data:0 ~beginning_of_data:0 ~pos:0
+    loop Scan0 ~absolute_beginning_of_data:0 ~beginning_of_data:0 ~pos:0
       ~end_of_data:n
 
 let copy_file ~conf ?chmod ~src ~dst () =
@@ -604,17 +609,14 @@ let copy_file ~conf ?chmod ~src ~dst () =
     (fun () ->
       copy ~conf ~input_file:src ~input:(input ic) ~output:(output oc) ())
 
-let in_place_replace ~src =
+let in_place_replace ~src i =
   let ic, oc = Io.open_read_write src in
-  Printf.eprintf "P2\n%!";
   let conf = conf_dummy in
   Fiber.finalize
     ~finally:(fun () ->
       Io.close_out oc;
-      Printf.eprintf "P3\n%!";
       Fiber.return ())
     (fun () ->
       copy ~conf ~input_file:src ~input:(input ic) ~output:(output oc)
-        ~seek:(Some (seek_out oc, fun () -> pos_in ic))
-        ()
-      (* Fiber.return () *))
+        ~seek:(Some (seek_out oc, i))
+        ())

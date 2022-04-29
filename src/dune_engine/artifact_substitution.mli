@@ -8,7 +8,7 @@ type configpath =
 
 type cbi_mode =
   | NA
-  | S of int
+  | Id of int
 
 (** A symbolic representation of the value to substitute to *)
 type t =
@@ -79,11 +79,11 @@ val copy :
   -> input_file:Path.t
   -> input:(Bytes.t -> int -> int -> int)
   -> output:(Bytes.t -> int -> int -> unit)
-  -> ?seek:((int -> unit) * (unit -> int)) option
+  -> ?seek:((int -> unit) * int) option
   -> unit
   -> unit Fiber.t
 
-val in_place_replace : src:Path.t -> unit Fiber.t
+val in_place_replace : src:Path.t -> int -> unit Fiber.t
 
 (** Produce the string that would replace the placeholder with the given value .*)
 val encode_replacement : len:int -> repl:string -> string
