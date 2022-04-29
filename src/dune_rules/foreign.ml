@@ -156,6 +156,8 @@ module Stubs = struct
     { loc; language; names; mode; flags; include_dirs; extra_deps }
 
   let decode = Dune_lang.Decoder.fields decode_stubs
+
+  let is_mode_dependent t = Option.is_some t.mode
 end
 
 module Library = struct
@@ -241,19 +243,19 @@ module Object = struct
     | None -> false
 
   let filter mode l =
-    List.filter_map
-      ~f:(fun (m, p) ->
-        match m with
-        | None -> Some p
-        | Some m when Mode.equal mode m -> Some p
-        | _ -> None)
-      l
+    List.filter_map ~f:(fun (m, p) -> if m = mode then Some p else None) l
 
   module L = struct
     type nonrec 'path t = 'path t list
 
-    let byte l = filter Mode.Byte l
+    let both l = filter None l
 
-    let native l = filter Mode.Native l
+    let byte ?(and_both = false) l =
+      let r = filter (Some Mode.Byte) l in
+      if and_both then r @ both l else r
+
+    let native ?(and_both = false) l =
+      let r = filter (Some Mode.Native) l in
+      if and_both then r @ both l else r
   end
 end

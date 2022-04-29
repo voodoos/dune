@@ -83,7 +83,11 @@ end = struct
       (modes.byte
       && Dynlink_supported.get dynlink ctx.supports_shared_libraries
       && ctx.dynamically_linked_foreign_archives)
-      (Lib_info.foreign_dll_files lib).byte
+      (Printf.eprintf "InstallFDLL: %s\n%!"
+         (String.concat ~sep:";"
+         @@ List.map (Lib_info.foreign_dll_files lib).byte
+              ~f:Path.Build.to_string);
+       (Lib_info.foreign_dll_files lib).byte)
 
   let lib_install_files sctx ~scope ~dir_contents ~dir ~sub_dir:lib_subdir
       (lib : Library.t) =

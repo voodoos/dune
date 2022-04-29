@@ -262,9 +262,11 @@ let link_many
             in
             let link_args, o_files =
               match linkage.mode with
-              | Native -> (link_args.native, Foreign.Object.L.native o_files)
+              | Native ->
+                ( link_args.native
+                , Foreign.Object.L.native ~and_both:true o_files )
               | Byte | Byte_for_jsoo | Byte_with_stubs_statically_linked_in ->
-                (link_args.byte, Foreign.Object.L.byte o_files)
+                (link_args.byte, Foreign.Object.L.byte ~and_both:true o_files)
             in
             let o_files = List.map ~f:Path.build o_files in
             link_exe cctx ~loc ~name ~linkage ~cm_files ~link_time_code_gen

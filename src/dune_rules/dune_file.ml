@@ -337,6 +337,9 @@ module Buildable = struct
     List.exists
       ~f:(fun stub -> Foreign_language.(equal Cxx stub.Foreign.Stubs.language))
       t.foreign_stubs
+
+  let has_mode_dependent_foreign_stubs t =
+    List.exists ~f:Foreign.Stubs.is_mode_dependent t.foreign_stubs
 end
 
 module Public_lib = struct
@@ -757,19 +760,42 @@ module Library = struct
   let has_foreign_cxx t = Buildable.has_foreign_cxx t.buildable
 
   let foreign_archives t =
-    (if List.is_empty t.buildable.foreign_stubs then []
+    if List.is_empty t.buildable.foreign_stubs then None
     else
       (* TODO @ulysse FOREIGN STUBS ?*)
-      [ Foreign.Archive.stubs (Lib_name.Local.to_string (snd t.name)) ])
-    @ List.map ~f:snd t.buildable.foreign_archives
+      Some
+        ( Foreign.Archive.stubs (Lib_name.Local.to_string (snd t.name))
+        , List.map ~f:snd t.buildable.foreign_archives )
 
   let foreign_lib_files t ~dir ~ext_lib ~mode =
-    List.map (foreign_archives t) ~f:(fun archive ->
-        Foreign.Archive.lib_file ~archive ~dir ~ext_lib ~mode:(Some mode))
+    let open Option.O in
+    let archives =
+      let+ lib_archive, foreign_archives = foreign_archives t in
+      let mode =
+        if Buildable.has_mode_dependent_foreign_stubs t.buildable then Some mode
+        else None
+      in
+      (* Stubs can have mode-dependent versions, not foreign archives *)
+      Foreign.Archive.lib_file ~archive:lib_archive ~dir ~ext_lib ~mode
+      :: List.map foreign_archives ~f:(fun archive ->
+             Foreign.Archive.lib_file ~archive ~dir ~ext_lib ~mode:None)
+    in
+    Option.value ~default:[] archives
 
   let foreign_dll_files t ~dir ~ext_dll ~mode =
-    List.map (foreign_archives t) ~f:(fun archive ->
-        Foreign.Archive.dll_file ~archive ~dir ~ext_dll ~mode:(Some mode))
+    let open Option.O in
+    let archives =
+      let+ lib_archive, foreign_archives = foreign_archives t in
+      let mode =
+        if Buildable.has_mode_dependent_foreign_stubs t.buildable then Some mode
+        else None
+      in
+      (* Stubs can have mode-dependent versions, not foreign archives *)
+      Foreign.Archive.dll_file ~archive:lib_archive ~dir ~ext_dll ~mode
+      :: List.map foreign_archives ~f:(fun archive ->
+             Foreign.Archive.dll_file ~archive ~dir ~ext_dll ~mode:None)
+    in
+    Option.value ~default:[] archives
 
   let archive_basename t ~ext = Lib_name.Local.to_string (snd t.name) ^ ext
 

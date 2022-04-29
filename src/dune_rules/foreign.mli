@@ -125,6 +125,8 @@ module Stubs : sig
     -> t
 
   val decode : t Dune_lang.Decoder.t
+
+  val is_mode_dependent : t -> bool
 end
 
 (** Foreign libraries.
@@ -216,8 +218,10 @@ module Object : sig
   module L : sig
     type nonrec 'path t = 'path t list
 
-    val byte : 'path t -> 'path list
+    val byte : ?and_both:bool -> 'path t -> 'path list
 
-    val native : 'path t -> 'path list
+    val native : ?and_both:bool -> 'path t -> 'path list
+
+    val both : 'path t -> 'path list
   end
 end
