@@ -1,4 +1,4 @@
-  $ dune build @install --debug-dep
+  $ dune build @install 
 
 
   $ dune install --prefix _install
@@ -14,8 +14,8 @@
 
   $ _install/bin/main
   Some custom information accessible with `My_cbi.custom`
-  Some custom information accessible with `My_cbi_exe.custom`
+  .exe_My_cbi_exe_cbi.txt-gen-1
 
   $ ocamlrun _install/bin/main-bc
-  Some custom information accessible with `My_cbi.custom`
-  Some custom information accessible with `My_cbi_exe.custom`
+  Some custom information access ible with `My_cbi.custom`
+  .exe_My_cbi_exe_cbi.txt-gen-0
