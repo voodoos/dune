@@ -134,7 +134,7 @@ module Lib = struct
        and+ plugins = mode_paths "plugins"
        and+ foreign_objects = paths "foreign_objects"
        and+ foreign_archives =
-         if lang.version >= (3, 0) then
+         if lang.version >= (3, 2) then
            (* TODO @FOREIGN ADD TESTS *)
            mode_paths "foreign_archives"
          else if lang.version >= (2, 0) then
