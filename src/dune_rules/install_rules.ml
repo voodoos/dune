@@ -66,7 +66,16 @@ end = struct
         Memo.return
           (let d = Lib_info.foreign_archives lib in
            (* TODO @FOREIGN check *)
-           List.rev_append d.byte d.native)
+           List.fold_left ~init:d.byte
+             ~f:(fun acc path ->
+               if
+                 List.mem acc
+                   ~equal:(fun a b ->
+                     Dyn.equal (Path.Build.to_dyn a) (Path.Build.to_dyn b))
+                   path
+               then acc
+               else path :: acc)
+             d.native)
     in
     List.concat_map
       ~f:(List.map ~f:(fun f -> (Section.Lib, f)))
@@ -83,9 +92,8 @@ end = struct
       (modes.byte
       && Dynlink_supported.get dynlink ctx.supports_shared_libraries
       && ctx.dynamically_linked_foreign_archives)
-      (Printf.eprintf "InstallFDLL: %s\n%!"
-         (String.concat ~sep:";"
-         @@ List.map (Lib_info.foreign_dll_files lib) ~f:Path.Build.to_string);
+      ((* Printf.eprintf "InstallFDLL: %s\n%!" (String.concat ~sep:";" @@
+          List.map (Lib_info.foreign_dll_files lib) ~f:Path.Build.to_string); *)
        Lib_info.foreign_dll_files lib)
 
   let lib_install_files sctx ~scope ~dir_contents ~dir ~sub_dir:lib_subdir
