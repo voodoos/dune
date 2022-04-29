@@ -225,9 +225,7 @@ let link_js ~name ~cm_files ~promote ~link_time_code_gen cctx =
   Jsoo_rules.build_exe cctx ~in_context ~src ~cm:top_sorted_cms ~promote
     ~link_time_code_gen:other_cm
 
-let link_many
-    ?(link_args =
-      Mode.Dict.make_both (Action_builder.return Command.Args.empty))
+let link_many ?(link_args = Action_builder.return Command.Args.empty)
     ?(o_files : Path.Build.t Foreign.Object.t list = [])
     ?(embed_in_plugin_libraries = []) ?sandbox ~programs ~linkages ~promote cctx
     =
@@ -263,10 +261,9 @@ let link_many
             let link_args, o_files =
               match linkage.mode with
               | Native ->
-                ( link_args.native
-                , Foreign.Object.L.native ~and_both:true o_files )
+                (link_args, Foreign.Object.L.native ~and_both:true o_files)
               | Byte | Byte_for_jsoo | Byte_with_stubs_statically_linked_in ->
-                (link_args.byte, Foreign.Object.L.byte ~and_both:true o_files)
+                (link_args, Foreign.Object.L.byte ~and_both:true o_files)
             in
             let o_files = List.map ~f:Path.build o_files in
             link_exe cctx ~loc ~name ~linkage ~cm_files ~link_time_code_gen

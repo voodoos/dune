@@ -468,7 +468,6 @@ let exe_link_only ~dir ~shared_cctx ~sandbox program ~deps =
     let+ () = deps in
     Command.Args.empty
   in
-  let link_args = Mode.Dict.make_both link_args in
   let program = program_of_module_and_dir ~dir program in
   Exe.link_many ~link_args ~programs:[ program ]
     ~linkages:[ Exe.Linkage.native ] ~promote:None shared_cctx ~sandbox

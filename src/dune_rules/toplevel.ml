@@ -114,9 +114,7 @@ let setup_rules_and_return_exe_path t =
   let linkage = Exe.Linkage.custom (Compilation_context.context t.cctx) in
   let program = Source.program t.source in
   let link_args =
-    Mode.Dict.make_both
-      (Action_builder.return
-         (Command.Args.As [ "-linkall"; "-warn-error"; "-31" ]))
+    Action_builder.return (Command.Args.As [ "-linkall"; "-warn-error"; "-31" ])
   in
   let* () =
     Exe.build_and_link t.cctx ~program ~linkages:[ linkage ] ~link_args

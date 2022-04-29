@@ -787,7 +787,8 @@ module Library = struct
     let archives =
       let+ lib_archive, foreign_archives = foreign_archives t in
       let mode =
-        if Buildable.has_mode_dependent_foreign_stubs t.buildable then Some Mode.Byte
+        if Buildable.has_mode_dependent_foreign_stubs t.buildable then
+          Some Mode.Byte
         else None
       in
       (* Stubs can have mode-dependent versions, not foreign archives *)
@@ -873,9 +874,7 @@ module Library = struct
       then Lib_info.Files [ archive ]
       else Lib_info.Needs_module_info archive
     in
-    let foreign_dll_files =
-      foreign_dll_files conf ~dir ~ext_dll
-    in
+    let foreign_dll_files = foreign_dll_files conf ~dir ~ext_dll in
     let exit_module = Option.bind conf.stdlib ~f:(fun x -> x.exit_module) in
     let jsoo_archive =
       (* XXX we shouldn't access the directory of the obj_dir directly. We

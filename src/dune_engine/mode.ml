@@ -85,12 +85,6 @@ module Dict = struct
 
   let make ~byte ~native = { byte; native }
 
-  let map_concurrently t ~f =
-    let open Memo.O in
-    let+ byte = f t.byte
-    and+ native = f t.native in
-    make ~byte ~native
-
   module Set = struct
     type nonrec t = bool t
 

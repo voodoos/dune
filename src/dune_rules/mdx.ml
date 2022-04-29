@@ -327,10 +327,7 @@ let mdx_prog_gen t ~sctx ~dir ~scope ~expander ~mdx_prog =
   let+ () =
     Exe.build_and_link cctx
       ~program:{ name; main_module_name; loc }
-      ~link_args:
-        (Mode.Dict.make
-           ~byte:(Action_builder.return (Command.Args.A "-linkall"))
-           ~native:(Action_builder.return Command.Args.empty))
+      ~link_args:(Action_builder.return (Command.Args.A "-linkall"))
       ~linkages:[ Exe.Linkage.byte ] ~promote:None
   in
   Path.Build.relative dir (name ^ ".bc")

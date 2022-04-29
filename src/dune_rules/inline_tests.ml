@@ -182,7 +182,6 @@ include Sub_system.Register_end_point (struct
         in
         Command.Args.As link_args_info
       in
-      let link_args = Mode.Dict.make_both link_args in
       Exe.build_and_link cctx
         ~program:{ name; main_module_name = Module.name main_module; loc }
         ~linkages ~link_args ~promote:None

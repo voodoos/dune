@@ -83,16 +83,6 @@ let o_files sctx ~dir ~expander ~(exes : Executables.t) ~linkages ~dir_contents
       ~dir_contents ~foreign_sources
     |> Memo.all
 
-(* in *)
-(* let byte, native = List.fold_left o_files_by_mode ~init:([], []) ~f:(fun
-   (byte, native) (mode, path) -> let path = Memo.Build.map ~f:Path.build path
-   in match mode with | None -> path::byte, path::native | Some Mode.Byte ->
-   path::byte, native | Some Native -> byte, path::native ) in let dict =
-   Mode.Dict.make ~byte ~native in *)
-(* Mode.Dict.map_concurrently ~f:(Memo.Build.all_concurrently) dict *)
-(* in *)
-(* o_files *)
-
 let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
     ~embed_in_plugin_libraries (exes : Dune_file.Executables.t) =
   (* Use "eobjs" rather than "objs" to avoid a potential conflict with a library
@@ -171,7 +161,7 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
     (* Building an archive for foreign stubs, we link the corresponding object
        files directly to improve perf. *)
     let link_deps, sandbox = Dep_conf_eval.unnamed ~expander exes.link_deps in
-    let make_link_args ~mode:_ =
+    let link_args =
       let use_standard_cxx_flags =
         match Dune_project.use_standard_c_and_cxx_flags project with
         | Some true -> Buildable.has_foreign_cxx exes.buildable
@@ -212,14 +202,20 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
             (List.concat_map ctypes_cclib_flags ~f:(fun f -> [ "-cclib"; f ]))
         ]
     in
-    let link_args = Mode.Dict.of_func make_link_args in
     let* o_files =
       o_files sctx ~dir ~expander ~exes ~linkages ~dir_contents
         ~requires_compile
     in
-    (* let () = Mode.Dict.map o_files ~f:(fun o_files -> let* o_files = o_files
-       in Check_rules.add_files sctx ~dir o_files ) in *)
-    (* TODO @FOREIGN *)
+    let* () =
+      let files =
+        List.concat_map ~f:(List.map ~f:Path.build)
+          [ Foreign.Object.L.byte o_files
+          ; Foreign.Object.L.native o_files
+          ; Foreign.Object.L.both o_files
+          ]
+      in
+      Check_rules.add_files sctx ~dir files
+    in
     let buildable = exes.Executables.buildable in
     match buildable.Buildable.ctypes with
     | None ->

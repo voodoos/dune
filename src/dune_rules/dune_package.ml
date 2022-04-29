@@ -193,12 +193,11 @@ module Lib = struct
            ~orig_src_dir ~obj_dir ~version ~synopsis ~main_module_name
            ~sub_systems ~requires ~foreign_objects ~plugins ~archives
            ~ppx_runtime_deps ~foreign_archives
-           ~native_archives:(Files native_archives)
-           ~foreign_dll_files:[] ~jsoo_runtime
-           ~jsoo_archive ~preprocess ~enabled ~virtual_deps ~dune_version
-           ~virtual_ ~entry_modules ~implements ~default_implementation ~modes
-           ~wrapped ~special_builtin_support ~exit_module:None
-           ~instrumentation_backend
+           ~native_archives:(Files native_archives) ~foreign_dll_files:[]
+           ~jsoo_runtime ~jsoo_archive ~preprocess ~enabled ~virtual_deps
+           ~dune_version ~virtual_ ~entry_modules ~implements
+           ~default_implementation ~modes ~wrapped ~special_builtin_support
+           ~exit_module:None ~instrumentation_backend
        in
        { info; main_module_name; modules = Some modules })
 
