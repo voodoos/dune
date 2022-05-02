@@ -77,12 +77,11 @@ let o_files sctx ~dir ~expander ~(exes : Executables.t) ~linkages ~dir_contents
       let first_exe = first_exe exes in
       Foreign_sources.for_exes foreign_sources ~first_exe
     in
-    let+ o_files =
-      Foreign_rules.build_o_files ~sctx ~dir ~expander
-        ~requires:requires_compile ~dir_contents ~foreign_sources
-      |> Memo.all_concurrently
-    in
-    List.map o_files ~f:Path.build
+    (* let+ o_files = *)
+    (* let o_files_by_mode = *)
+    Foreign_rules.build_o_files ~sctx ~dir ~expander ~requires:requires_compile
+      ~dir_contents ~foreign_sources
+    |> Memo.all
 
 let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
     ~embed_in_plugin_libraries (exes : Dune_file.Executables.t) =
@@ -193,7 +192,9 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
              (* XXX: don't these need the msvc hack being done in lib_rules? *)
              (* XXX: also the Command.quote_args being done in lib_rules? *)
              List.map foreign_archives ~f:(fun archive ->
-                 let lib = Foreign.Archive.lib_file ~archive ~dir ~ext_lib in
+                 let lib =
+                   Foreign.Archive.lib_file ~archive ~dir ~ext_lib ~mode:None
+                 in
                  Command.Args.S [ A "-cclib"; Dep (Path.build lib) ]))
           (* XXX: don't these need the msvc hack being done in lib_rules? *)
           (* XXX: also the Command.quote_args being done in lib_rules? *)
@@ -205,7 +206,16 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
       o_files sctx ~dir ~expander ~exes ~linkages ~dir_contents
         ~requires_compile
     in
-    let* () = Check_rules.add_files sctx ~dir o_files in
+    let* () =
+      let files =
+        List.concat_map ~f:(List.map ~f:Path.build)
+          [ Foreign.Object.L.byte o_files
+          ; Foreign.Object.L.native o_files
+          ; Foreign.Object.L.both o_files
+          ]
+      in
+      Check_rules.add_files sctx ~dir files
+    in
     let buildable = exes.Executables.buildable in
     match buildable.Buildable.ctypes with
     | None ->

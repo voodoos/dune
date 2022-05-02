@@ -42,7 +42,7 @@ module Archive : sig
 
     val to_string : t -> string
 
-    val path : dir:Path.Build.t -> t -> Path.Build.t
+    val path : dir:Path.Build.t -> mode:Mode.t option -> t -> Path.Build.t
 
     val decode : t Dune_lang.Decoder.t
 
@@ -50,24 +50,44 @@ module Archive : sig
 
     val lib_file_prefix : string
 
-    val lib_file : t -> dir:Path.Build.t -> ext_lib:string -> Path.Build.t
+    val lib_file :
+         t
+      -> dir:Path.Build.t
+      -> ext_lib:string
+      -> mode:Mode.t option
+      -> Path.Build.t
 
-    val dll_file : t -> dir:Path.Build.t -> ext_dll:string -> Path.Build.t
+    val dll_file :
+         t
+      -> dir:Path.Build.t
+      -> ext_dll:string
+      -> mode:Mode.t option
+      -> Path.Build.t
   end
 
   type t
 
   val dir_path : dir:Path.Build.t -> t -> Path.Build.t
 
-  val name : t -> Name.t
+  val name : mode:Mode.t option -> t -> Name.t
 
   val stubs : string -> t
 
   val decode : t Dune_lang.Decoder.t
 
-  val lib_file : archive:t -> dir:Path.Build.t -> ext_lib:string -> Path.Build.t
+  val lib_file :
+       archive:t
+    -> dir:Path.Build.t
+    -> ext_lib:string
+    -> mode:Mode.t option
+    -> Path.Build.t
 
-  val dll_file : archive:t -> dir:Path.Build.t -> ext_dll:string -> Path.Build.t
+  val dll_file :
+       archive:t
+    -> dir:Path.Build.t
+    -> ext_dll:string
+    -> mode:Mode.t option
+    -> Path.Build.t
 end
 
 (** A type of foreign library "stubs", which includes all fields of the
@@ -89,6 +109,7 @@ module Stubs : sig
     { loc : Loc.t
     ; language : Foreign_language.t
     ; names : Ordered_set_lang.t
+    ; mode : Mode.t option
     ; flags : Ordered_set_lang.Unexpanded.t
     ; include_dirs : Include_dir.t list
     ; extra_deps : Dep_conf.t list
@@ -99,10 +120,13 @@ module Stubs : sig
        loc:Loc.t
     -> language:Foreign_language.t
     -> names:Ordered_set_lang.t
+    -> mode:Mode.t option
     -> flags:Ordered_set_lang.Unexpanded.t
     -> t
 
   val decode : t Dune_lang.Decoder.t
+
+  val is_mode_dependent : t -> bool
 end
 
 (** Foreign libraries.
@@ -161,7 +185,7 @@ end
 
 (** A map from object names to the corresponding sources. *)
 module Sources : sig
-  type t = (Loc.t * Source.t) String.Map.t
+  type t = (Loc.t * Mode.t option * Source.t) String.Map.t
 
   val object_files :
     t -> dir:Path.Build.t -> ext_obj:string -> Path.Build.t list
@@ -181,5 +205,23 @@ module Sources : sig
       -> dir:Path.Build.t
       -> files:String.Set.t
       -> t
+  end
+end
+
+module Object : sig
+  type 'path t = Mode.t option * 'path
+
+  val for_both : 'path t -> bool
+
+  val for_ : mode:Mode.t -> 'path t -> bool
+
+  module L : sig
+    type nonrec 'path t = 'path t list
+
+    val byte : ?and_both:bool -> 'path t -> 'path list
+
+    val native : ?and_both:bool -> 'path t -> 'path list
+
+    val both : 'path t -> 'path list
   end
 end

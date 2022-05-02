@@ -24,13 +24,20 @@ let possible_sources ~language obj ~dune_version =
         (Foreign_language.equal lang language && dune_version >= version)
         (obj ^ "." ^ ext))
 
+let add_mode_suffix mode s =
+  match mode with
+  | None -> s
+  | Some mode -> String.concat ~sep:"_" [ s; Mode.to_string mode ]
+
 module Archive = struct
   module Name = struct
     include String
 
     let to_string t = t
 
-    let path ~dir t = Path.Build.relative dir t
+    let path ~dir ~mode archive_name =
+      let archive_name = add_mode_suffix mode archive_name in
+      Path.Build.relative dir archive_name
 
     let decode =
       Dune_lang.Decoder.plain_string (fun ~loc s ->
@@ -47,11 +54,13 @@ module Archive = struct
 
     let lib_file_prefix = "lib"
 
-    let lib_file archive_name ~dir ~ext_lib =
+    let lib_file archive_name ~dir ~ext_lib ~mode =
+      let archive_name = add_mode_suffix mode archive_name in
       Path.Build.relative dir
         (sprintf "%s%s%s" lib_file_prefix archive_name ext_lib)
 
-    let dll_file archive_name ~dir ~ext_dll =
+    let dll_file archive_name ~dir ~ext_dll ~mode =
+      let archive_name = add_mode_suffix mode archive_name in
       Path.Build.relative dir (sprintf "dll%s%s" archive_name ext_dll)
   end
 
@@ -70,7 +79,7 @@ module Archive = struct
 
   let dir_path ~dir t = Path.Build.relative dir t.dir
 
-  let name t = t.name
+  let name ~mode t = add_mode_suffix mode t.name
 
   let stubs archive_name = { dir = "."; name = Name.stubs archive_name }
 
@@ -79,13 +88,13 @@ module Archive = struct
     let+ s = string in
     { dir = Filename.dirname s; name = Filename.basename s }
 
-  let lib_file ~archive ~dir ~ext_lib =
+  let lib_file ~archive ~dir ~ext_lib ~mode =
     let dir = dir_path ~dir archive in
-    Name.lib_file archive.name ~dir ~ext_lib
+    Name.lib_file archive.name ~dir ~ext_lib ~mode
 
-  let dll_file ~archive ~dir ~ext_dll =
+  let dll_file ~archive ~dir ~ext_dll ~mode =
     let dir = dir_path ~dir archive in
-    Name.dll_file archive.name ~dir ~ext_dll
+    Name.dll_file archive.name ~dir ~ext_dll ~mode
 end
 
 module Stubs = struct
@@ -111,13 +120,14 @@ module Stubs = struct
     { loc : Loc.t
     ; language : Foreign_language.t
     ; names : Ordered_set_lang.t
+    ; mode : Mode.t option
     ; flags : Ordered_set_lang.Unexpanded.t
     ; include_dirs : Include_dir.t list
     ; extra_deps : Dep_conf.t list
     }
 
-  let make ~loc ~language ~names ~flags =
-    { loc; language; names; flags; include_dirs = []; extra_deps = [] }
+  let make ~loc ~language ~names ~mode ~flags =
+    { loc; language; names; mode; flags; include_dirs = []; extra_deps = [] }
 
   let decode_stubs =
     let open Dune_lang.Decoder in
@@ -126,6 +136,7 @@ module Stubs = struct
       located (field_o "archive_name" string)
     and+ language = field "language" decode_lang
     and+ names = Ordered_set_lang.field "names"
+    and+ mode = field_o "mode" Mode.decode
     and+ flags = Ordered_set_lang.Unexpanded.field "flags"
     and+ include_dirs =
       field ~default:[] "include_dirs" (repeat Include_dir.decode)
@@ -142,9 +153,11 @@ module Stubs = struct
                (foreign_library ...) stanza."
           ]
     in
-    { loc; language; names; flags; include_dirs; extra_deps }
+    { loc; language; names; mode; flags; include_dirs; extra_deps }
 
   let decode = Dune_lang.Decoder.fields decode_stubs
+
+  let is_mode_dependent t = Option.is_some t.mode
 end
 
 module Library = struct
@@ -178,20 +191,22 @@ module Source = struct
   let path t = t.path
 
   let object_name t =
+    (* TODO @FOREIGN for mode *)
     t.path |> Path.Build.split_extension |> fst |> Path.Build.basename
+    |> add_mode_suffix t.stubs.mode
 
   let make ~stubs ~path = { stubs; path }
 end
 
 module Sources = struct
-  type t = (Loc.t * Source.t) String.Map.t
+  type t = (Loc.t * Mode.t option * Source.t) String.Map.t
 
   let object_files t ~dir ~ext_obj =
     String.Map.keys t
     |> List.map ~f:(fun c -> Path.Build.relative dir (c ^ ext_obj))
 
   let has_cxx_sources (t : t) =
-    String.Map.exists t ~f:(fun (_loc, source) ->
+    String.Map.exists t ~f:(fun (_loc, _, source) ->
         Foreign_language.(equal Cxx source.stubs.language))
 
   module Unresolved = struct
@@ -214,5 +229,33 @@ module Sources = struct
           | Some (obj, language) ->
             let path = Path.Build.relative dir fn in
             String.Map.add_multi acc obj (language, path))
+  end
+end
+
+module Object = struct
+  type 'path t = Mode.t option * 'path
+
+  let for_both (mode, _) = Option.is_none mode
+
+  let for_ ~mode (m, _) =
+    match m with
+    | Some m -> Mode.equal m mode
+    | None -> false
+
+  let filter mode l =
+    List.filter_map ~f:(fun (m, p) -> if m = mode then Some p else None) l
+
+  module L = struct
+    type nonrec 'path t = 'path t list
+
+    let both l = filter None l
+
+    let byte ?(and_both = false) l =
+      let r = filter (Some Mode.Byte) l in
+      if and_both then r @ both l else r
+
+    let native ?(and_both = false) l =
+      let r = filter (Some Mode.Native) l in
+      if and_both then r @ both l else r
   end
 end

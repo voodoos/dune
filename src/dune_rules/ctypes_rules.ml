@@ -512,8 +512,8 @@ let gen_rules ~cctx ~buildable ~loc ~scope ~dir ~sctx =
     let ext_dll = ctx.Context.lib_config.ext_dll in
     List.concat_map buildable.Buildable.foreign_archives
       ~f:(fun (_loc, archive) ->
-        [ Foreign.Archive.lib_file ~archive ~dir ~ext_lib
-        ; Foreign.Archive.dll_file ~archive ~dir ~ext_dll
+        [ Foreign.Archive.lib_file ~mode:None ~archive ~dir ~ext_lib
+        ; Foreign.Archive.dll_file ~mode:None ~archive ~dir ~ext_dll
         ])
   in
   let* expander = Super_context.expander sctx ~dir in

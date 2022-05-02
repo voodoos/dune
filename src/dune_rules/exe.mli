@@ -49,7 +49,7 @@ end
    between executables without requiring an intermediate library. *)
 val link_many :
      ?link_args:Command.Args.without_targets Command.Args.t Action_builder.t
-  -> ?o_files:Path.t list
+  -> ?o_files:Path.Build.t Foreign.Object.t list
   -> ?embed_in_plugin_libraries:(Loc.t * Lib_name.t) list
   -> ?sandbox:Sandbox_config.t
   -> programs:Program.t list
@@ -60,7 +60,7 @@ val link_many :
 
 val build_and_link :
      ?link_args:Command.Args.without_targets Command.Args.t Action_builder.t
-  -> ?o_files:Path.t list
+  -> ?o_files:Path.Build.t Foreign.Object.t list
   -> ?embed_in_plugin_libraries:(Loc.t * Lib_name.t) list
   -> ?sandbox:Sandbox_config.t
   -> program:Program.t
@@ -71,7 +71,7 @@ val build_and_link :
 
 val build_and_link_many :
      ?link_args:Command.Args.without_targets Command.Args.t Action_builder.t
-  -> ?o_files:Path.t list
+  -> ?o_files:Path.Build.t Foreign.Object.t list
   -> ?embed_in_plugin_libraries:(Loc.t * Lib_name.t) list
   -> ?sandbox:Sandbox_config.t
   -> programs:Program.t list
