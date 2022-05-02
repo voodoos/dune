@@ -109,12 +109,7 @@ let eval_foreign_stubs (d : _ Dir_with_dune.t) foreign_stubs
               ])
     in
     String.Map.fold names ~init:String.Map.empty ~f:(fun (loc, src) acc ->
-        let new_keys =
-          (* match src.stubs.mode with | None -> Foreign.Source. [ (Mode.Byte,
-             object_name Byte src) ; (Native, object_name Native src) ] | Some
-             mode -> *)
-          [ (src.stubs.mode, Foreign.Source.object_name src) ]
-        in
+        let new_keys = [ (src.stubs.mode, Foreign.Source.object_name src) ] in
         List.fold_left new_keys ~init:acc ~f:(fun acc (mode, k) ->
             String.Map.add_exn acc k (loc, mode, src)))
   in
@@ -158,7 +153,33 @@ let make (d : _ Dir_with_dune.t) ~(sources : Foreign.Sources.Unresolved.t)
     in
     List.(rev libs, rev foreign_libs, rev exes)
   in
-  let () = ignore lib_config (* TODO @FOREIGN re implement check *) in
+  let () =
+    let objects =
+      List.concat
+        [ List.map libs ~f:snd
+        ; List.map foreign_libs ~f:(fun (_, (_, sources)) -> sources)
+        ; List.map exes ~f:snd
+        ]
+      |> List.concat_map ~f:(fun sources ->
+             String.Map.to_list_map sources ~f:(fun _ (loc, _mode, source) ->
+                 (Foreign.Source.object_name source ^ lib_config.ext_obj, loc)))
+    in
+    match String.Map.of_list objects with
+    | Ok _ -> ()
+    | Error (path, loc, another_loc) ->
+      User_error.raise ~loc
+        [ Pp.textf
+            "Multiple definitions for the same object file %S. See another \
+             definition at %s."
+            path
+            (Loc.to_file_colon_line another_loc)
+        ]
+        ~hints:
+          [ Pp.text
+              "You can avoid the name clash by renaming one of the objects, or \
+               by placing it into a different directory."
+          ]
+  in
   (* TODO: Make this more type-safe by switching to non-empty lists. *)
   let executables =
     String.Map.of_list_map_exn exes ~f:(fun (exes, m) ->
