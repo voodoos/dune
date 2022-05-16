@@ -16,6 +16,7 @@ let index_path_in_obj_dir ?for_cmt obj_dir =
 ;;
 
 let project_index ~build_dir = Path.Build.relative build_dir "project.ocaml-index"
+(* FIXME: this doesn't work if the workspace field is in a parent of the dune-project file. *)
 
 let cctx_rules cctx =
   let open Memo.O in
