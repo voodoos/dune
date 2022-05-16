@@ -26,8 +26,8 @@ $ tree -a
   dune__exe__Othermod.cmt
 
 
-  $ dune build _build/default/workspace.uideps
-  $ ocaml-uideps dump _build/default/workspace.uideps
+  $ dune build _build/default/unit.uideps
+  $ ocaml-uideps dump _build/default/unit.uideps
   {uid: Dune__exe__Othermod.0; locs: File "othermod.ml", line 1, characters 4-5;
                                      File "othermod.ml", line 2, characters 17-18
    uid: Dune__exe__Othermod; locs: File ".main.eobjs/dune__exe.ml-gen", line 6, characters 18-37;
