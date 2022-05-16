@@ -39,6 +39,21 @@ module Dune_config = struct
     let decode = enum all
   end
 
+  module Workspace_indexation = struct
+    type t =
+      | Enabled
+      | Disabled
+
+    let all = [ "enabled", Enabled; "disabled", Disabled ]
+
+    let to_dyn = function
+      | Enabled -> Dyn.Variant ("Enabled", [])
+      | Disabled -> Dyn.Variant ("Disabled", [])
+    ;;
+
+    let decode = enum all
+  end
+
   module Concurrency = struct
     type t =
       | Fixed of int
@@ -120,6 +135,7 @@ module Dune_config = struct
       { display : Display.t field
       ; concurrency : Concurrency.t field
       ; terminal_persistence : Terminal_persistence.t field
+      ; workspace_indexation : Workspace_indexation.t field
       ; sandboxing_preference : Sandboxing_preference.t field
       ; cache_enabled : Config.Toggle.t field
       ; cache_reproducibility_check : Dune_cache.Config.Reproducibility_check.t field
@@ -144,6 +160,7 @@ module Dune_config = struct
       { display = field a.display b.display
       ; concurrency = field a.concurrency b.concurrency
       ; terminal_persistence = field a.terminal_persistence b.terminal_persistence
+      ; workspace_indexation = field a.workspace_indexation b.workspace_indexation
       ; sandboxing_preference = field a.sandboxing_preference b.sandboxing_preference
       ; cache_enabled = field a.cache_enabled b.cache_enabled
       ; cache_reproducibility_check =
@@ -170,6 +187,7 @@ module Dune_config = struct
       { M.display
       ; concurrency
       ; terminal_persistence
+      ; workspace_indexation
       ; sandboxing_preference
       ; cache_enabled
       ; cache_reproducibility_check
@@ -183,6 +201,7 @@ module Dune_config = struct
         [ "display", field Display.to_dyn display
         ; "concurrency", field Concurrency.to_dyn concurrency
         ; "terminal_persistence", field Terminal_persistence.to_dyn terminal_persistence
+        ; "workspace_indexation", field Workspace_indexation.to_dyn workspace_indexation
         ; ( "sandboxing_preference"
           , field (Dyn.list Sandbox_mode.to_dyn) sandboxing_preference )
         ; "cache_enabled", field Config.Toggle.to_dyn cache_enabled
@@ -212,6 +231,7 @@ module Dune_config = struct
       { display = None
       ; concurrency = None
       ; terminal_persistence = None
+      ; workspace_indexation = None
       ; sandboxing_preference = None
       ; cache_enabled = None
       ; cache_reproducibility_check = None
@@ -278,6 +298,7 @@ module Dune_config = struct
     { display = Simple { verbosity = Quiet; status_line = not Execution_env.inside_dune }
     ; concurrency = (if Execution_env.inside_dune then Fixed 1 else Auto)
     ; terminal_persistence = Clear_on_rebuild
+    ; workspace_indexation = Disabled
     ; sandboxing_preference = []
     ; cache_enabled = `Disabled
     ; cache_reproducibility_check = Skip
@@ -298,6 +319,8 @@ module Dune_config = struct
     and+ concurrency = field_o "jobs" (1, 0) Concurrency.decode
     and+ terminal_persistence =
       field_o "terminal-persistence" (1, 0) Terminal_persistence.decode
+    and+ workspace_indexation =
+      field_o "workspace_indexation" (3, 5) Workspace_indexation.decode
     and+ sandboxing_preference =
       field_o "sandboxing_preference" (1, 0) Sandboxing_preference.decode
     and+ cache_enabled = field_o "cache" (2, 0) (enum Config.Toggle.all)
@@ -361,6 +384,7 @@ module Dune_config = struct
     { Partial.display
     ; concurrency
     ; terminal_persistence
+    ; workspace_indexation
     ; sandboxing_preference
     ; cache_enabled
     ; cache_reproducibility_check

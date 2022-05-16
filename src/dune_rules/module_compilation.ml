@@ -167,6 +167,7 @@ let build_cm
             let+ () = copy_interface ~dir ~obj_dir ~sctx ~cm_kind m in
             [], [], []))
    in
+   let* with_index = Ocaml_index.activated in
    let other_targets =
      match cm_kind with
      | Ocaml (Cmi | Cmo) | Melange (Cmi | Cmj) -> other_targets
@@ -196,7 +197,9 @@ let build_cm
          let fn =
            Option.value_exn (Obj_dir.Module.cmt_file obj_dir m ~cm_kind ~ml_kind)
          in
-         fn :: other_targets, A "-bin-annot")
+         if with_index
+         then fn :: other_targets, As [ "-bin-annot"; "-store-usage-index" ]
+         else fn :: other_targets, A "-bin-annot")
        else other_targets, Command.Args.empty
    in
    let opaque_arg : _ Command.Args.t =
