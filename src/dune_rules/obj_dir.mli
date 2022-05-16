@@ -100,6 +100,8 @@ module Module : sig
 
   val cmt_file : 'path t -> Module.t -> ml_kind:Ml_kind.t -> 'path option
 
+  val uideps_file : 'path t -> Module.t -> ml_kind:Ml_kind.t -> 'path option
+
   val obj_file : 'path t -> Module.t -> kind:Cm_kind.t -> ext:string -> 'path
 
   (** Same as [cm_file] but raises if [cm_kind] is [Cmo] or [Cmx] and the module
