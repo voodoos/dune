@@ -26,7 +26,7 @@ let generate cctx (m : Module.t) =
   else Memo.return ()
 
 let aggregate cctx (modules : Module.t list) =
-  if Compilation_context.bin_annot cctx then (
+  if Compilation_context.bin_annot cctx then
     let sctx = CC.super_context cctx in
     let dir = CC.dir cctx in
     let obj_dir = CC.obj_dir cctx in
@@ -35,11 +35,10 @@ let aggregate cctx (modules : Module.t list) =
           Option.value_exn (Obj_dir.Module.uideps_file obj_dir m ~ml_kind:Impl)
           |> Path.build)
     in
-    let target = Obj_dir.dir obj_dir in
-    let target = Path.Build.relative target "workspace.uideps" in
+    let target = Path.Build.relative (Obj_dir.dir obj_dir) "unit.uideps" in
     let open Memo.O in
     let* ocaml_uideps = ocaml_uideps sctx ~dir in
     SC.add_rule sctx ~dir
       (Command.run ~dir:(Path.build dir) ocaml_uideps
-         [ A "aggregate"; Deps uideps_files; Hidden_targets [ target ] ]))
+         [ A "aggregate"; A "-o"; Target target; Deps uideps_files ])
   else Memo.return ()
