@@ -42,3 +42,10 @@ $ tree -a
    uid: Dune__exe.0; locs: File ".main.eobjs/dune__exe.ml-gen", line 2, characters 0-29
    uid: Dune__exe__Main; locs: File ".main.eobjs/dune__exe.ml-gen", line 2, characters 14-29
    }
+  
+  $ dune build _build/default/lib/unit.uideps
+
+  $ dune build _build/default/context.uideps
+  $ ocaml-uideps dump _build/default/context.uideps
+
+  $ tree -a _build/default
