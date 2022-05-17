@@ -361,7 +361,7 @@ let build_all cctx =
           in
           build_module cctx m)
   in
-  Uideps.aggregate cctx modules_list
+  Uideps.aggregate_modules cctx modules_list
 
 let with_empty_intf ~sctx ~dir module_ =
   let name =

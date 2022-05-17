@@ -25,20 +25,23 @@ let generate cctx (m : Module.t) =
          [ A "process-cmt"; Dep cmt; Hidden_targets [ fn ] ])
   else Memo.return ()
 
-let aggregate cctx (modules : Module.t list) =
-  if Compilation_context.bin_annot cctx then
-    let sctx = CC.super_context cctx in
-    let dir = CC.dir cctx in
-    let obj_dir = CC.obj_dir cctx in
-    let uideps_files =
-      List.map modules ~f:(fun m ->
-          Option.value_exn (Obj_dir.Module.uideps_file obj_dir m ~ml_kind:Impl)
-          |> Path.build)
-    in
-    let target = Path.Build.relative (Obj_dir.dir obj_dir) "unit.uideps" in
+let aggregate sctx ~dir ~target ~uideps =
     let open Memo.O in
     let* ocaml_uideps = ocaml_uideps sctx ~dir in
+    let uideps = List.map ~f:Path.build uideps in
     SC.add_rule sctx ~dir
       (Command.run ~dir:(Path.build dir) ocaml_uideps
-         [ A "aggregate"; A "-o"; Target target; Deps uideps_files ])
-  else Memo.return ()
+         [ A "aggregate"; A "-o"; Target target; Deps uideps ])
+
+  let aggregate_modules cctx (modules : Module.t list) =
+    if Compilation_context.bin_annot cctx then
+      let sctx = CC.super_context cctx in
+      let dir = CC.dir cctx in
+      let obj_dir = CC.obj_dir cctx in
+      let uideps =
+        List.map modules ~f:(fun m ->
+            Option.value_exn (Obj_dir.Module.uideps_file obj_dir m ~ml_kind:Impl))
+      in
+      let target = Path.Build.relative (Obj_dir.dir obj_dir) "unit.uideps" in
+      aggregate sctx ~dir ~target ~uideps
+    else Memo.return ()

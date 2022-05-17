@@ -4,8 +4,9 @@ open Dune_file
 open Memo.O
 
 module For_stanza : sig
-  type ('merlin, 'cctx, 'js, 'source_dirs) t =
+  type ('merlin, 'uideps, 'cctx, 'js, 'source_dirs) t =
     { merlin : 'merlin
+    ; uideps : 'uideps
     ; cctx : 'cctx
     ; js : 'js
     ; source_dirs : 'source_dirs
@@ -22,22 +23,24 @@ module For_stanza : sig
     -> expander:Expander.t
     -> files_to_install:(Install_conf.t -> unit Memo.t)
     -> ( Merlin.t list
+       , Path.Build.t Obj_dir.t list
        , (Loc.t * Compilation_context.t) list
        , Path.Build.t list
        , Path.Source.t list )
        t
        Memo.t
 end = struct
-  type ('merlin, 'cctx, 'js, 'source_dirs) t =
+  type ('merlin, 'uideps, 'cctx, 'js, 'source_dirs) t =
     { merlin : 'merlin
+    ; uideps : 'uideps
     ; cctx : 'cctx
     ; js : 'js
     ; source_dirs : 'source_dirs
     }
 
-  let empty_none = { merlin = None; cctx = None; js = None; source_dirs = None }
+  let empty_none = { merlin = None; uideps = None; cctx = None; js = None; source_dirs = None }
 
-  let empty_list = { merlin = []; cctx = []; js = []; source_dirs = [] }
+  let empty_list = { merlin = []; uideps = []; cctx = []; js = []; source_dirs = [] }
 
   let cons_maybe hd_o tl =
     match hd_o with
@@ -46,6 +49,7 @@ end = struct
 
   let cons acc x =
     { merlin = cons_maybe x.merlin acc.merlin
+    ; uideps = cons_maybe x.uideps acc.uideps
     ; cctx = cons_maybe x.cctx acc.cctx
     ; source_dirs = cons_maybe x.source_dirs acc.source_dirs
     ; js =
@@ -57,6 +61,7 @@ end = struct
   let rev t =
     { t with
       merlin = List.rev t.merlin
+    ; uideps = List.rev t.uideps
     ; cctx = List.rev t.cctx
     ; source_dirs = List.rev t.source_dirs
     }
@@ -80,6 +85,7 @@ end = struct
           Lib_rules.rules lib ~sctx ~dir ~scope ~dir_contents ~expander
         in
         { merlin = Some merlin
+        ; uideps = Some (Compilation_context.obj_dir cctx)
         ; cctx = Some (lib.buildable.loc, cctx)
         ; js = None
         ; source_dirs = None
@@ -99,6 +105,7 @@ end = struct
           Exe_rules.rules exes ~sctx ~dir ~scope ~expander ~dir_contents
         in
         { merlin = Some merlin
+        ; uideps = Some (Compilation_context.obj_dir cctx)
         ; cctx = Some (exes.buildable.loc, cctx)
         ; js =
             Some
@@ -116,6 +123,7 @@ end = struct
         Test_rules.rules tests ~sctx ~dir ~scope ~expander ~dir_contents
       in
       { merlin = Some merlin
+      ; uideps = None
       ; cctx = Some (tests.exes.buildable.loc, cctx)
       ; js = None
       ; source_dirs = None
@@ -130,7 +138,7 @@ end = struct
           | In_build_dir _ | External _ -> None
         else None
       in
-      Memo.return { merlin = None; cctx = None; js = None; source_dirs }
+      Memo.return { merlin = None; uideps = None; cctx = None; js = None; source_dirs }
     | Install i ->
       let+ () = files_to_install i in
       empty_none
@@ -212,6 +220,7 @@ let gen_rules sctx dir_contents cctxs expander
       (Action_builder.paths files_and_dirs)
   in
   let* { For_stanza.merlin = merlins
+       ; uideps = _
        ; cctx = cctxs
        ; js = js_targets
        ; source_dirs
@@ -226,6 +235,20 @@ let gen_rules sctx dir_contents cctxs expander
           lib_src_dirs ~dir_contents |> List.rev_append (src_dir :: source_dirs)
         in
         Merlin.add_rules sctx ~dir:ctx_dir ~more_src_dirs ~expander merlin)
+  in
+  let* () =
+    let uideps = List.filter_map cctxs ~f:(fun (_, cctx) ->
+      if Compilation_context.bin_annot cctx then
+      Some (Path.Build.relative (Obj_dir.dir (Compilation_context.obj_dir cctx)) "unit.uideps") else None
+      )
+    in
+    Printf.eprintf "Workspace uideps: [%s]\n%!" (List.map uideps ~f:(Path.Build.to_string) |> String.concat ~sep:";");
+    (* let context = sctx |> Super_context.context |> Context.name in
+    let ctx = Context_name.to_string context in
+
+    let ctx_root = Path.Build.(relative root ctx) in *)
+    let target = Path.Build.relative ctx_dir "context.uideps" in
+    Uideps.aggregate sctx ~dir:ctx_dir ~target ~uideps
   in
   let* () =
     Memo.parallel_iter stanzas ~f:(fun stanza ->
