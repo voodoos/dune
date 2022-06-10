@@ -374,10 +374,9 @@ module Module = struct
     let ext = Ml_kind.cmt_ext ml_kind in
     Option.map file ~f:(fun _ -> obj_file t m ~kind:Cmi ~ext)
 
-  let uideps_file t m ~(ml_kind : Ml_kind.t) =
-    let file = Module.file m ~ml_kind in
+  let uideps_file t m =
     let ext = ".uideps" in
-    Option.map file ~f:(fun _ -> obj_file t m ~kind:Cmi ~ext)
+    obj_file t m ~kind:Cmi ~ext
 
   let cmti_file t m =
     let ext =
