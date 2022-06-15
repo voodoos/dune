@@ -2,7 +2,7 @@
   $ dune exec ./main.exe
   42
 
-  $ dune build @check
+  $ dune build @uideps
   $ find . -name '*.uideps'
   ./_build/default/.main.eobjs/cctx.uideps
   ./_build/default/lib/.otherlib.objs/cctx.uideps
