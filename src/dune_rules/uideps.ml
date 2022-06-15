@@ -3,45 +3,72 @@ open! Stdune
 module CC = Compilation_context
 module SC = Super_context
 
+(** Indexing all definitions usages is a two step process:
+
+    - first, for all compilation context we generate the uideps for all the
+      modules of that cctx in the corresponding obj_dir.
+    - then we aggregate all the cctx uideps *)
+
 let ocaml_uideps sctx ~dir =
   Super_context.resolve_program ~loc:None ~dir sctx "ocaml-uideps"
 
-let generate cctx (m : Module.t) =
-  if Compilation_context.bin_annot cctx then
-    let sctx = CC.super_context cctx in
-    let dir = CC.dir cctx in
-    let obj_dir = CC.obj_dir cctx in
-    let cmt = Obj_dir.Module.cmt_file obj_dir m ~ml_kind:Impl in
-    match cmt with
-    | None -> Memo.return ()
-    | Some cmt ->
-      let fn = Obj_dir.Module.uideps_file obj_dir m in
-      let open Memo.O in
-      let* ocaml_uideps = ocaml_uideps sctx ~dir in
-      SC.add_rule sctx ~dir
-        (Command.run ~dir:(Path.build dir) ocaml_uideps
-           [ A "process-cmt"; Dep (Path.build cmt); Hidden_targets [ fn ] ])
-  else Memo.return ()
+let uideps_path_in_obj_dir obj_dir =
+  let dir = Obj_dir.obj_dir obj_dir in
+  Path.Build.relative dir "cctx.uideps"
+
+(** This is done by calling the external binary [ocaml-uideps] which performs
+    fulle shape reduction to compute the actual definition of all the occurences
+    of values in the typedtree. This step is therefore dependent on all the cmts
+    of those definitions are used by all the cmts of modules in this cctx. *)
+let make_all cctx =
+  let dir = Compilation_context.dir cctx in
+  let modules =
+    Compilation_context.modules cctx
+    |> Modules.fold_no_vlib ~init:[] ~f:(fun x acc -> x :: acc)
+  in
+  let sctx = CC.super_context cctx in
+  let obj_dir = CC.obj_dir cctx in
+  let cmts =
+    List.filter_map ~f:(Obj_dir.Module.cmt_file obj_dir ~ml_kind:Impl) modules
+  in
+  let cmts = List.map ~f:Path.build cmts in
+  let fn = uideps_path_in_obj_dir obj_dir in
+
+  let open Memo.O in
+  let* () = Check_rules.add_files sctx ~dir [ Path.build fn ] in
+  let* ocaml_uideps = ocaml_uideps sctx ~dir in
+  SC.add_rule sctx ~dir
+    (Command.run ~dir:(Path.build dir) ocaml_uideps
+       (* TODO add hidden deps !*)
+       [ A "process-cmt"; A "-o"; Target fn; Deps cmts ])
 
 let aggregate sctx ~dir ~target ~uideps =
   let open Memo.O in
-  let* ocaml_uideps = ocaml_uideps sctx ~dir in
-  let uideps = List.map ~f:Path.build uideps in
-  SC.add_rule sctx ~dir
-    (Command.run ~dir:(Path.build dir) ocaml_uideps
-       [ A "aggregate"; A "-o"; Target target; Deps uideps ])
+  if List.is_empty uideps then Memo.return ()
+  else
+    let* ocaml_uideps = ocaml_uideps sctx ~dir in
+    let uideps = List.map ~f:Path.build uideps in
+    SC.add_rule sctx ~dir
+      (Command.run ~dir:(Path.build dir) ocaml_uideps
+         [ A "aggregate"; A "-o"; Target target; Deps uideps ])
 
-let aggregate_modules cctx (modules : Module.t list) =
-  if Compilation_context.bin_annot cctx then
-    let sctx = CC.super_context cctx in
-    (* let dir = CC.dir cctx in *)
-    let obj_dir = CC.obj_dir cctx in
-    let uideps =
-      List.map modules ~f:(fun m -> Obj_dir.Module.uideps_file obj_dir m)
-    in
-    let dir = Obj_dir.obj_dir obj_dir in
-    let target = Path.Build.relative (Obj_dir.obj_dir obj_dir) "unit.uideps" in
-    let open Memo.O in
-    let* () = Check_rules.add_files sctx ~dir [ Path.build target ] in
-    aggregate sctx ~dir ~target ~uideps
-  else Memo.return ()
+let gen_project_rule sctx _project =
+  let dir = (Super_context.context sctx).build_dir in
+  let stanzas = Super_context.stanzas sctx in
+  let uideps =
+    Dir_with_dune.deep_fold stanzas ~init:[] ~f:(fun d stanza acc ->
+        let { Dir_with_dune.ctx_dir = dir; _ } = d in
+        let open Dune_file in
+        match stanza with
+        | Executables exes ->
+          let obj_dir = Executables.obj_dir ~dir exes in
+          uideps_path_in_obj_dir obj_dir :: acc
+        | Library lib ->
+          let obj_dir = Library.obj_dir ~dir lib in
+          uideps_path_in_obj_dir obj_dir :: acc
+        | _ -> acc)
+  in
+  let target = Path.Build.relative dir "project.uideps" in
+  let open Memo.O in
+  let* () = Check_rules.add_files sctx ~dir [ target |> Path.build ] in
+  aggregate sctx ~dir ~target ~uideps

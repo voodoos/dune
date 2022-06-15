@@ -192,7 +192,6 @@ let build_cm cctx ~precompiled_cmi ~cm_kind (m : Module.t)
 let build_module ?(precompiled_cmi = false) cctx m =
   let open Memo.O in
   let* () = build_cm cctx m ~precompiled_cmi ~cm_kind:Cmo ~phase:None
-  and* () = Uideps.generate cctx m
   and* () =
     let ctx = CC.context cctx in
     let can_split =
@@ -342,26 +341,22 @@ let build_all cctx =
   let modules_list =
     Modules.fold_no_vlib modules ~init:[] ~f:(fun x acc -> x :: acc)
   in
-  let open Memo.O in
-  let* () =
-    Memo.parallel_iter modules_list ~f:(fun m ->
-        match Module.kind m with
-        | Root -> build_root_module cctx m
-        | Alias -> build_alias_module cctx m
-        | Wrapped_compat ->
-          let cctx = Lazy.force for_wrapped_compat in
-          build_module cctx m
-        | _ ->
-          let cctx =
-            if Modules.is_stdlib_alias modules m then
-              (* XXX it would probably be simpler if the flags were just for
-                 this module in the definition of the stanza *)
-              Compilation_context.for_alias_module cctx m
-            else cctx
-          in
-          build_module cctx m)
-  in
-  Uideps.aggregate_modules cctx modules_list
+  Memo.parallel_iter modules_list ~f:(fun m ->
+      match Module.kind m with
+      | Root -> build_root_module cctx m
+      | Alias -> build_alias_module cctx m
+      | Wrapped_compat ->
+        let cctx = Lazy.force for_wrapped_compat in
+        build_module cctx m
+      | _ ->
+        let cctx =
+          if Modules.is_stdlib_alias modules m then
+            (* XXX it would probably be simpler if the flags were just for this
+               module in the definition of the stanza *)
+            Compilation_context.for_alias_module cctx m
+          else cctx
+        in
+        build_module cctx m)
 
 let with_empty_intf ~sctx ~dir module_ =
   let name =

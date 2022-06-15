@@ -447,6 +447,10 @@ let library_rules (lib : Library.t) ~local_lib ~cctx ~source_modules
   let* () = gen_wrapped_compat_modules lib cctx
   and* () = Module_compilation.build_all cctx
   and* expander = Super_context.expander sctx ~dir in
+  let* () =
+    if Compilation_context.bin_annot cctx then Uideps.make_all cctx
+    else Memo.return ()
+  in
   let+ () =
     Memo.when_
       (not (Library.is_virtual lib))
