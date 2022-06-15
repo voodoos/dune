@@ -1,5 +1,4 @@
-(* open Import *)
-open! Stdune
+open Import
 module CC = Compilation_context
 module SC = Super_context
 
@@ -21,10 +20,9 @@ let uideps_path_in_obj_dir obj_dir =
     of values in the typedtree. This step is therefore dependent on all the cmts
     of those definitions are used by all the cmts of modules in this cctx. *)
 let make_all cctx =
-  let dir = Compilation_context.dir cctx in
+  let dir = CC.dir cctx in
   let modules =
-    Compilation_context.modules cctx
-    |> Modules.fold_no_vlib ~init:[] ~f:(fun x acc -> x :: acc)
+    CC.modules cctx |> Modules.fold_no_vlib ~init:[] ~f:(fun x acc -> x :: acc)
   in
   let sctx = CC.super_context cctx in
   let obj_dir = CC.obj_dir cctx in
@@ -35,7 +33,6 @@ let make_all cctx =
   let fn = uideps_path_in_obj_dir obj_dir in
 
   let open Memo.O in
-  let* () = Check_rules.add_files sctx ~dir [ Path.build fn ] in
   let* ocaml_uideps = ocaml_uideps sctx ~dir in
   SC.add_rule sctx ~dir
     (Command.run ~dir:(Path.build dir) ocaml_uideps
@@ -53,8 +50,8 @@ let aggregate sctx ~dir ~target ~uideps =
          [ A "aggregate"; A "-o"; Target target; Deps uideps ])
 
 let gen_project_rule sctx _project =
-  let dir = (Super_context.context sctx).build_dir in
-  let stanzas = Super_context.stanzas sctx in
+  let dir = (SC.context sctx).build_dir in
+  let stanzas = SC.stanzas sctx in
   let uideps =
     Dir_with_dune.deep_fold stanzas ~init:[] ~f:(fun d stanza acc ->
         let { Dir_with_dune.ctx_dir = dir; _ } = d in
@@ -70,5 +67,9 @@ let gen_project_rule sctx _project =
   in
   let target = Path.Build.relative dir "project.uideps" in
   let open Memo.O in
-  let* () = Check_rules.add_files sctx ~dir [ target |> Path.build ] in
+  let uideps_alias = Alias.uideps ~dir in
+  let* () =
+    Rules.Produce.Alias.add_deps uideps_alias
+      (Action_builder.path @@ Path.build target)
+  in
   aggregate sctx ~dir ~target ~uideps

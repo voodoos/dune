@@ -25,6 +25,8 @@ module Name : sig
 
   val install : t
 
+  val uideps : t
+
   val fmt : t
 
   val all : t
@@ -77,6 +79,8 @@ end = struct
   let runtest = "runtest"
 
   let install = "install"
+
+  let uideps = "uideps"
 
   let fmt = "fmt"
 
@@ -163,6 +167,8 @@ let default = make_standard Name.default
 let runtest = make_standard Name.runtest
 
 let install = make_standard Name.install
+
+let uideps = make_standard Name.uideps
 
 let doc = make_standard (Name.of_string "doc")
 

@@ -314,7 +314,9 @@ let gen_rules sctx dir_contents cctxs ~source_dir ~dir :
 let gen_project_rules sctx project =
   let+ () = Opam_create.add_rules sctx project
   and+ () = Install_rules.gen_project_rules sctx project
-  and+ () = Uideps.gen_project_rule sctx project
+  and+ () =
+    Uideps.gen_project_rule sctx
+      project (* TODO uideps what about bin annots ? *)
   and+ () = Odoc.gen_project_rules sctx project in
   ()
 

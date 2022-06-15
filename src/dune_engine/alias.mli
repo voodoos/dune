@@ -61,6 +61,8 @@ val runtest : dir:Path.Build.t -> t
 
 val install : dir:Path.Build.t -> t
 
+val uideps : dir:Path.Build.t -> t
+
 val doc : dir:Path.Build.t -> t
 
 val private_doc : dir:Path.Build.t -> t
