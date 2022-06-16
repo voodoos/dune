@@ -31,12 +31,12 @@ let make_all cctx =
   in
   let cmts = List.map ~f:Path.build cmts in
   let fn = uideps_path_in_obj_dir obj_dir in
-
   let open Memo.O in
   let* ocaml_uideps = ocaml_uideps sctx ~dir in
+  let context_dir = CC.context cctx |> Context.name |> Context_name.build_dir in
   SC.add_rule sctx ~dir
-    (Command.run ~dir:(Path.build dir) ocaml_uideps
-       (* TODO add hidden deps !*)
+    (Command.run ~dir:(Path.build context_dir) ocaml_uideps
+       (* TODO there are hidden deps !*)
        [ A "process-cmt"; A "-o"; Target fn; Deps cmts ])
 
 let aggregate sctx ~dir ~target ~uideps =
@@ -50,23 +50,36 @@ let aggregate sctx ~dir ~target ~uideps =
          [ A "aggregate"; A "-o"; Target target; Deps uideps ])
 
 let gen_project_rule sctx _project =
+  let open Memo.O in
   let dir = (SC.context sctx).build_dir in
   let stanzas = SC.stanzas sctx in
-  let uideps =
-    Dir_with_dune.deep_fold stanzas ~init:[] ~f:(fun d stanza acc ->
+  let* expander =
+    let+ expander = Super_context.expander sctx ~dir in
+    Dir_contents.add_sources_to_expander sctx expander
+  in
+  let* uideps =
+    Dir_with_dune.deep_fold stanzas ~init:(Memo.return [])
+      ~f:(fun d stanza acc ->
         let { Dir_with_dune.ctx_dir = dir; _ } = d in
         let open Dune_file in
-        match stanza with
-        | Executables exes ->
-          let obj_dir = Executables.obj_dir ~dir exes in
-          uideps_path_in_obj_dir obj_dir :: acc
-        | Library lib ->
-          let obj_dir = Library.obj_dir ~dir lib in
-          uideps_path_in_obj_dir obj_dir :: acc
-        | _ -> acc)
+        match
+          match stanza with
+          | Executables exes ->
+            Some (Executables.obj_dir ~dir exes, exes.enabled_if)
+            (* let obj_dir = Executables.obj_dir ~dir exes in
+               uideps_path_in_obj_dir obj_dir :: acc *)
+          | Library lib -> Some (Library.obj_dir ~dir lib, lib.enabled_if)
+          | _ -> None
+        with
+        | None -> acc
+        | Some (obj_dir, enabled_if) ->
+          let* enabled = Expander.eval_blang expander enabled_if in
+          if enabled then
+            let+ acc = acc in
+            uideps_path_in_obj_dir obj_dir :: acc
+          else acc)
   in
   let target = Path.Build.relative dir "project.uideps" in
-  let open Memo.O in
   let uideps_alias = Alias.uideps ~dir in
   let* () =
     Rules.Produce.Alias.add_deps uideps_alias
