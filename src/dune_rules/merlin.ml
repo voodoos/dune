@@ -14,7 +14,8 @@ module Processed = struct
 
   (* Most of the configuration is shared accros a same lib/exe... *)
   type config =
-    { stdlib_dir : Path.t
+    { build_dir : Path.t
+    ; stdlib_dir : Path.t
     ; obj_dirs : Path.Set.t
     ; src_dirs : Path.Set.t
     ; flags : string list
@@ -54,11 +55,13 @@ module Processed = struct
 
   let serialize_path = Path.to_absolute_filename
 
-  let to_sexp ~pp { stdlib_dir; obj_dirs; src_dirs; flags; extensions } =
+  let to_sexp ~pp
+      { build_dir; stdlib_dir; obj_dirs; src_dirs; flags; extensions } =
     let make_directive tag value = Sexp.List [ Atom tag; value ] in
     let make_directive_of_path tag path =
       make_directive tag (Sexp.Atom (serialize_path path))
     in
+    let build_dir = [ make_directive_of_path "BUILD_DIR" build_dir ] in
     let stdlib_dir = [ make_directive_of_path "STDLIB" stdlib_dir ] in
     let exclude_query_dir = [ Sexp.List [ Atom "EXCLUDE_QUERY_DIR" ] ] in
     let obj_dirs =
@@ -87,7 +90,14 @@ module Processed = struct
     in
     Sexp.List
       (List.concat
-         [ stdlib_dir; exclude_query_dir; obj_dirs; src_dirs; flags; suffixes ])
+         [ build_dir
+         ; stdlib_dir
+         ; exclude_query_dir
+         ; obj_dirs
+         ; src_dirs
+         ; flags
+         ; suffixes
+         ])
 
   let quote_for_dot_merlin s =
     let s =
@@ -176,7 +186,13 @@ module Processed = struct
                { modules = _
                ; pp_config
                ; config =
-                   { stdlib_dir = _; obj_dirs; src_dirs; flags; extensions }
+                   { build_dir = _
+                   ; stdlib_dir = _
+                   ; obj_dirs
+                   ; src_dirs
+                   ; flags
+                   ; extensions
+                   }
                }
              ->
             ( pp_config :: acc_pp
@@ -356,11 +372,16 @@ module Unprocessed = struct
                     in
                     Path.Set.add obj_dirs public_cmi_dir )))
       in
+
+      let build_dir =
+        Super_context.context sctx |> Context.name |> Context_name.build_dir
+        |> Path.build
+      in
       let src_dirs =
         Path.Set.union src_dirs
           (Path.Set.of_list_map ~f:Path.source more_src_dirs)
       in
-      { Processed.stdlib_dir; src_dirs; obj_dirs; flags; extensions }
+      { Processed.build_dir; stdlib_dir; src_dirs; obj_dirs; flags; extensions }
     and+ pp_config =
       Module_name.Per_item.map_action_builder preprocess
         ~f:(pp_flags sctx ~expander libname)
