@@ -51,16 +51,17 @@ let aggregate sctx ~dir ~target ~uideps =
 
 let gen_project_rule sctx _project =
   let open Memo.O in
-  let dir = (SC.context sctx).build_dir in
-  let stanzas = SC.stanzas sctx in
+  let ctx = Super_context.context sctx in
+  let dir = ctx.build_dir in
+  let* stanzas = Only_packages.filtered_stanzas ctx in
   let* expander =
     let+ expander = Super_context.expander sctx ~dir in
     Dir_contents.add_sources_to_expander sctx expander
   in
   let* uideps =
-    Dir_with_dune.deep_fold stanzas ~init:(Memo.return [])
-      ~f:(fun d stanza acc ->
-        let { Dir_with_dune.ctx_dir = dir; _ } = d in
+    Dune_file.fold_stanzas stanzas ~init:(Memo.return [])
+      ~f:(fun dune_file stanza acc ->
+        let dir = Path.Build.append_source ctx.build_dir dune_file.dir in
         let open Dune_file in
         match
           match stanza with
