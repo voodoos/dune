@@ -49,10 +49,11 @@ let aggregate sctx ~dir ~target ~uideps =
       (Command.run ~dir:(Path.build dir) ocaml_uideps
          [ A "aggregate"; A "-o"; Target target; Deps uideps ])
 
-let gen_project_rule sctx _project =
+let gen_project_rule sctx project =
   let open Memo.O in
   let ctx = Super_context.context sctx in
-  let dir = ctx.build_dir in
+  let bd = ctx.build_dir in
+  let dir = Path.Build.append_source bd @@ Dune_project.root project in
   let* stanzas = Only_packages.filtered_stanzas ctx in
   let* expander =
     let+ expander = Super_context.expander sctx ~dir in
