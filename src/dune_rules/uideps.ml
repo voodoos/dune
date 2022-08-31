@@ -16,9 +16,9 @@ let uideps_path_in_obj_dir obj_dir =
   Path.Build.relative dir "cctx.uideps"
 
 (** This is done by calling the external binary [ocaml-uideps] which performs
-    fulle shape reduction to compute the actual definition of all the occurences
-    of values in the typedtree. This step is therefore dependent on all the cmts
-    of those definitions are used by all the cmts of modules in this cctx. *)
+    full shape reduction to compute the actual definition of all the elements in
+    the typedtree. This step is therefore dependent on all the cmts of those
+    definitions are used by all the cmts of modules in this cctx. *)
 let make_all cctx =
   let dir = CC.dir cctx in
   let modules =
@@ -59,20 +59,30 @@ let gen_project_rule sctx project =
     let+ expander = Super_context.expander sctx ~dir in
     Dir_contents.add_sources_to_expander sctx expander
   in
+  let scope = Expander.scope expander in
   let* uideps =
     Dune_file.fold_stanzas stanzas ~init:(Memo.return [])
       ~f:(fun dune_file stanza acc ->
         let dir = Path.Build.append_source ctx.build_dir dune_file.dir in
         let open Dune_file in
-        match
+        let* obj =
           match stanza with
           | Executables exes ->
-            Some (Executables.obj_dir ~dir exes, exes.enabled_if)
+            Memo.return @@ Some (Executables.obj_dir ~dir exes, exes.enabled_if)
             (* let obj_dir = Executables.obj_dir ~dir exes in
                uideps_path_in_obj_dir obj_dir :: acc *)
-          | Library lib -> Some (Library.obj_dir ~dir lib, lib.enabled_if)
-          | _ -> None
-        with
+          | Library lib ->
+            let+ available =
+              if lib.optional then
+                Lib.DB.available (Scope.libs scope)
+                  (Dune_file.Library.best_name lib)
+              else Memo.return true
+            in
+            if available then Some (Library.obj_dir ~dir lib, lib.enabled_if)
+            else None
+          | _ -> Memo.return None
+        in
+        match obj with
         | None -> acc
         | Some (obj_dir, enabled_if) ->
           let* enabled = Expander.eval_blang expander enabled_if in
