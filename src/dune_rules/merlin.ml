@@ -62,6 +62,9 @@ module Processed = struct
       make_directive tag (Sexp.Atom (serialize_path path))
     in
     let build_dir = [ make_directive_of_path "BUILD_DIR" build_dir ] in
+    let source_root =
+      [ make_directive_of_path "PROJECT_ROOT" @@ Path.source Path.Source.root ]
+    in
     let stdlib_dir = [ make_directive_of_path "STDLIB" stdlib_dir ] in
     let exclude_query_dir = [ Sexp.List [ Atom "EXCLUDE_QUERY_DIR" ] ] in
     let obj_dirs =
@@ -91,6 +94,7 @@ module Processed = struct
     Sexp.List
       (List.concat
          [ build_dir
+         ; source_root
          ; stdlib_dir
          ; exclude_query_dir
          ; obj_dirs
