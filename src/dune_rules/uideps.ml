@@ -11,9 +11,13 @@ module SC = Super_context
 let ocaml_uideps sctx ~dir =
   Super_context.resolve_program ~loc:None ~dir sctx "ocaml-uideps"
 
-let uideps_path_in_obj_dir obj_dir =
+let uideps_path_in_obj_dir ?for_cmt obj_dir =
   let dir = Obj_dir.obj_dir obj_dir in
-  Path.Build.relative dir "cctx.uideps"
+  match for_cmt with
+  | Some path ->
+    let name = Path.basename path in
+    Path.Build.relative dir @@ Printf.sprintf ".uideps/%s.uideps" name
+  | None -> Path.Build.relative dir "cctx.uideps"
 
 (** This is done by calling the external binary [ocaml-uideps] which performs
     full shape reduction to compute the actual definition of all the elements in
@@ -30,14 +34,25 @@ let make_all cctx =
     List.filter_map ~f:(Obj_dir.Module.cmt_file obj_dir ~ml_kind:Impl) modules
   in
   let cmts = List.map ~f:Path.build cmts in
-  let fn = uideps_path_in_obj_dir obj_dir in
   let open Memo.O in
   let* ocaml_uideps = ocaml_uideps sctx ~dir in
-  let context_dir = CC.context cctx |> Context.name |> Context_name.build_dir in
-  SC.add_rule sctx ~dir
-    (Command.run ~dir:(Path.build context_dir) ocaml_uideps
-       (* TODO there are hidden deps !*)
-       [ A "process-cmt"; A "-o"; Target fn; Deps cmts ])
+  let context_dir =
+    CC.context cctx |> Context.name |> Context_name.build_dir |> Path.build
+  in
+  let intermediate_targets, intermediates =
+    List.fold_map cmts ~init:[] ~f:(fun targets for_cmt ->
+        let fn = uideps_path_in_obj_dir ~for_cmt obj_dir in
+        ( Path.build fn :: targets
+        , Command.run ~dir:context_dir ocaml_uideps
+            (* TODO there are hidden deps !*)
+            [ A "process-cmt"; A "-o"; Target fn; Dep for_cmt ] ))
+  in
+  let fn = uideps_path_in_obj_dir obj_dir in
+  SC.add_rules sctx ~dir
+    [ Action_builder.progn intermediates
+    ; Command.run ~dir:context_dir ocaml_uideps
+        [ A "aggregate"; A "-o"; Target fn; Deps intermediate_targets ]
+    ]
 
 let aggregate sctx ~dir ~target ~uideps =
   let open Memo.O in
