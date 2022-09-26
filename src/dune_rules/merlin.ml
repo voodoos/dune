@@ -63,7 +63,7 @@ module Processed = struct
     in
     let build_dir = [ make_directive_of_path "BUILD_DIR" build_dir ] in
     let source_root =
-      [ make_directive_of_path "PROJECT_ROOT" @@ Path.source Path.Source.root ]
+      [ make_directive_of_path "SOURCE_ROOT" @@ Path.source Path.Source.root ]
     in
     let stdlib_dir = [ make_directive_of_path "STDLIB" stdlib_dir ] in
     let exclude_query_dir = [ Sexp.List [ Atom "EXCLUDE_QUERY_DIR" ] ] in
