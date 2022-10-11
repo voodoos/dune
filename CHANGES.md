@@ -72,7 +72,7 @@
 
 - The test suite for Coq now requires Coq >= 8.16 due to changes in the
   plugin loading mechanism upstream (which now uses findlib).
-  
+
 - Starting with Coq build language 0.6, theories can be built without importing
   Coq's standard library by including `(stdlib no)`.
   (#6165 #6164, fixes #6163, @ejgallego @Alizter @LasseBlaauwbroek)
@@ -81,7 +81,11 @@
   #5650, @emillon)
 
 - Added an (aliases ...) field to the (rules ...) stanza which allows the
-  specification of multiple aliases per rule (#6194, @Alizter) 
+  specification of multiple aliases per rule (#6194, @Alizter)
+
+- Add a new experimental feature `mode_specific_stubs` that allows the
+  specification of different flags and sources for foreign stubs depending on
+  the build mode (#5649, @voodoos)
 
 3.4.1 (26-07-2022)
 ------------------
