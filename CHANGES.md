@@ -71,7 +71,7 @@
   #6169, @shonfeder)
 
 - The test suite for Coq now requires Coq >= 8.16 due to changes in the
-  plugin loading mechanism upstream (which now uses findlib).
+  plugin loading mechanism upstream (which now uses `Findlib`).
 
 - Starting with Coq build language 0.6, theories can be built without importing
   Coq's standard library by including `(stdlib no)`.
