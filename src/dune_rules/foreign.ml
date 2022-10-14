@@ -148,16 +148,15 @@ module Stubs = struct
   let () =
     Dune_project.Extension.register_simple syntax (Dune_lang.Decoder.return [])
 
-  let decode_stubs ~for_library =
+  let decode_stubs =
     let open Dune_lang.Decoder in
     let* loc = loc in
     let+ loc_archive_name, archive_name =
       located (field_o "archive_name" string)
     and+ language = field "language" decode_lang
     and+ names = Ordered_set_lang.field "names"
-    and+ loc_mode, mode =
-      located
-        (field_o "mode" (Dune_lang.Syntax.since syntax (0, 1) >>> Mode.decode))
+    and+ mode =
+      field_o "mode" (Dune_lang.Syntax.since syntax (0, 1) >>> Mode.decode)
     and+ flags = Ordered_set_lang.Unexpanded.field "flags"
     and+ include_dirs =
       field ~default:[] "include_dirs" (repeat Include_dir.decode)
@@ -174,18 +173,10 @@ module Stubs = struct
                (foreign_library ...) stanza."
           ]
     in
-    let () =
-      match mode with
-      | Some _ when for_library ->
-        User_error.raise ~loc:loc_mode
-          [ Pp.textf "The field \"mode\" is not available for foreign_libraries"
-          ]
-      | _ -> ()
-    in
     let mode = Mode.Select.of_option mode in
     { loc; language; names; mode; flags; include_dirs; extra_deps }
 
-  let decode = Dune_lang.Decoder.fields @@ decode_stubs ~for_library:false
+  let decode = Dune_lang.Decoder.fields decode_stubs
 
   let is_mode_dependent t = Mode.Select.is_not_all t.mode
 end
@@ -232,12 +223,19 @@ module Library = struct
     ; stubs : Stubs.t
     }
 
+  let archive_name ?(with_mode_suffix = true) {archive_name; stubs; _} =
+    if with_mode_suffix then
+       add_mode_suffix stubs.mode archive_name
+    else
+      archive_name
+
   let decode =
     let open Dune_lang.Decoder in
     fields
       (let+ archive_name_loc, archive_name =
          located (field "archive_name" Archive.Name.decode)
-       and+ stubs = Stubs.decode_stubs ~for_library:true in
+       and+ stubs = Stubs.decode_stubs in
+       (* let archive_name = add_mode_suffix stubs.mode archive_name in *)
        { archive_name; archive_name_loc; stubs })
 end
 

@@ -224,7 +224,7 @@ let link_js ~name ~loc ~cm_files ~promote ~link_time_code_gen cctx =
 
 type dep_graphs = { for_exes : Module.t list Action_builder.t list }
 
-let link_many ?(link_args = Action_builder.return Command.Args.empty) ?o_files
+let link_many ?(link_args = fun ~mode:_ -> Action_builder.return Command.Args.empty) ?o_files
     ?(embed_in_plugin_libraries = []) ?sandbox ~programs ~linkages ~promote cctx
     =
   let open Memo.O in
@@ -269,9 +269,9 @@ let link_many ?(link_args = Action_builder.return Command.Args.empty) ?o_files
                     Mode.Map.Multi.for_only ~and_all:true o_files
                   in
                   match linkage.mode with
-                  | Native -> (link_args, select_o_files Mode.Native)
+                  | Native -> (link_args ~mode:Mode.Native, select_o_files Mode.Native)
                   | Byte | Byte_for_jsoo | Byte_with_stubs_statically_linked_in
-                    -> (link_args, select_o_files Mode.Byte)
+                    -> (link_args ~mode:Mode.Byte, select_o_files Mode.Byte)
                 in
                 link_exe cctx ~loc ~name ~linkage ~cm_files ~link_time_code_gen
                   ~promote ~link_args ~o_files ?sandbox)

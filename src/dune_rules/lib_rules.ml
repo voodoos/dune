@@ -209,21 +209,21 @@ let ocamlmklib ~loc ~c_library_flags ~sctx ~dir ~o_files ~archive_name
    produces it will fail. *)
 let foreign_rules (library : Foreign.Library.t) ~sctx ~expander ~dir
     ~dir_contents =
-  let archive_name = library.archive_name in
+  let archive_name = Foreign.Library.archive_name  library in
   let* foreign_sources =
     Dir_contents.foreign_sources dir_contents
     >>| Foreign_sources.for_archive ~archive_name
   in
   let* o_files =
-    let+ o_files_by_mode =
+    (* let+ o_files_by_mode = *)
       Foreign_rules.build_o_files ~sctx ~dir ~expander
         ~requires:(Resolve.return []) ~dir_contents ~foreign_sources
-    in
-    Mode.Map.Multi.for_all_modes o_files_by_mode
+    (* in
+    Mode.Map.Multi.for_all_modes o_files_by_mode *)
     (* TODO XXX in the future we could support the use of mode-dependent
        foreign_libraries. Right now it is not the case *)
   in
-  let* () = Check_rules.add_files sctx ~dir o_files in
+  (* let* () = Check_rules.add_files sctx ~dir o_files in *)
   let* standard =
     let+ project =
       let+ scope = Scope.DB.find_by_dir dir in
@@ -239,8 +239,17 @@ let foreign_rules (library : Foreign.Library.t) ~sctx ~expander ~dir
     Expander.expand_and_eval_set expander Ordered_set_lang.Unexpanded.standard
       ~standard
   in
+  let stubs_mode = library.stubs.mode in
+  let lib_o_files_for_all_modes = Mode.Map.Multi.for_all_modes o_files in
+  let o_files = match stubs_mode with
+    | Only m ->
+      let o_files_for_mode = Mode.Map.Multi.for_only o_files m in
+      List.rev_append lib_o_files_for_all_modes o_files_for_mode
+    | All -> lib_o_files_for_all_modes
+  in
+  let archive_name = library.archive_name in
   ocamlmklib ~archive_name ~loc:library.stubs.loc ~c_library_flags ~sctx ~dir
-    ~o_files ~build_targets_together:false ~stubs_mode:Mode.Select.All
+    ~o_files ~build_targets_together:false ~stubs_mode
 
 (* Build a required set of archives for an OCaml library. *)
 let build_stubs lib ~cctx ~dir ~expander ~requires ~dir_contents

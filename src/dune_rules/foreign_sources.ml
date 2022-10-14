@@ -140,8 +140,9 @@ let make stanzas ~(sources : Foreign.Sources.Unresolved.t) ~dune_version
             let all =
               eval_foreign_stubs ~dune_version [ library.stubs ] ~sources
             in
+            let archive_name = Foreign.Library.archive_name library in
             ( libs
-            , (library.archive_name, (library.archive_name_loc, all))
+            , (archive_name, (library.archive_name_loc, all))
               :: foreign_libs
             , exes )
           | Executables exe | Tests { exes = exe; _ } ->

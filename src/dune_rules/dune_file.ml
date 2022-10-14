@@ -796,14 +796,18 @@ module Library = struct
             Some (lib_file ~for_mode archive)
           | _ -> None)
     in
-    if for_mode = Mode.Select.All then
+    let foreign_archives = List.map foreign_archives ~f:(lib_file ~for_mode) in
+    match  stubs_archive with
+    | Some sa -> sa :: foreign_archives
+    | None -> foreign_archives
+    (* if for_mode = Mode.Select.All then
       let foreign_archives =
         (* Stubs, and thus the lib archives can have mode-dependent versions, but
            right now foreign archives cannot *)
         List.map foreign_archives ~f:(lib_file ~for_mode)
       in
       Option.to_list stubs_archive @ foreign_archives
-    else Option.to_list stubs_archive
+    else Option.to_list stubs_archive  *)
 
   let foreign_dll_files t ~dir ~ext_dll =
     let lib_archive, foreign_archives = foreign_archives t in

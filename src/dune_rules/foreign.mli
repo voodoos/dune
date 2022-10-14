@@ -163,6 +163,8 @@ module Library : sig
     }
 
   val decode : t Dune_lang.Decoder.t
+
+  val archive_name : ?with_mode_suffix:bool -> t -> Archive.Name.t
 end
 
 (** A foreign source file that has a [path] and all information of the

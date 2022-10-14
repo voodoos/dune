@@ -60,7 +60,7 @@ val link_many :
   -> dep_graphs Memo.t
 
 val build_and_link :
-     ?link_args:Command.Args.without_targets Command.Args.t Action_builder.t
+     ?link_args:(mode:Mode.Select.t -> Command.Args.without_targets Command.Args.t Action_builder.t)
   -> ?o_files:Path.t Mode.Map.Multi.t
   -> ?embed_in_plugin_libraries:(Loc.t * Lib_name.t) list
   -> ?sandbox:Sandbox_config.t
@@ -71,7 +71,7 @@ val build_and_link :
   -> dep_graphs Memo.t
 
 val build_and_link_many :
-     ?link_args:Command.Args.without_targets Command.Args.t Action_builder.t
+     ?link_args:(mode:Mode.Select.t -> Command.Args.without_targets Command.Args.t Action_builder.t)
   -> ?o_files:Path.t Mode.Map.Multi.t
   -> ?embed_in_plugin_libraries:(Loc.t * Lib_name.t) list
   -> ?sandbox:Sandbox_config.t
