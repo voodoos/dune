@@ -481,6 +481,7 @@ let library_rules (lib : Library.t) ~local_lib ~cctx ~source_modules
   let dir = Compilation_context.dir cctx in
   let scope = Compilation_context.scope cctx in
   let* requires_compile = Compilation_context.requires_compile cctx in
+  let* requires_link = Compilation_context.requires_link cctx in
   let stdlib_dir = (Compilation_context.context cctx).Context.stdlib_dir in
   let top_sorted_modules =
     let impl_only = Modules.impl_only modules in
@@ -524,8 +525,8 @@ let library_rules (lib : Library.t) ~local_lib ~cctx ~source_modules
            (Lib.DB.instrumentation_backend (Scope.libs scope)))
   in
   ( cctx
-  , Merlin.make ~requires:requires_compile ~stdlib_dir ~flags ~modules
-      ~preprocess ~libname:(snd lib.name) ~obj_dir
+  , Merlin.make ~requires:requires_link ~stdlib_dir ~flags ~modules ~preprocess
+      ~libname:(snd lib.name) ~obj_dir
       ~dialects:(Dune_project.dialects (Scope.project scope))
       ~ident:(Lib.Compile.merlin_ident compile_info)
       () )

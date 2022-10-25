@@ -131,6 +131,7 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
   in
   let stdlib_dir = ctx.Context.stdlib_dir in
   let* requires_compile = Compilation_context.requires_compile cctx in
+  let* requires_link = Compilation_context.requires_link cctx in
   let* preprocess =
     Resolve.Memo.read_memo
       (Preprocess.Per_module.with_instrumentation exes.buildable.preprocess
@@ -211,8 +212,8 @@ let executables_rules ~sctx ~dir ~expander ~dir_contents ~scope ~compile_info
       ~f:(Check_rules.add_cycle_check sctx ~dir)
   in
   ( cctx
-  , Merlin.make ~requires:requires_compile ~stdlib_dir ~flags ~modules
-      ~preprocess ~obj_dir
+  , Merlin.make ~requires:requires_link ~stdlib_dir ~flags ~modules ~preprocess
+      ~obj_dir
       ~dialects:(Dune_project.dialects (Scope.project scope))
       ~ident:(Lib.Compile.merlin_ident compile_info)
       () )
