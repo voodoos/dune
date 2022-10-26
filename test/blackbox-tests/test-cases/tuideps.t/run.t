@@ -2,9 +2,19 @@
   $ dune exec ./main.exe
   114
 
+$ tree -a _build/default 
+
+  $ dune clean
   $ dune build @uideps
+
   $ find . -name '*.uideps'
+  ./_build/default/.main.eobjs/.uideps
+  ./_build/default/.main.eobjs/.uideps/dune__exe__Main.cmt.uideps
+  ./_build/default/.main.eobjs/.uideps/dune__exe.cmt.uideps
+  ./_build/default/.main.eobjs/.uideps/dune__exe__Othermod.cmt.uideps
   ./_build/default/.main.eobjs/cctx.uideps
+  ./_build/default/lib/.otherlib.objs/.uideps
+  ./_build/default/lib/.otherlib.objs/.uideps/otherlib.cmt.uideps
   ./_build/default/lib/.otherlib.objs/cctx.uideps
   ./_build/default/project.uideps
 
@@ -19,8 +29,8 @@
    uid: Stdlib.313; locs: File "main.ml", line 1, characters 0-9
    uid: Stdlib.55; locs: File "main.ml", line 1, characters 26-27;
                          File "othermod.ml", line 2, characters 15-16
-   uid: Dune__exe.1; locs: File ".main.eobjs/dune__exe.ml-gen", line 6, characters 0-37
    uid: Dune__exe.0; locs: File ".main.eobjs/dune__exe.ml-gen", line 2, characters 0-29
+   uid: Dune__exe.1; locs: File ".main.eobjs/dune__exe.ml-gen", line 6, characters 0-37
    uid: Dune__exe__Main; locs: File ".main.eobjs/dune__exe.ml-gen", line 2, characters 14-29
    }
 
@@ -45,7 +55,7 @@
    uid: Stdlib.55; locs: File "main.ml", line 1, characters 26-27;
                          File "othermod.ml", line 2, characters 15-16
    uid: Stdlib.141; locs: File "lib/otherlib.ml", line 2, characters 22-28
-   uid: Dune__exe.0; locs: File ".main.eobjs/dune__exe.ml-gen", line 2, characters 0-29
    uid: Dune__exe.1; locs: File ".main.eobjs/dune__exe.ml-gen", line 6, characters 0-37
+   uid: Dune__exe.0; locs: File ".main.eobjs/dune__exe.ml-gen", line 2, characters 0-29
    uid: Dune__exe__Main; locs: File ".main.eobjs/dune__exe.ml-gen", line 2, characters 14-29
    }
