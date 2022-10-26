@@ -30,22 +30,36 @@ let make_all cctx =
   in
   let sctx = CC.super_context cctx in
   let obj_dir = CC.obj_dir cctx in
-  let cmts =
-    List.filter_map ~f:(Obj_dir.Module.cmt_file obj_dir ~ml_kind:Impl) modules
+  let modules_with_cmts =
+    List.filter_map
+      ~f:(fun module_ ->
+        Obj_dir.Module.cmt_file obj_dir ~ml_kind:Impl module_
+        |> Option.map ~f:(fun cmt -> (module_, Path.build cmt)))
+      modules
   in
-  let cmts = List.map ~f:Path.build cmts in
   let open Memo.O in
   let* ocaml_uideps = ocaml_uideps sctx ~dir in
   let context_dir =
     CC.context cctx |> Context.name |> Context_name.build_dir |> Path.build
   in
   let intermediate_targets, intermediates =
-    List.fold_map cmts ~init:[] ~f:(fun targets for_cmt ->
+    List.fold_map modules_with_cmts ~init:[]
+      ~f:(fun targets (_module_, for_cmt) ->
         let fn = uideps_path_in_obj_dir ~for_cmt obj_dir in
-        ( Path.build fn :: targets
-        , Command.run ~dir:context_dir ocaml_uideps
-            (* TODO there are hidden deps !*)
-            [ A "process-cmt"; A "-o"; Target fn; Dep for_cmt ] ))
+        let action =
+          (* (Hidden) deps for a uideps file is the same as the one for the corresponding cmt *)
+          let hidden_deps = Dep.Set.of_files [ for_cmt ] in
+          Command.run ~dir:context_dir ocaml_uideps
+            [ A "process-cmt"
+            ; A "-o"
+            ; Target fn
+            ; A "--build-root"
+            ; A Path.(build Build.root |> to_absolute_filename)
+            ; Dep for_cmt
+            ; Hidden_deps hidden_deps
+            ]
+        in
+        (Path.build fn :: targets, action))
   in
   let fn = uideps_path_in_obj_dir obj_dir in
   SC.add_rules sctx ~dir
