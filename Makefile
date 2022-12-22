@@ -25,7 +25,8 @@ ppx_inline_test \
 ppxlib \
 ctypes \
 "utop>=2.6.0" \
-"melange"
+"melange" \
+"ocaml-index"
 # Dependencies recommended for developing dune locally,
 # but not wanted in CI
 DEV_DEPS := \
@@ -78,8 +79,12 @@ dev-depext:
 melange:
 	opam pin add -n melange.dev https://github.com/melange-re/melange.git#v4-414-dev
 
+.PHONY: ocaml-index
+ocaml-index:
+	opam pin add ocaml-index https://github.com/voodoos/ocaml-index.git#main
+
 .PHONY: dev-deps
-dev-deps: melange
+dev-deps: melange ocaml-index
 	opam install -y $(TEST_DEPS)
 
 .PHONY: coverage-deps
