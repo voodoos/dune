@@ -288,6 +288,7 @@ CAMLprim value dune_fsevents_start(value v_t, value v_dq) {
 
 CAMLprim value dune_fsevents_stop(value v_t) {
   CAMLparam1(v_t);
+  CAMLlocal1(v_dq);
   dune_fsevents_t *t = Fsevents_val(v_t);
   dune_dispatch_queue *dq = t->dq;
   if (dq == NULL) {
