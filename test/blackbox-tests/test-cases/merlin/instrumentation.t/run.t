@@ -9,7 +9,9 @@ up a project with instrumentation and testing checking the merlin config.
   $ dune build --instrument-with hello ./lib/.merlin-conf/lib-foo ./lib/.merlin-conf/lib-bar --profile release
   $ dune ocaml merlin dump-config $PWD/lib
   Bar
-  ((STDLIB /OCAMLC_WHERE)
+  ((INDEX_FILE
+    $TESTCASE_ROOT/_build/default/project.ocaml-index)
+   (STDLIB /OCAMLC_WHERE)
    (EXCLUDE_QUERY_DIR)
    (B
     $TESTCASE_ROOT/_build/default/lib/.bar.objs/byte)
@@ -21,9 +23,12 @@ up a project with instrumentation and testing checking the merlin config.
     $TESTCASE_ROOT/lib/subdir)
    (S
     $TESTCASE_ROOT/ppx)
-   (FLG (-w -40 -g)))
+   (FLG (-w -40 -g))
+   (UNIT_NAME bar))
   File
-  ((STDLIB /OCAMLC_WHERE)
+  ((INDEX_FILE
+    $TESTCASE_ROOT/_build/default/project.ocaml-index)
+   (STDLIB /OCAMLC_WHERE)
    (EXCLUDE_QUERY_DIR)
    (B
     $TESTCASE_ROOT/_build/default/lib/.bar.objs/byte)
@@ -36,9 +41,12 @@ up a project with instrumentation and testing checking the merlin config.
    (S
     $TESTCASE_ROOT/ppx)
    (FLG (-open Bar))
-   (FLG (-w -40 -g)))
+   (FLG (-w -40 -g))
+   (UNIT_NAME bar__File))
   Foo
-  ((STDLIB /OCAMLC_WHERE)
+  ((INDEX_FILE
+    $TESTCASE_ROOT/_build/default/project.ocaml-index)
+   (STDLIB /OCAMLC_WHERE)
    (EXCLUDE_QUERY_DIR)
    (B
     $TESTCASE_ROOT/_build/default/lib/.foo.objs/byte)
@@ -50,9 +58,12 @@ up a project with instrumentation and testing checking the merlin config.
     $TESTCASE_ROOT/lib/subdir)
    (S
     $TESTCASE_ROOT/ppx)
-   (FLG (-w -40 -g)))
+   (FLG (-w -40 -g))
+   (UNIT_NAME foo))
   Privmod
-  ((STDLIB /OCAMLC_WHERE)
+  ((INDEX_FILE
+    $TESTCASE_ROOT/_build/default/project.ocaml-index)
+   (STDLIB /OCAMLC_WHERE)
    (EXCLUDE_QUERY_DIR)
    (B
     $TESTCASE_ROOT/_build/default/lib/.foo.objs/byte)
@@ -65,4 +76,5 @@ up a project with instrumentation and testing checking the merlin config.
    (S
     $TESTCASE_ROOT/ppx)
    (FLG (-open Foo))
-   (FLG (-w -40 -g)))
+   (FLG (-w -40 -g))
+   (UNIT_NAME foo__Privmod))

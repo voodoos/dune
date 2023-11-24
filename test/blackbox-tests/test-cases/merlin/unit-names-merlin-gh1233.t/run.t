@@ -6,7 +6,9 @@
 
   $ dune ocaml merlin dump-config $PWD
   Foo
-  ((STDLIB /OCAMLC_WHERE)
+  ((INDEX_FILE
+    $TESTCASE_ROOT/_build/default/project.ocaml-index)
+   (STDLIB /OCAMLC_WHERE)
    (EXCLUDE_QUERY_DIR)
    (B
     $TESTCASE_ROOT/_build/default/.foo.eobjs/byte)
@@ -23,11 +25,14 @@
      -strict-formats
      -short-paths
      -keep-locs
-     -g)))
+     -g))
+   (UNIT_NAME dune__exe__Foo))
 
   $ dune ocaml merlin dump-config $PWD/foo
   Bar
-  ((STDLIB /OCAMLC_WHERE)
+  ((INDEX_FILE
+    $TESTCASE_ROOT/_build/default/project.ocaml-index)
+   (STDLIB /OCAMLC_WHERE)
    (EXCLUDE_QUERY_DIR)
    (B
     $TESTCASE_ROOT/_build/default/foo/.foo.objs/byte)
@@ -41,9 +46,12 @@
      -strict-formats
      -short-paths
      -keep-locs
-     -g)))
+     -g))
+   (UNIT_NAME foo__Bar))
   Foo
-  ((STDLIB /OCAMLC_WHERE)
+  ((INDEX_FILE
+    $TESTCASE_ROOT/_build/default/project.ocaml-index)
+   (STDLIB /OCAMLC_WHERE)
    (EXCLUDE_QUERY_DIR)
    (B
     $TESTCASE_ROOT/_build/default/foo/.foo.objs/byte)
@@ -56,7 +64,8 @@
      -strict-formats
      -short-paths
      -keep-locs
-     -g)))
+     -g))
+   (UNIT_NAME foo))
 
 FIXME : module Foo is not unbound
 This test is disabled because it depends on root detection and is not reproducible.

@@ -23,7 +23,9 @@ If Merlin field is absent, default context is chosen
 
   $ dune ocaml merlin dump-config "$PWD"
   Foo
-  ((STDLIB OPAM_PREFIX)
+  ((INDEX_FILE
+    $TESTCASE_ROOT/_build/default/project.ocaml-index)
+   (STDLIB OPAM_PREFIX)
    (EXCLUDE_QUERY_DIR)
    (B
     $TESTCASE_ROOT/_build/default/.foo.objs/byte)
@@ -36,7 +38,8 @@ If Merlin field is absent, default context is chosen
      -strict-formats
      -short-paths
      -keep-locs
-     -g)))
+     -g))
+   (UNIT_NAME foo))
 
 If Merlin field is present, this context is chosen
 
@@ -61,7 +64,9 @@ If Merlin field is present, this context is chosen
 
   $ dune ocaml merlin dump-config "$PWD"
   Foo
-  ((STDLIB OPAM_PREFIX)
+  ((INDEX_FILE
+    $TESTCASE_ROOT/_build/cross/project.ocaml-index)
+   (STDLIB OPAM_PREFIX)
    (EXCLUDE_QUERY_DIR)
    (B
     $TESTCASE_ROOT/_build/cross/.foo.objs/byte)
@@ -74,4 +79,5 @@ If Merlin field is present, this context is chosen
      -strict-formats
      -short-paths
      -keep-locs
-     -g)))
+     -g))
+   (UNIT_NAME foo))

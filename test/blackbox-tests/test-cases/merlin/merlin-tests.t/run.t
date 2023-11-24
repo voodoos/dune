@@ -14,7 +14,9 @@ CRAM sanitization
   $ dune build ./exe/.merlin-conf/exe-x --profile release
   $ dune ocaml merlin dump-config $PWD/exe
   X
-  ((STDLIB /OCAMLC_WHERE)
+  ((INDEX_FILE
+    $TESTCASE_ROOT/_build/default/project.ocaml-index)
+   (STDLIB /OCAMLC_WHERE)
    (EXCLUDE_QUERY_DIR)
    (B
     $TESTCASE_ROOT/_findlib/publicfoo)
@@ -31,12 +33,15 @@ CRAM sanitization
    (FLG
     (-pp
      $TESTCASE_ROOT/_build/default/pp/pp.exe))
-   (FLG (-w -40 -g)))
+   (FLG (-w -40 -g))
+   (UNIT_NAME x))
 
   $ dune build ./lib/.merlin-conf/lib-foo ./lib/.merlin-conf/lib-bar --profile release
   $ dune ocaml merlin dump-config $PWD/lib
   Bar
-  ((STDLIB /OCAMLC_WHERE)
+  ((INDEX_FILE
+    $TESTCASE_ROOT/_build/default/project.ocaml-index)
+   (STDLIB /OCAMLC_WHERE)
    (EXCLUDE_QUERY_DIR)
    (B
     $TESTCASE_ROOT/_build/default/lib/.bar.objs/byte)
@@ -50,9 +55,12 @@ CRAM sanitization
      --as-ppx
      --cookie
      'library-name="bar"'"))
-   (FLG (-w -40 -g)))
+   (FLG (-w -40 -g))
+   (UNIT_NAME bar))
   File
-  ((STDLIB /OCAMLC_WHERE)
+  ((INDEX_FILE
+    $TESTCASE_ROOT/_build/default/project.ocaml-index)
+   (STDLIB /OCAMLC_WHERE)
    (EXCLUDE_QUERY_DIR)
    (B
     $TESTCASE_ROOT/_build/default/lib/.bar.objs/byte)
@@ -67,9 +75,12 @@ CRAM sanitization
      --as-ppx
      --cookie
      'library-name="bar"'"))
-   (FLG (-w -40 -g)))
+   (FLG (-w -40 -g))
+   (UNIT_NAME bar__File))
   Foo
-  ((STDLIB /OCAMLC_WHERE)
+  ((INDEX_FILE
+    $TESTCASE_ROOT/_build/default/project.ocaml-index)
+   (STDLIB /OCAMLC_WHERE)
    (EXCLUDE_QUERY_DIR)
    (B
     $TESTCASE_ROOT/_findlib/publicfoo)
@@ -87,9 +98,12 @@ CRAM sanitization
      --as-ppx
      --cookie
      'library-name="foo"'"))
-   (FLG (-w -40 -g)))
+   (FLG (-w -40 -g))
+   (UNIT_NAME foo))
   Privmod
-  ((STDLIB /OCAMLC_WHERE)
+  ((INDEX_FILE
+    $TESTCASE_ROOT/_build/default/project.ocaml-index)
+   (STDLIB /OCAMLC_WHERE)
    (EXCLUDE_QUERY_DIR)
    (B
     $TESTCASE_ROOT/_findlib/publicfoo)
@@ -108,7 +122,8 @@ CRAM sanitization
      --as-ppx
      --cookie
      'library-name="foo"'"))
-   (FLG (-w -40 -g)))
+   (FLG (-w -40 -g))
+   (UNIT_NAME foo__Privmod))
 
 Make sure a ppx directive is generated (if not, the [grep ppx] step fails)
   $ dune ocaml merlin dump-config $PWD/lib | grep ppx > /dev/null
@@ -118,7 +133,9 @@ Make sure pp flag is correct and variables are expanded
   $ dune build ./pp-with-expand/.merlin-conf/exe-foobar --profile release
   $ dune ocaml merlin dump-config $PWD/pp-with-expand
   Foobar
-  ((STDLIB /OCAMLC_WHERE)
+  ((INDEX_FILE
+    $TESTCASE_ROOT/_build/default/project.ocaml-index)
+   (STDLIB /OCAMLC_WHERE)
    (EXCLUDE_QUERY_DIR)
    (B
     $TESTCASE_ROOT/_build/default/pp-with-expand/.foobar.eobjs/byte)
@@ -128,13 +145,16 @@ Make sure pp flag is correct and variables are expanded
     (-pp
      "$TESTCASE_ROOT/_build/default/pp/pp.exe
      -nothing"))
-   (FLG (-w -40 -g)))
+   (FLG (-w -40 -g))
+   (UNIT_NAME foobar))
 
 Check hash of executables names if more than one
   $ dune build ./exes/.merlin-conf/exe-x-6562915302827c6dce0630390bfa68b7
   $ dune ocaml merlin dump-config $PWD/exes
   X
-  ((STDLIB /OCAMLC_WHERE)
+  ((INDEX_FILE
+    $TESTCASE_ROOT/_build/default/project.ocaml-index)
+   (STDLIB /OCAMLC_WHERE)
    (EXCLUDE_QUERY_DIR)
    (B
     $TESTCASE_ROOT/_build/default/exes/.x.eobjs/byte)
@@ -147,9 +167,12 @@ Check hash of executables names if more than one
      -strict-formats
      -short-paths
      -keep-locs
-     -g)))
+     -g))
+   (UNIT_NAME x))
   Y
-  ((STDLIB /OCAMLC_WHERE)
+  ((INDEX_FILE
+    $TESTCASE_ROOT/_build/default/project.ocaml-index)
+   (STDLIB /OCAMLC_WHERE)
    (EXCLUDE_QUERY_DIR)
    (B
     $TESTCASE_ROOT/_build/default/exes/.x.eobjs/byte)
@@ -162,4 +185,5 @@ Check hash of executables names if more than one
      -strict-formats
      -short-paths
      -keep-locs
-     -g)))
+     -g))
+   (UNIT_NAME y))
