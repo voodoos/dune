@@ -47,17 +47,19 @@ module Processed = struct
 
   (* Most of the configuration is shared across a same lib/exe... *)
   type config =
-    { stdlib_dir : Path.t option
+    { build_dir : Path.Build.t
+    ; stdlib_dir : Path.t option
     ; obj_dirs : Path.Set.t
     ; src_dirs : Path.Set.t
     ; flags : string list
     ; extensions : string option Ml_kind.Dict.t list
     }
 
-  let dyn_of_config { stdlib_dir; obj_dirs; src_dirs; flags; extensions } =
+  let dyn_of_config { build_dir; stdlib_dir; obj_dirs; src_dirs; flags; extensions } =
     let open Dyn in
     record
-      [ "stdlib_dir", option Path.to_dyn stdlib_dir
+      [ "build_dir", Path.Build.to_dyn build_dir
+      ; "stdlib_dir", option Path.to_dyn stdlib_dir
       ; "obj_dirs", Path.Set.to_dyn obj_dirs
       ; "src_dirs", Path.Set.to_dyn src_dirs
       ; "flags", list string flags
@@ -100,12 +102,13 @@ module Processed = struct
     type nonrec t = t
 
     let name = "merlin-conf"
-    let version = 4
+    let version = 5
     let to_dyn _ = Dyn.String "Use [dune ocaml dump-dot-merlin] instead"
 
     let test_example () =
       { config =
-          { stdlib_dir = None
+          { build_dir = Path.Build.root
+          ; stdlib_dir = None
           ; obj_dirs = Path.Set.empty
           ; src_dirs = Path.Set.empty
           ; flags = [ "-x" ]
@@ -149,10 +152,20 @@ module Processed = struct
     | None, None -> None
   ;;
 
-  let to_sexp ~opens ~pp ~reader { stdlib_dir; obj_dirs; src_dirs; flags; extensions } =
+  let to_sexp
+    ~unit_name
+    ~opens
+    ~pp
+    ~reader
+    { build_dir; stdlib_dir; obj_dirs; src_dirs; flags; extensions }
+    =
     let make_directive tag value = Sexp.List [ Atom tag; value ] in
     let make_directive_of_path tag path =
       make_directive tag (Sexp.Atom (serialize_path path))
+    in
+    let index_file_path = Ocaml_index.project_index ~build_dir in
+    let index_file =
+      [ make_directive_of_path "INDEX_FILE" (Path.build index_file_path) ]
     in
     let stdlib_dir =
       match stdlib_dir with
@@ -184,6 +197,7 @@ module Processed = struct
           (Sexp.List (Ocaml_flags.open_flags opens |> List.map ~f:(fun x -> Sexp.Atom x)))
         :: flags
     in
+    let unit_name = [ make_directive "UNIT_NAME" (Sexp.Atom unit_name) ] in
     let suffixes =
       List.filter_map extensions ~f:(fun x ->
         let open Option.O in
@@ -199,7 +213,16 @@ module Processed = struct
     in
     Sexp.List
       (List.concat
-         [ stdlib_dir; exclude_query_dir; obj_dirs; src_dirs; flags; suffixes; reader ])
+         [ index_file
+         ; stdlib_dir
+         ; exclude_query_dir
+         ; obj_dirs
+         ; src_dirs
+         ; flags
+         ; unit_name
+         ; suffixes
+         ; reader
+         ])
   ;;
 
   let quote_for_dot_merlin s =
@@ -265,7 +288,8 @@ module Processed = struct
            Path.Build.Map.find per_file_config (remove_extension file))
     in
     let pp = Module_name.Per_item.get pp_config (Module.name module_) in
-    to_sexp ~opens ~pp ~reader config
+    let unit_name = Module_name.Unique.to_string (Module.obj_name module_) in
+    to_sexp ~unit_name ~opens ~pp ~reader config
   ;;
 
   let print_file path =
@@ -275,8 +299,9 @@ module Processed = struct
       let pp_one (source, { module_; opens; reader }) =
         let open Pp.O in
         let name = Module.name module_ in
+        let unit_name = Module_name.Unique.to_string (Module.obj_name module_) in
         let pp = Module_name.Per_item.get pp_config name in
-        let sexp = to_sexp ~reader ~opens ~pp config in
+        let sexp = to_sexp ~unit_name ~reader ~opens ~pp config in
         Pp.hvbox
           (Pp.textf "%s: %s" (Module_name.to_string name) (Path.Build.to_string source))
         ++ Pp.newline
@@ -310,7 +335,8 @@ module Processed = struct
               (acc_pp, acc_obj, acc_src, acc_flags, acc_ext)
               { per_file_config = _
               ; pp_config
-              ; config = { stdlib_dir = _; obj_dirs; src_dirs; flags; extensions }
+              ; config =
+                  { build_dir = _; stdlib_dir = _; obj_dirs; src_dirs; flags; extensions }
               }
             ->
             ( pp_config :: acc_pp
@@ -580,10 +606,13 @@ module Unprocessed = struct
                      in
                      Path.Set.add obj_dirs public_cmi_dir )))
       in
+      let build_dir =
+        Super_context.context sctx |> Context.name |> Context_name.build_dir
+      in
       let src_dirs =
         Path.Set.union src_dirs (Path.Set.of_list_map ~f:Path.source more_src_dirs)
       in
-      { Processed.stdlib_dir; src_dirs; obj_dirs; flags; extensions }
+      { Processed.build_dir; stdlib_dir; src_dirs; obj_dirs; flags; extensions }
     and+ pp_config = pp_config t (Super_context.context sctx) ~expander in
     let per_file_config =
       (* And copy for each module the resulting pp flags *)

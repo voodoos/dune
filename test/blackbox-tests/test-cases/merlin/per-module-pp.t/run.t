@@ -8,7 +8,9 @@ should appear only once since only Foo is using it.
 
   $ dune ocaml merlin dump-config $PWD
   Bar: _build/default/bar
-  ((STDLIB /OCAMLC_WHERE)
+  ((INDEX_FILE
+    $TESTCASE_ROOT/_build/default/project.ocaml-index)
+   (STDLIB /OCAMLC_WHERE)
    (EXCLUDE_QUERY_DIR)
    (B
     $TESTCASE_ROOT/_build/default/.foo.objs/byte)
@@ -36,9 +38,12 @@ should appear only once since only Foo is using it.
      -strict-formats
      -short-paths
      -keep-locs
-     -g)))
+     -g))
+   (UNIT_NAME bar))
   Foo: _build/default/foo
-  ((STDLIB /OCAMLC_WHERE)
+  ((INDEX_FILE
+    $TESTCASE_ROOT/_build/default/project.ocaml-index)
+   (STDLIB /OCAMLC_WHERE)
    (EXCLUDE_QUERY_DIR)
    (B
     $TESTCASE_ROOT/_build/default/.foo.objs/byte)
@@ -72,4 +77,5 @@ should appear only once since only Foo is using it.
      -strict-formats
      -short-paths
      -keep-locs
-     -g)))
+     -g))
+   (UNIT_NAME foo))
