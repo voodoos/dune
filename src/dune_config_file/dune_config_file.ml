@@ -298,7 +298,7 @@ module Dune_config = struct
     { display = Simple { verbosity = Quiet; status_line = not Execution_env.inside_dune }
     ; concurrency = (if Execution_env.inside_dune then Fixed 1 else Auto)
     ; terminal_persistence = Clear_on_rebuild
-    ; workspace_indexation = Disabled
+    ; workspace_indexation = Enabled
     ; sandboxing_preference = []
     ; cache_enabled = `Disabled
     ; cache_reproducibility_check = Skip
