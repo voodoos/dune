@@ -4,8 +4,8 @@
 
 FIXME: Dune should communicate the build-path for Pmodlib to the indexer
   $ dune build @ocaml-index
-  [warning] Failed to load file "Pmodlib.cmt" in load_path: ; .main.eobjs/byte; lib/.otherlib.objs/byte; private-module/.pmodlib.objs/public_cmi; vendor/otherproject/.vendored_lib.objs/byte; /Users/ulysse/tmp/0ccurrences/_opam/lib/ocaml; implicit-lib/.imp_lib.objs/byte
-  
+    [warning] Failed to load file "Pmodlib.cmt" in load_path: ; .main.eobjs/byte; lib/.otherlib.objs/byte; private-module/.pmodlib.objs/public_cmi; vendor/otherproject/.vendored_lib.objs/byte; /Users/ulysse/tmp/0ccurrences/_opam/lib/ocaml; implicit-lib/.imp_lib.objs/byte
+
   $ find . -name '*.cmt'
   ./_build/default/implicit-lib/.imp_lib.objs/byte/imp_lib.cmt
   ./_build/default/.main.eobjs/byte/dune__exe__Othermod.cmt
@@ -27,7 +27,7 @@ FIXME: Dune should communicate the build-path for Pmodlib to the indexer
   ./_build/default/vendor/otherproject/.private_lib.objs/cctx.ocaml-index
   ./_build/default/vendor/otherproject/.vendored_lib.objs/cctx.ocaml-index
 
-  $ ocaml-uideps dump ./_build/default/project.ocaml-index
+  $ ocaml-index dump ./_build/default/project.ocaml-index
   19 uids:
   {uid: Dune__exe__Othermod.0; locs:
      "y": File "$TESTCASE_ROOT/othermod.ml", line 1, characters 4-5;
@@ -49,9 +49,9 @@ FIXME: Dune should communicate the build-path for Pmodlib to the indexer
    uid: Imp_lib; locs:
      "Imp_lib": File "$TESTCASE_ROOT/lib/otherlib.ml", line 4, characters 8-15
    uid: Otherlib.0; locs:
+     "Otherlib.fromotherlib": File "$TESTCASE_ROOT/main.ml", line 1, characters 28-49;
      "fromotherlib": File "$TESTCASE_ROOT/lib/otherlib.ml", line 1, characters 4-16;
-     "fromotherlib": File "$TESTCASE_ROOT/lib/otherlib.ml", line 2, characters 29-41;
-     "Otherlib.fromotherlib": File "$TESTCASE_ROOT/main.ml", line 1, characters 28-49
+     "fromotherlib": File "$TESTCASE_ROOT/lib/otherlib.ml", line 2, characters 29-41
    uid: Pmodlib__Pmod.0; locs:
      "x": File "$TESTCASE_ROOT/private-module/pmod.ml", line 1, characters 4-5
    uid: Pmodlib__.1; locs:
