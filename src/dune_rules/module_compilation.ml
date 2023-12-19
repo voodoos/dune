@@ -198,7 +198,7 @@ let build_cm
            Option.value_exn (Obj_dir.Module.cmt_file obj_dir m ~cm_kind ~ml_kind)
          in
          if with_index
-         then fn :: other_targets, As [ "-bin-annot"; "-store-usage-index" ]
+         then fn :: other_targets, As [ "-bin-annot"; "-bin-annot-occurrences" ]
          else fn :: other_targets, A "-bin-annot")
        else other_targets, Command.Args.empty
    in
