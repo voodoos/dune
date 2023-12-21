@@ -74,8 +74,7 @@ let cctx_rules cctx =
     in
     let fn = index_path_in_obj_dir obj_dir in
     let includes =
-      Resolve.peek additionnal_libs
-      |> Result.value ~default:Command.Args.empty
+      Resolve.peek additionnal_libs |> Result.value ~default:Command.Args.empty
     in
     let aggregate =
       Command.run
@@ -174,7 +173,9 @@ let project_rule sctx project =
     let target = project_index ~build_dir:dir in
     let ocaml_index_alias = Alias.make Alias0.ocaml_index ~dir in
     let* () =
-      Rules.Produce.Alias.add_deps ocaml_index_alias (Action_builder.path @@ Path.build target)
+      Rules.Produce.Alias.add_deps
+        ocaml_index_alias
+        (Action_builder.path @@ Path.build target)
     in
     aggregate sctx ~dir ~target ~index)
 ;;
