@@ -605,7 +605,9 @@ let library_rules
     info
   in
   let+ () =
-    if Compilation_context.bin_annot cctx then Ocaml_index.cctx_rules cctx else Memo.return ()
+    if Compilation_context.bin_annot cctx
+    then Ocaml_index.cctx_rules cctx
+    else Memo.return ()
   and+ () =
     Memo.when_
       (not (Library.is_virtual lib))
