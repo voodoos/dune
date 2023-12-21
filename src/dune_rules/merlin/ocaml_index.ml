@@ -47,6 +47,13 @@ let cctx_rules cctx =
           |> Option.map ~f:(fun cmt -> Path.build cmt))
         modules
     in
+    let modules_with_cmtis =
+      List.filter_map
+        ~f:(fun module_ ->
+          Obj_dir.Module.cmt_file obj_dir ~ml_kind:Intf ~cm_kind module_
+          |> Option.map ~f:(fun cmti -> Path.build cmti))
+        modules
+    in
     let* ocaml_index = ocaml_index sctx ~dir in
     let context_dir =
       CC.context cctx |> Context.name |> Context_name.build_dir |> Path.build
@@ -86,6 +93,7 @@ let cctx_rules cctx =
         ; A "-o"
         ; Target fn
         ; Deps modules_with_cmts
+        ; Deps modules_with_cmtis
         ; includes
         ]
     in
