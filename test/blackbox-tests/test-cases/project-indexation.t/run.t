@@ -28,7 +28,7 @@ FIXME: Dune should communicate the build-path for Pmodlib to the indexer
   ./_build/default/vendor/otherproject/.vendored_lib.objs/cctx.ocaml-index
 
   $ ocaml-index dump ./_build/default/project.ocaml-index
-  19 uids:
+  21 uids:
   {uid: Dune__exe__Othermod.0; locs:
      "y": File "$TESTCASE_ROOT/othermod.ml", line 1, characters 4-5;
      "y": File "$TESTCASE_ROOT/othermod.ml", line 2, characters 17-18
@@ -39,7 +39,9 @@ FIXME: Dune should communicate the build-path for Pmodlib to the indexer
      "Dune__exe__Othermod": File "$TESTCASE_ROOT/.main.eobjs/dune__exe.ml-gen", line 7, characters 18-37;
      "Othermod": File "$TESTCASE_ROOT/main.ml", line 1, characters 10-18
    uid: Otherlib.1; locs:
-     "do_something": File "$TESTCASE_ROOT/lib/otherlib.ml", line 2, characters 4-16
+     "Otherlib.fromotherlib": File "$TESTCASE_ROOT/main.ml", line 1, characters 28-49;
+     "fromotherlib": File "$TESTCASE_ROOT/lib/otherlib.ml", line 3, characters 4-16;
+     "fromotherlib": File "$TESTCASE_ROOT/lib/otherlib.ml", line 4, characters 29-41
    uid: Dune__exe__Othermod.1; locs:
      "other": File "$TESTCASE_ROOT/main.ml", line 1, characters 20-25;
      "other": File "$TESTCASE_ROOT/othermod.ml", line 2, characters 4-9
@@ -47,11 +49,12 @@ FIXME: Dune should communicate the build-path for Pmodlib to the indexer
      "imp_x": File "$TESTCASE_ROOT/implicit-lib/imp_lib.ml", line 1, characters 4-9;
      "Otherlib.imp_x": File "$TESTCASE_ROOT/main.ml", line 1, characters 52-66
    uid: Imp_lib; locs:
-     "Imp_lib": File "$TESTCASE_ROOT/lib/otherlib.ml", line 4, characters 8-15
+     "Imp_lib": File "$TESTCASE_ROOT/lib/otherlib.ml", line 6, characters 8-15
    uid: Otherlib.0; locs:
-     "Otherlib.fromotherlib": File "$TESTCASE_ROOT/main.ml", line 1, characters 28-49;
-     "fromotherlib": File "$TESTCASE_ROOT/lib/otherlib.ml", line 1, characters 4-16;
-     "fromotherlib": File "$TESTCASE_ROOT/lib/otherlib.ml", line 2, characters 29-41
+     "u": File "$TESTCASE_ROOT/lib/otherlib.ml", line 1, characters 5-6
+   uid: Imp_lib.1; locs:
+     "t": File "$TESTCASE_ROOT/implicit-lib/imp_lib.ml", line 2, characters 5-6;
+     "Imp_lib.t": File "$TESTCASE_ROOT/lib/otherlib.ml", line 1, characters 9-18
    uid: Pmodlib__Pmod.0; locs:
      "x": File "$TESTCASE_ROOT/private-module/pmod.ml", line 1, characters 4-5
    uid: Pmodlib__.1; locs:
@@ -62,6 +65,8 @@ FIXME: Dune should communicate the build-path for Pmodlib to the indexer
      "print_int": File "$TESTCASE_ROOT/main.ml", line 1, characters 0-9;
      "print_int": File "$TESTCASE_ROOT/main.ml", line 2, characters 0-9;
      "print_int": File "$TESTCASE_ROOT/main.ml", line 3, characters 0-9
+   uid: Otherlib.2; locs:
+     "do_something": File "$TESTCASE_ROOT/lib/otherlib.ml", line 4, characters 4-16
    uid: Pmodlib__Pmod; locs:
      "Pmodlib__Pmod": File "$TESTCASE_ROOT/private-module/pmodlib__.ml-gen", line 4, characters 14-27
    uid: Vendored_lib.0; locs:
@@ -72,7 +77,7 @@ FIXME: Dune should communicate the build-path for Pmodlib to the indexer
      "+": File "$TESTCASE_ROOT/main.ml", line 1, characters 50-51;
      "+": File "$TESTCASE_ROOT/othermod.ml", line 2, characters 15-16
    uid: Stdlib.141; locs:
-     "ignore": File "$TESTCASE_ROOT/lib/otherlib.ml", line 2, characters 22-28
+     "ignore": File "$TESTCASE_ROOT/lib/otherlib.ml", line 4, characters 22-28
    uid: Dune__exe.0; locs:
      "Main": File "$TESTCASE_ROOT/.main.eobjs/dune__exe.ml-gen", line 4, characters 7-11
    uid: Dune__exe.1; locs:
