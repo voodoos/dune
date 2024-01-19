@@ -16,8 +16,11 @@ Test the (dialect ...) stanza inside the `dune-project` file.
   $ dune build --display short 2>&1 | grep -i cppo
         ocamlc .cppo.eobjs/byte/dune__exe__Cppo.{cmi,cmti}
       ocamlopt .cppo.eobjs/native/dune__exe__Cppo.{cmx,o}
+        ocamlc .cppo.eobjs/byte/dune__exe__Cppo.{cmo,cmt}
       ocamlopt cppo.exe
           cppo main.cppo.ml.ml
+  File ".cppo.eobjs/_unknown_", line 1, characters 0-0:
+   ocaml-index .cppo.eobjs/cctx.ocaml-index (exit 125)
 
   $ dune build @show
   print_endline "Hello, World"

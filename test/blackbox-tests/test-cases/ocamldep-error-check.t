@@ -13,7 +13,7 @@ Dune uses ocamldep to prevent a module from depending on itself.
   $ cat >lib/bar.ml <<EOF
   > Foo.bar
   > EOF
-  $ dune build @all
+  $ dune build @lib/all
   Error: Module Bar in directory _build/default/lib depends on Foo.
   This doesn't make sense to me.
   

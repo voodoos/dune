@@ -12,6 +12,7 @@ working directory.
   d/
   dune
   dune-project
+  project.ocaml-index
   simple.a
   simple.cma
   simple.cmxa
@@ -27,6 +28,7 @@ used, and only the targets available in that directory will be displayed.
   d/
   dune
   dune-project
+  project.ocaml-index
   simple.a
   simple.cma
   simple.cmxa
@@ -49,6 +51,7 @@ The command also works with files in the _build directory.
   d/
   dune
   dune-project
+  project.ocaml-index
   simple.a
   simple.cma
   simple.cmxa
