@@ -90,28 +90,6 @@ let cctx_rules cctx =
   SC.add_rule sctx ~dir aggregate
 ;;
 
-let aggregate sctx ~dir ~target ~indexes =
-  let open Memo.O in
-  if List.is_empty indexes
-  then Memo.return ()
-  else
-    let* ocaml_index = ocaml_index sctx ~dir in
-    let indexes =
-      Action_builder.List.filter_map indexes ~f:(fun path ->
-        let open Action_builder.O in
-        let+ file_exists = Action_builder.file_exists (Path.build path) in
-        if not file_exists then None else Some (Command.Args.Dep (Path.build path)))
-      |> Action_builder.map ~f:(fun args -> Command.Args.S args)
-    in
-    SC.add_rule
-      sctx
-      ~dir
-      (Command.run
-         ~dir:(Path.build dir)
-         ocaml_index
-         [ A "aggregate"; A "-o"; Target target; Dyn indexes ])
-;;
-
 let project_rule sctx project =
   let open Memo.O in
   let ctx = Super_context.context sctx in
@@ -129,14 +107,10 @@ let project_rule sctx project =
       in
       match obj with
       | None -> acc
-      | Some obj_dir -> index_path_in_obj_dir obj_dir :: acc)
+      | Some obj_dir -> Path.build  (index_path_in_obj_dir obj_dir) :: acc)
   in
-  let target = project_index ~build_dir:dir in
   let ocaml_index_alias = Alias.make Alias0.ocaml_index ~dir in
-  let* () =
     Rules.Produce.Alias.add_deps
       ocaml_index_alias
-      (Action_builder.path @@ Path.build target)
-  in
-  aggregate sctx ~dir ~target ~indexes
+      (Action_builder.paths_existing @@ indexes)
 ;;
