@@ -47,23 +47,23 @@ module Processed = struct
 
   (* Most of the configuration is shared across a same lib/exe... *)
   type config =
-    { build_dir : Path.Build.t
-    ; stdlib_dir : Path.t option
+    { stdlib_dir : Path.t option
     ; obj_dirs : Path.Set.t
     ; src_dirs : Path.Set.t
     ; flags : string list
     ; extensions : string option Ml_kind.Dict.t list
+    ; indexes : Path.t list
     }
 
-  let dyn_of_config { build_dir; stdlib_dir; obj_dirs; src_dirs; flags; extensions } =
+  let dyn_of_config { stdlib_dir; obj_dirs; src_dirs; flags; extensions; indexes } =
     let open Dyn in
     record
-      [ "build_dir", Path.Build.to_dyn build_dir
-      ; "stdlib_dir", option Path.to_dyn stdlib_dir
+      [ "stdlib_dir", option Path.to_dyn stdlib_dir
       ; "obj_dirs", Path.Set.to_dyn obj_dirs
       ; "src_dirs", Path.Set.to_dyn src_dirs
       ; "flags", list string flags
       ; "extensions", list (Ml_kind.Dict.to_dyn (Dyn.option string)) extensions
+      ; "indexes", list Path.to_dyn indexes
       ]
   ;;
 
@@ -107,12 +107,12 @@ module Processed = struct
 
     let test_example () =
       { config =
-          { build_dir = Path.Build.root
-          ; stdlib_dir = None
+          { stdlib_dir = None
           ; obj_dirs = Path.Set.empty
           ; src_dirs = Path.Set.empty
           ; flags = [ "-x" ]
           ; extensions = [ { Ml_kind.Dict.intf = None; impl = Some "ext" } ]
+          ; indexes = []
           }
       ; per_file_config = Path.Build.Map.empty
       ; pp_config =
@@ -157,16 +157,13 @@ module Processed = struct
     ~opens
     ~pp
     ~reader
-    { build_dir; stdlib_dir; obj_dirs; src_dirs; flags; extensions }
+    { stdlib_dir; obj_dirs; src_dirs; flags; extensions; indexes }
     =
     let make_directive tag value = Sexp.List [ Atom tag; value ] in
     let make_directive_of_path tag path =
       make_directive tag (Sexp.Atom (serialize_path path))
     in
-    let index_file_path = Ocaml_index.project_index ~build_dir in
-    let index_file =
-      [ make_directive_of_path "INDEX_FILE" (Path.build index_file_path) ]
-    in
+    let index_files = List.map indexes ~f:(fun p -> make_directive_of_path "INDEX" p) in
     let stdlib_dir =
       match stdlib_dir with
       | None -> []
@@ -213,7 +210,7 @@ module Processed = struct
     in
     Sexp.List
       (List.concat
-         [ index_file
+         [ index_files
          ; stdlib_dir
          ; exclude_query_dir
          ; obj_dirs
@@ -238,7 +235,7 @@ module Processed = struct
     if String.need_quoting s then Filename.quote s else s
   ;;
 
-  let to_dot_merlin stdlib_dir pp_configs flags obj_dirs src_dirs extensions =
+  let to_dot_merlin stdlib_dir pp_configs flags obj_dirs src_dirs extensions indexes =
     let b = Buffer.create 256 in
     let printf = Printf.bprintf b in
     let print = Buffer.add_string b in
@@ -247,6 +244,7 @@ module Processed = struct
       printf "STDLIB %s\n" (serialize_path stdlib_dir));
     Path.Set.iter obj_dirs ~f:(fun p -> printf "B %s\n" (serialize_path p));
     Path.Set.iter src_dirs ~f:(fun p -> printf "S %s\n" (serialize_path p));
+    List.iter indexes ~f:(fun p -> printf "INDEX %s\n" (serialize_path p));
     List.iter extensions ~f:(fun x ->
       Option.iter (get_ext x) ~f:(fun (impl, intf) ->
         printf "SUFFIX %s" (Printf.sprintf "%s %s" impl intf)));
@@ -320,7 +318,7 @@ module Processed = struct
     | Error msg -> Printf.eprintf "%s\n" msg
     | Ok [] -> Printf.eprintf "No merlin configuration found.\n"
     | Ok (init :: tl) ->
-      let pp_configs, obj_dirs, src_dirs, flags, extensions =
+      let pp_configs, obj_dirs, src_dirs, flags, extensions, indexes =
         (* We merge what is easy to merge and ignore the rest *)
         List.fold_left
           tl
@@ -329,21 +327,23 @@ module Processed = struct
             , init.config.obj_dirs
             , init.config.src_dirs
             , [ init.config.flags ]
-            , init.config.extensions )
+            , init.config.extensions
+            , init.config.indexes )
           ~f:
             (fun
-              (acc_pp, acc_obj, acc_src, acc_flags, acc_ext)
+              (acc_pp, acc_obj, acc_src, acc_flags, acc_ext, acc_indexes)
               { per_file_config = _
               ; pp_config
               ; config =
-                  { build_dir = _; stdlib_dir = _; obj_dirs; src_dirs; flags; extensions }
+                  { stdlib_dir = _; obj_dirs; src_dirs; flags; extensions; indexes }
               }
             ->
             ( pp_config :: acc_pp
             , Path.Set.union acc_obj obj_dirs
             , Path.Set.union acc_src src_dirs
             , flags :: acc_flags
-            , extensions @ acc_ext ))
+            , extensions @ acc_ext
+            , indexes @ acc_indexes ))
       in
       Printf.printf
         "%s\n"
@@ -353,7 +353,8 @@ module Processed = struct
            flags
            obj_dirs
            src_dirs
-           extensions)
+           extensions
+           indexes)
   ;;
 end
 
@@ -605,14 +606,11 @@ module Unprocessed = struct
                        obj_dir_of_lib `Public mode (Lib_info.obj_dir info)
                      in
                      Path.Set.add obj_dirs public_cmi_dir )))
-      in
-      let build_dir =
-        Super_context.context sctx |> Context.name |> Context_name.build_dir
-      in
+      and+ indexes = Action_builder.of_memo (Ocaml_index.context_indexes sctx) in
       let src_dirs =
         Path.Set.union src_dirs (Path.Set.of_list_map ~f:Path.source more_src_dirs)
       in
-      { Processed.build_dir; stdlib_dir; src_dirs; obj_dirs; flags; extensions }
+      { Processed.stdlib_dir; src_dirs; obj_dirs; flags; extensions; indexes }
     and+ pp_config = pp_config t (Super_context.context sctx) ~expander in
     let per_file_config =
       (* And copy for each module the resulting pp flags *)

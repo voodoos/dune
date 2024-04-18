@@ -90,27 +90,30 @@ let cctx_rules cctx =
   SC.add_rule sctx ~dir aggregate
 ;;
 
-let project_rule sctx project =
+let context_indexes sctx =
   let open Memo.O in
   let ctx = Super_context.context sctx in
   let build_dir = Context.build_dir ctx in
+  let+ stanzas = Dune_load.dune_files (Context.name ctx) in
+  Dune_file.fold_static_stanzas stanzas ~init:[] ~f:(fun dune_file stanza acc ->
+    let dir = Path.Build.append_source build_dir (Dune_file.dir dune_file) in
+    let obj =
+      match Stanza.repr stanza with
+      | Executables.T exes | Tests.T { exes; _ } -> Some (Executables.obj_dir ~dir exes)
+      | Library.T lib -> Some (Library.obj_dir ~dir lib)
+      | _ -> None
+    in
+    match obj with
+    | None -> acc
+    | Some obj_dir -> Path.build (index_path_in_obj_dir obj_dir) :: acc)
+;;
+
+let project_rule sctx project =
+  let open Memo.O in
+  let* indexes = context_indexes sctx in
+  let ctx = Super_context.context sctx in
+  let build_dir = Context.build_dir ctx in
   let dir = Path.Build.append_source build_dir @@ Dune_project.root project in
-  let* stanzas = Dune_load.dune_files (Context.name ctx) in
-  let indexes =
-    Dune_file.fold_static_stanzas stanzas ~init:[] ~f:(fun dune_file stanza acc ->
-      let dir = Path.Build.append_source build_dir (Dune_file.dir dune_file) in
-      let obj =
-        match Stanza.repr stanza with
-        | Executables.T exes | Tests.T { exes; _ } -> Some (Executables.obj_dir ~dir exes)
-        | Library.T lib -> Some (Library.obj_dir ~dir lib)
-        | _ -> None
-      in
-      match obj with
-      | None -> acc
-      | Some obj_dir -> Path.build  (index_path_in_obj_dir obj_dir) :: acc)
-  in
   let ocaml_index_alias = Alias.make Alias0.ocaml_index ~dir in
-    Rules.Produce.Alias.add_deps
-      ocaml_index_alias
-      (Action_builder.paths_existing @@ indexes)
+  Rules.Produce.Alias.add_deps ocaml_index_alias (Action_builder.paths_existing @@ indexes)
 ;;

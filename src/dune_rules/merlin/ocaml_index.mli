@@ -17,6 +17,10 @@ val project_index : build_dir:Path.Build.t -> Path.Build.t
     [cctx.uideps] index covering the whole compilation context. *)
 val cctx_rules : Compilation_context.t -> unit Memo.t
 
+(** [context_indexes] lists all the available cctx.ocaml-index files in the
+    given context *)
+val context_indexes : Super_context.t -> Path.t list Memo.t
+
 (** [project_rule] adds a rule that will aggregate all the generated indexes
     into one global, project-wide, index *)
 val project_rule : Super_context.t -> Dune_project.t -> unit Memo.t
