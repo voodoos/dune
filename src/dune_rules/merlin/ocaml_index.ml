@@ -87,7 +87,8 @@ let cctx_rules cctx =
       ; includes
       ]
   in
-  SC.add_rule sctx ~dir aggregate
+  let+ () = SC.add_rule sctx ~dir aggregate in
+  fn
 ;;
 
 let context_indexes sctx =

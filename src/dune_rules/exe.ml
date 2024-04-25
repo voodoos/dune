@@ -364,9 +364,11 @@ let build_and_link_many
   let open Memo.O in
   let* () = Module_compilation.build_all cctx in
   let* () =
-    if Compilation_context.bin_annot cctx
-    then Ocaml_index.cctx_rules cctx
-    else Memo.return ()
+    Memo.when_ (Compilation_context.bin_annot cctx) (fun () ->
+      let* index_file = Ocaml_index.cctx_rules cctx in
+      let sctx = Compilation_context.super_context cctx in
+      let dir = Compilation_context.dir cctx in
+      Check_rules.add_files ~dir sctx [ Path.build index_file ])
   in
   link_many
     ?link_args

@@ -608,9 +608,9 @@ let library_rules
     info
   in
   let+ () =
-    if Compilation_context.bin_annot cctx
-    then Ocaml_index.cctx_rules cctx
-    else Memo.return ()
+    Memo.when_ (Compilation_context.bin_annot cctx) (fun () ->
+      let* index_file = Ocaml_index.cctx_rules cctx in
+      Check_rules.add_files ~dir sctx [ Path.build index_file ])
   and+ () =
     Memo.when_
       (not (Library.is_virtual lib))
