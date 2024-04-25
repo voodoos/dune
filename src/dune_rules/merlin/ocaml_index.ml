@@ -17,7 +17,7 @@ let index_path_in_obj_dir ?for_cmt obj_dir =
 
 let project_index ~build_dir = Path.Build.relative build_dir "project.ocaml-index"
 
-let cctx_rules cctx =
+let cctx_rules cctx () =
   let open Memo.O in
   (* Indexing is performed by the external binary [ocaml-index] which performs
      full shape reduction to compute the actual definition of all the elements in
@@ -54,7 +54,7 @@ let cctx_rules cctx =
        be missing.These are passed to the indexer with the `-I` flag.
 
        The implicit transitive libs correspond to the set:
-       (requires_link \ requires_link)
+       (requires_link \ req_compile)
     *)
     let open Resolve.Memo.O in
     let* req_link = CC.requires_link cctx in
@@ -87,8 +87,11 @@ let cctx_rules cctx =
       ; includes
       ]
   in
-  let+ () = SC.add_rule sctx ~dir aggregate in
-  fn
+  let* () = SC.add_rule sctx ~dir aggregate in
+  let check_index_alias = Alias.make Alias0.check_index ~dir in
+  let at_check = Dep.alias (Alias.make Alias0.check ~dir) in
+  let action = Action_builder.(all_unit [ dep at_check; path (Path.build fn) ]) in
+  Rules.Produce.Alias.add_deps check_index_alias action
 ;;
 
 let context_indexes sctx =
