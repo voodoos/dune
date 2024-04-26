@@ -44,7 +44,7 @@ let cctx_rules cctx () =
   let context_dir =
     CC.context cctx |> Context.name |> Context_name.build_dir |> Path.build
   in
-  let* additionnal_libs =
+  let* additional_libs =
     (* The indexer relies on the load_path of cmt files. When
        [implicit_transitive_deps] is set to [false] some necessary paths will
        be missing.These are passed to the indexer with the `-I` flag.
@@ -67,7 +67,7 @@ let cctx_rules cctx () =
   in
   let fn = index_path_in_obj_dir obj_dir in
   let includes =
-    Resolve.peek additionnal_libs |> Result.value ~default:Command.Args.empty
+    Resolve.peek additional_libs |> Result.value ~default:Command.Args.empty
   in
   let aggregate =
     Command.run
