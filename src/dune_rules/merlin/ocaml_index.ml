@@ -6,13 +6,9 @@ let ocaml_index sctx ~dir =
   Super_context.resolve_program_memo ~loc:None ~dir sctx "ocaml-index"
 ;;
 
-let index_path_in_obj_dir ?for_cmt obj_dir =
+let index_path_in_obj_dir obj_dir =
   let dir = Obj_dir.obj_dir obj_dir in
-  match for_cmt with
-  | Some path ->
-    let name = Path.basename path in
-    Path.Build.relative dir @@ Printf.sprintf ".index/%s.ocaml-index" name
-  | None -> Path.Build.relative dir "cctx.ocaml-index"
+  Path.Build.relative dir "cctx.ocaml-index"
 ;;
 
 let project_index ~build_dir = Path.Build.relative build_dir "project.ocaml-index"
