@@ -3,7 +3,7 @@ module CC = Compilation_context
 module SC = Super_context
 
 let ocaml_index sctx ~dir =
-  Super_context.resolve_program_memo ~loc:None ~dir sctx "ocaml-index"
+  Super_context.resolve_program ~loc:None ~dir sctx "ocaml-index"
 ;;
 
 let index_path_in_obj_dir obj_dir =
@@ -40,7 +40,6 @@ let cctx_rules cctx () =
         |> Option.map ~f:(fun cmti -> Path.build cmti))
       modules
   in
-  let* ocaml_index = ocaml_index sctx ~dir in
   let context_dir =
     CC.context cctx |> Context.name |> Context_name.build_dir |> Path.build
   in
@@ -70,9 +69,9 @@ let cctx_rules cctx () =
     Resolve.peek additional_libs |> Result.value ~default:Command.Args.empty
   in
   let aggregate =
-    Command.run
+    Command.run_dyn_prog
       ~dir:context_dir
-      ocaml_index
+      (ocaml_index sctx ~dir)
       [ A "aggregate"
       ; A "--root"
       ; A Path.(Source.root |> source |> to_absolute_filename)
