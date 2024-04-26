@@ -54,15 +54,11 @@ let cctx_rules cctx () =
     let open Resolve.Memo.O in
     let* req_link = CC.requires_link cctx in
     let+ req_compile = CC.requires_compile cctx in
-    let a =
-      List.fold_left req_link ~init:[] ~f:(fun acc l ->
-        if List.exists req_compile ~f:(Lib.equal l)
-        then acc
-        else (
-          let dir = Lib.info l |> Lib_info.obj_dir |> Obj_dir.byte_dir in
-          Command.Args.(A "-I" :: Path dir :: acc)))
+    let non_compile_libs =
+      List.filter req_link ~f:(fun l ->
+        not (List.exists req_compile ~f:(Lib.equal l)))
     in
-    Command.Args.S a
+    Lib_flags.L.include_flags non_compile_libs (Lib_mode.Ocaml Byte)
   in
   let fn = index_path_in_obj_dir obj_dir in
   let includes =
