@@ -9,15 +9,12 @@
    ../utils/melc_stdlib_prefix.exe
    ../utils/refmt.exe
    ../utils/webserver_oneshot.exe
-   ../utils/sherlodoc.exe)))
+   ../utils/sherlodoc.exe
+   ../utils/ocaml_index.exe)))
 
 (cram
  (applies_to pp-cwd)
  (deps %{bin:dunepp}))
-
-(cram
- (applies_to tuideps)
- (deps %{bin:ocaml-uideps}))
 
 (cram
  (applies_to :whole_subtree)
