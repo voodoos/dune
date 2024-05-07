@@ -55,8 +55,7 @@ let cctx_rules cctx () =
     let* req_link = CC.requires_link cctx in
     let+ req_compile = CC.requires_compile cctx in
     let non_compile_libs =
-      List.filter req_link ~f:(fun l ->
-        not (List.exists req_compile ~f:(Lib.equal l)))
+      List.filter req_link ~f:(fun l -> not (List.exists req_compile ~f:(Lib.equal l)))
     in
     Lib_flags.L.include_flags non_compile_libs (Lib_mode.Ocaml Byte)
   in
@@ -78,11 +77,7 @@ let cctx_rules cctx () =
       ; includes
       ]
   in
-  let* () = SC.add_rule sctx ~dir aggregate in
-  let check_index_alias = Alias.make Alias0.check_index ~dir in
-  let at_check = Dep.alias (Alias.make Alias0.check ~dir) in
-  let action = Action_builder.(all_unit [ dep at_check; path (Path.build fn) ]) in
-  Rules.Produce.Alias.add_deps check_index_alias action
+  SC.add_rule sctx ~dir aggregate
 ;;
 
 let context_indexes sctx =

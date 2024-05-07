@@ -12,17 +12,6 @@ The @check alias does not build indexes:
 
   $ find . -name '*.ocaml-index'
 
-The @check-index include @check plus builds indexes:
-
-  $ dune build @check-index
-
-  $ find . -name '*.ocaml-index'
-  ./_build/default/implicit-lib/.imp_lib.objs/cctx.ocaml-index
-  ./_build/default/.main.eobjs/cctx.ocaml-index
-  ./_build/default/sub-project/.subprojectlib.objs/cctx.ocaml-index
-  ./_build/default/lib/.otherlib.objs/cctx.ocaml-index
-  ./_build/default/private-module/.pmodlib.objs/cctx.ocaml-index
-
 The @ocaml-index indexes the entire workspace, including librairies that my not 
 be directly used and thus usually not built by @check:
 
