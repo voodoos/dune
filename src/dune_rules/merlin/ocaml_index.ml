@@ -104,6 +104,6 @@ let project_rule sctx project =
   let ctx = Super_context.context sctx in
   let build_dir = Context.build_dir ctx in
   let dir = Path.Build.append_source build_dir @@ Dune_project.root project in
-  let index_all_alias = Alias.make Alias0.index_all ~dir in
-  Rules.Produce.Alias.add_deps index_all_alias (Action_builder.paths_existing @@ indexes)
+  let ocaml_index_alias = Alias.make Alias0.ocaml_index ~dir in
+  Rules.Produce.Alias.add_deps ocaml_index_alias (Action_builder.paths_existing @@ indexes)
 ;;
